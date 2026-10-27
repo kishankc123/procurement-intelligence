@@ -105,7 +105,7 @@ export const useSubmitFeedback = () =>
   )
 
 export const useReviewFeedback = () =>
-  useWrite<{ id: string; status: 'accepted' | 'rejected' | 'edited' }>(async (v) => {
-    await send('PATCH', `/feedback/${v.id}`, { status: v.status })
+  useWrite<{ id: string; status: 'accepted' | 'rejected' | 'edited'; reason?: string }>(async (v) => {
+    await send('PATCH', `/feedback/${v.id}`, v.reason === undefined ? { status: v.status } : { status: v.status, reason: v.reason })
     return { action: `Feedback ${v.status}`, target: v.id }
   })

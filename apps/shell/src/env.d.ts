@@ -7,3 +7,7 @@ declare module 'monitoring/Monitoring' {
   const Monitoring: React.ComponentType
   export default Monitoring
 }
+declare module 'learning/Learning' {
+  const Learning: React.ComponentType
+  export default Learning
+}

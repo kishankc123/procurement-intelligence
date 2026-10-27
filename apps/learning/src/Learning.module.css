@@ -1,0 +1,15 @@
+.page { display: grid; gap: 16px; min-width: 0; }
+.head h1 { font-size: 24px; } .head p, .sub { color: var(--muted); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.big { font-size: 32px; font-weight: 600; } .unit { color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
+.alert { display: grid; gap: 6px; padding: 12px 0 12px 12px; border-bottom: 1px solid var(--border); border-left: 4px solid var(--border); margin-bottom: 4px; }
+.high { border-left-color: var(--sev-high-fg); } .medium { border-left-color: var(--sev-med-fg); } .low { border-left-color: var(--sev-low-fg); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; }
+.table th, .table td { padding: 6px; border-bottom: 1px solid var(--border); }
+.assign select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.actions input { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
+.table td { vertical-align: top; }

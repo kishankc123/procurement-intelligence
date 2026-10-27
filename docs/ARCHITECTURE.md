@@ -1,6 +1,6 @@
 # Architecture
 
-Front-end-only demo of a Procurement Intelligence platform on a mocked backend. Status as of the Monitoring block: shell, Planning and Monitoring are built; Learning and Tender design are next.
+Front-end-only demo of a Procurement Intelligence platform on a mocked backend. Status: shell, Planning, Monitoring and Learning are built, plus Project data and a thin Tender design page in the shell. Knowledge base and Evidence workbench are still Planned.
 
 ## 1. Big picture
 
@@ -10,13 +10,13 @@ Front-end-only demo of a Procurement Intelligence platform on a mocked backend. 
  │ SHELL (host)  apps/shell                                     │
  │  layout · nav · filters · role switcher · routing            │
  │  owns the single QueryClient                                 │
- │  pages built in the shell: Project data (+ Planned stubs)    │
+ │  pages built in the shell: Project data, Tender design (+ Planned stubs)    │
  │                                                              │
  │   lazy(import('planning/Planning'))   lazy(import('monitoring/Monitoring'))
  └───────────┬───────────────────────────────────┬──────────────┘
              │ fetch remoteEntry.js              │ fetch remoteEntry.js
-   ┌─────────▼─────────┐               ┌─────────▼─────────┐
-   │ PLANNING  :5174   │               │ MONITORING :5175  │   (Learning :5176 planned)
+   ┌─────────▼─────────┐               ┌─────────▼─────────┐        LEARNING :5176 (same pattern)
+   │ PLANNING  :5174   │               │ MONITORING :5175  │
    │ exposes ./Planning│               │ exposes ./Monitoring
    └─────────┬─────────┘               └─────────┬─────────┘
              └──────────────┬────────────────────┘
@@ -77,15 +77,15 @@ All collections support `?field=value` filters (for example `?project_id=` and `
 | `enrichments` | Project data, Monitoring, shell coverage meter | POST (pending), PATCH status |
 | `amendments` | Project data, Monitoring | POST (pending), PATCH status |
 | `plans` | Planning, Tender design | PUT |
-| `tender_drafts` | Tender design (planned) | PUT |
+| `tender_drafts` | Tender design | PUT |
 | `supervision_reports`, `completion_reports` | Planning, Monitoring | seed only |
 | `documents`, `chunks` | SourceDrawer, retrieval | seed only |
 | `country_years` | Planning country context | seed only (real GPPD for RO, EE via `import-gppd.ts`) |
 | `governance` | Monitoring | seed only (illustrative values) |
 | `recommendations` | Planning | seed only |
 | `alerts` | Monitoring | PUT/POST assignee only. Alerts themselves are derived, not stored |
-| `feedback` | Planning, Learning (planned) | POST, PATCH status |
-| `audit_log` | Project data, Learning (planned) | POST on every write |
+| `feedback` | Planning, Learning | POST, PATCH status and reason |
+| `audit_log` | Project data, Learning | POST on every write |
 
 `pnpm reset-db` rebuilds `db.json` from `mock/seed.ts`.
 
@@ -101,7 +101,7 @@ Contract manager enters REF-004 end date (Project data) → `enrichments` row, s
 | shell | 5173 | `pnpm --filter @pi/shell dev` |
 | planning | 5174 | `pnpm --filter @pi/planning dev` |
 | monitoring | 5175 | `pnpm --filter @pi/monitoring dev` |
-| (learning) | 5176 | planned |
+| learning | 5176 | `pnpm --filter @pi/learning dev` |
 
 Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`.
 
@@ -118,14 +118,15 @@ Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`.
 | --- | --- | --- |
 | Data ingestion and sources | Provenance chips, public vs entered split, GPPD normalisation (`import-gppd.ts`), source facts honoured (contract awards have no tender dates) | Partial; Knowledge base page planned |
 | Knowledge graph | Consistent IDs across collections, citations linking claims to chunks and records | Graph view not built |
-| Risk models | Monitoring signals, disbursement-lag rule, derived KPIs; model cards are gated and labelled Simulated | Rules built; simulated model run not built |
-| Grounded retrieval | Citations on every claim, SourceDrawer, Withheld state when no support | Keyword assistant (Tender design) planned |
+| Risk models | Monitoring signals, disbursement-lag rule, derived KPIs; model cards are gated and labelled Simulated | Rules built; simulated model run not built (cards are gated) |
+| Grounded retrieval | Citations on every claim, SourceDrawer, Withheld state when no support | Keyword assistant not built |
 | Evidence conflict handling | Public vs entered kept apart, validation, review queue | Evidence workbench planned |
-| Continuous learning | Helpful / Not helpful → `feedback` → Learning queue and update log | Writing side built; Learning screen planned |
+| Continuous learning | Helpful / Not helpful → `feedback` → Learning queue and update log | Built: queue with Accept/Edit/Reject, derived KPIs, update log |
 | Architecture | Module Federation, shared singletons, package boundaries, ADR 0001 | Built |
 
 ## 11. Known limits
 
 - Mock data throughout (`P-MOCK-*`). Governance values are placeholders. Only 3 completion reports exist, so model cards stay gated.
 - No real auth; roles are a demo switcher.
-- Project data lives in the shell rather than a remote (2-day scope).
+- Project data and Tender design live in the shell rather than remotes (2-day scope).
+- `pnpm test` covers the selectors only; there is no Playwright test.

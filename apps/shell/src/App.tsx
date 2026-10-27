@@ -6,9 +6,11 @@ import { tenderCoverage, useContracts, useEnrichments, useMeta, useProjects, use
 import { RemoteBoundary } from './RemoteBoundary'
 import { Planned } from './pages/Planned'
 import { ProjectData } from './pages/ProjectData'
+import { TenderDesign } from './pages/TenderDesign'
 import styles from './App.module.css'
 
 const Planning = lazy(() => import('planning/Planning'))
+const Learning = lazy(() => import('learning/Learning'))
 const Monitoring = lazy(() => import('monitoring/Monitoring'))
 
 const LIFECYCLE = [
@@ -80,6 +82,8 @@ export function App() {
             <Route index element={<Navigate to="/planning" replace />} />
             <Route path="/planning" element={<RemoteBoundary name="Planning"><Planning /></RemoteBoundary>} />
             <Route path="/monitoring" element={<RemoteBoundary name="Monitoring"><Monitoring /></RemoteBoundary>} />
+            <Route path="/learning" element={<RemoteBoundary name="Learning"><Learning /></RemoteBoundary>} />
+            <Route path="/tender-design" element={<TenderDesign />} />
             <Route path="/project-data" element={<ProjectData />} />
             <Route path="*" element={<Planned />} />
           </Routes>

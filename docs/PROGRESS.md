@@ -23,10 +23,12 @@ pnpm --filter @pi/shell dev       # :5173
 - Verified in the browser: Contract manager enters end date for REF-004, Reviewer approves, new alert appears, Assign and evidence drawer work.
 - Run also needs `pnpm --filter @pi/monitoring dev` (:5175).
 
-## Next
-Learning remote (feedback queue Accept/Edit/Reject, KPIs, update log), thin Tender design route, Vitest on three selectors, DEMO.md, ARCHITECTURE.md.
+## Block 3: Learning + Tender design + tests + docs, done
+- Learning remote (:5176): feedback queue (Accept / Edit with note / Reject, Reviewer only), two derived KPIs with empty states, data coverage by fiscal year, update log from `audit_log`, static roadmap labelled Proposed plan.
+- Tender design (shell, `/tender-design`): draft clauses save to `tender_drafts`; comparison reflects the unsaved draft, benchmark gated at 10 contracts, finding derived from the plan.
+- Vitest: 5 tests on fiscalYearOf, tenderCoverage, tenderComparison, deriveAlerts (`pnpm test`).
+- Docs: DEMO.md (script + live-edit guide), ARCHITECTURE.md updated.
+- Verified in the browser: steps 3 and 6 of the script (bid validity finding flips; feedback rejected, KPI and log change).
 
-## Notes
-- Governance values in the seed are illustrative placeholders (covered by the Mock data label). Replace with real WGI/CPIA before sharing outside the demo.
-- Planning's duration curve is gated: only 3 completion reports exist, threshold is 30. Honest, not a bug.
-- `gppd_data.json` (23 MB) is git-ignored.
+## Next (not started, wait for K)
+Rehearse at 1440x900 and fix layout; build for `vite preview` demo and tag a known-good commit; Knowledge base and Evidence workbench pages; Playwright smoke test; remaining deferred items in CLAUDE.md section 14.

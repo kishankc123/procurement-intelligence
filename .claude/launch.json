@@ -30,6 +30,16 @@
       "port": 5175
     },
     {
+      "name": "learning",
+      "runtimeExecutable": "/Users/kishan/.npm-global/bin/pnpm",
+      "runtimeArgs": [
+        "--filter",
+        "@pi/learning",
+        "dev"
+      ],
+      "port": 5176
+    },
+    {
       "name": "shell",
       "runtimeExecutable": "/Users/kishan/.npm-global/bin/pnpm",
       "runtimeArgs": [
