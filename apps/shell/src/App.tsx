@@ -5,9 +5,11 @@ import { ProvenanceChip } from '@pi/ui'
 import { tenderCoverage, useContracts, useEnrichments, useMeta, useProjects, useUiStore } from '@pi/data'
 import { RemoteBoundary } from './RemoteBoundary'
 import { Planned } from './pages/Planned'
+import { ProjectData } from './pages/ProjectData'
 import styles from './App.module.css'
 
 const Planning = lazy(() => import('planning/Planning'))
+const Monitoring = lazy(() => import('monitoring/Monitoring'))
 
 const LIFECYCLE = [
   { to: '/planning', label: '1 · Planning' },
@@ -77,6 +79,8 @@ export function App() {
           <Routes>
             <Route index element={<Navigate to="/planning" replace />} />
             <Route path="/planning" element={<RemoteBoundary name="Planning"><Planning /></RemoteBoundary>} />
+            <Route path="/monitoring" element={<RemoteBoundary name="Monitoring"><Monitoring /></RemoteBoundary>} />
+            <Route path="/project-data" element={<ProjectData />} />
             <Route path="*" element={<Planned />} />
           </Routes>
         </main>

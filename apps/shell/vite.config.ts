@@ -14,6 +14,7 @@ export default defineConfig({
     federation({
       name: 'shell',
       remotes: {
+        monitoring: { type: 'module', name: 'monitoring', entry: 'http://localhost:5175/remoteEntry.js' },
         planning: { type: 'module', name: 'planning', entry: 'http://localhost:5174/remoteEntry.js' },
       },
       shared,

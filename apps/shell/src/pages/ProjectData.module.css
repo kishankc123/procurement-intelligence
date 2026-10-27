@@ -1,0 +1,12 @@
+.page { display: grid; gap: 16px; min-width: 0; }
+.page h1 { font-size: 24px; }
+.sub { color: var(--muted); }
+.scroll { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+.table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
+.form { display: grid; gap: 10px; justify-items: start; }
+.form label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); width: 100%; }
+.form input, .form select, .page input { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; color: var(--text); }
+.actions { display: flex; gap: 6px; }

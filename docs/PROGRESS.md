@@ -17,8 +17,14 @@ pnpm --filter @pi/planning dev    # :5174 (start the remote first)
 pnpm --filter @pi/shell dev       # :5173
 ```
 
-## Next (Day 1 hours 5-10 leftovers, then Day 2)
-Project data page (role-gated entry + approval), Monitoring remote (alerts from `deriveAlerts`, evidence drawer, one chart), Learning remote (feedback queue, KPIs, update log), thin Tender design route, Vitest on three selectors, DEMO.md, ARCHITECTURE.md.
+## Block 2: Project data + Monitoring, done
+- Project data (shell, `/project-data`): searchable contracts table (public columns locked, entered columns with Entered / Pending / Missing chips), role-gated entry form with validation (bids opened not before advertised), amendment form, Reviewer approve/reject queue, audit trail.
+- Monitoring remote (:5175): alerts derived by `deriveAlerts` (rating drop, risk increase, disbursement lag, contract past entered end date, approved amendments), See evidence opens the SourceDrawer (now shows entered records too), Assign writes to `alerts`, disbursement-vs-time chart, key dates, governance table.
+- Verified in the browser: Contract manager enters end date for REF-004, Reviewer approves, new alert appears, Assign and evidence drawer work.
+- Run also needs `pnpm --filter @pi/monitoring dev` (:5175).
+
+## Next
+Learning remote (feedback queue Accept/Edit/Reject, KPIs, update log), thin Tender design route, Vitest on three selectors, DEMO.md, ARCHITECTURE.md.
 
 ## Notes
 - Governance values in the seed are illustrative placeholders (covered by the Mock data label). Replace with real WGI/CPIA before sharing outside the demo.

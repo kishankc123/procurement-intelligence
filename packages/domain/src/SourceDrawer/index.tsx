@@ -1,4 +1,5 @@
-import { useChunks, useDocs, useRecommendations, useUiStore, type Citation } from '@pi/data'
+import { Fragment } from 'react'
+import { useAmendments, useChunks, useDocs, useEnrichments, usePlan, useRecommendations, useReports, useUiStore, type Citation } from '@pi/data'
 import { Button } from '@pi/ui'
 import styles from './SourceDrawer.module.css'
 
@@ -10,7 +11,14 @@ export function SourceDrawer({ citation, onClose }: Props) {
   const chunks = useChunks().data ?? []
   const docs = useDocs().data ?? []
   const recs = useRecommendations(projectId).data ?? []
+  const enrichments = useEnrichments().data ?? []
+  const amendments = useAmendments().data ?? []
+  const reports = useReports(projectId).data ?? []
+  const plans = usePlan(projectId).data ?? []
   if (!citation) return null
+  const record: Record<string, unknown> | undefined = citation.ref_type === 'record'
+    ? [...enrichments, ...amendments, ...reports, ...plans].find((r) => r.id === citation.ref_id)
+    : undefined
 
   const chunk = citation.ref_type === 'chunk' ? chunks.find((c) => c.chunk_id === citation.ref_id) : undefined
   const doc = chunk ? docs.find((d) => d.doc_id === chunk.doc_id) : undefined
@@ -31,7 +39,9 @@ export function SourceDrawer({ citation, onClose }: Props) {
           </dl>
         </>
       ) : (
-        <p>This evidence is a stored record: <span className="mono">{citation.ref_id}</span>.</p>
+        record ? (
+          <dl>{Object.entries(record).filter(([, v]) => typeof v !== 'object').map(([k, v]) => <Fragment key={k}><dt>{k}</dt><dd className="mono">{String(v)}</dd></Fragment>)}</dl>
+        ) : <p>Record <span className="mono">{citation.ref_id}</span> was not found.</p>
       )}
       <h3>Cited by</h3>
       {citedBy.length === 0 ? <p>No recommendation cites this on the selected project.</p> : <ul>{citedBy.map((r) => <li key={r.id}>{r.title}</li>)}</ul>}
