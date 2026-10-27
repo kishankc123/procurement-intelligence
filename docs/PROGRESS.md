@@ -35,9 +35,13 @@ pnpm --filter @pi/shell dev       # :5173
 - Knowledge base (registry with simulated Fetch, document search/filter, chunk detail) and Evidence workbench (one seeded conflict with Resolve, provenance trail, grounding table) added as shell pages. New collections: `sources`, `conflicts`; seed adds entered record ENR-S5 to create the conflict.
 - Checked all 7 screens at 1440x900: no horizontal overflow, no empty links. Resolve conflict, Fetch and doc detail verified in the browser.
 
+## Block 5: filter wiring, done (nothing committed)
+- Planning now shows which fiscal year the planned signing falls in and flags a plan outside the selected FY. Learning's coverage table follows the selected FY (empty state otherwise).
+- Checked in the browser: FY2026 -> FY2025 changes both screens; Planner sees amendment and contract-end entry disabled with a reason.
+
 ## Not done
 - No known-good git tag (K asked not to commit; tag after K commits).
-- Learning "Edit with note" and role-disabled states were not clicked through in the browser.
+- Learning "Edit with note" not clicked through; full six-step script not run as one continuous pass.
 - No Playwright test. Qualification card, retrieval assistant, risk network, graph: not built.
 
 ## Next (wait for K)

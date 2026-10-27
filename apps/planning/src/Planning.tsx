@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { THRESHOLDS, can, whyDisabled } from '@pi/config'
+import { THRESHOLDS, can, fiscalYearOf, whyDisabled } from '@pi/config'
 import {
   countryReference, evaluationFinding, gate, plannedDurations, useCompletionReports, useCountryYears,
   useCurrentUser, usePlan, useProject, useRecommendations, useSavePlan, useUiStore,
@@ -60,6 +60,7 @@ function PlanForm({ plan }: { plan: Plan }) {
 
 export default function Planning() {
   const projectId = useUiStore((s) => s.projectId)
+  const fiscalYear = useUiStore((s) => s.fiscalYear)
   const project = useProject(projectId).data?.[0]
   const plan = usePlan(projectId).data?.[0]
   const country = project?.borrower_country_code ?? ''
@@ -87,6 +88,10 @@ export default function Planning() {
       </div>
 
       <PlanForm plan={plan} />
+      <p role="status" className={styles.sub}>
+        Planned signing {plan.planned_signing} falls in FY{fiscalYearOf(plan.planned_signing)}.
+        {fiscalYearOf(plan.planned_signing) !== fiscalYear && ` This plan is outside the selected FY${fiscalYear}.`}
+      </p>
 
       <div className={styles.kpis}>
         <Card title="Planned: advertisement to signing">

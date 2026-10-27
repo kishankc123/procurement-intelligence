@@ -17,7 +17,7 @@ const ROADMAP = [
 ]
 
 export default function Learning() {
-  const { projectId } = useUiStore()
+  const { projectId, fiscalYear } = useUiStore()
   const { role } = useCurrentUser()
   const feedback = useFeedback()
   const recs = useRecommendations(projectId).data ?? []
@@ -35,7 +35,7 @@ export default function Learning() {
   const kpis = feedbackKpis(rows)
   const allowed = can(role, 'review_feedback')
   const reason_ = allowed ? undefined : whyDisabled('review_feedback')
-  const fiscalYears = [...new Set(contracts.map((c) => c.fiscal_year))].sort()
+  const fiscalYears = [...new Set(contracts.map((c) => c.fiscal_year))].filter((fy) => fy === fiscalYear)
   const titleOf = (id: string) => recs.find((r) => r.id === id)?.title ?? id
 
   return (
@@ -88,7 +88,7 @@ export default function Learning() {
 
       <div className={styles.two}>
         <Card title="Data coverage by fiscal year" aside={<ProvenanceChip kind="derived" />}>
-          {fiscalYears.length === 0 ? <EmptyState title="No contracts for this project" /> : (
+          {fiscalYears.length === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the top bar." /> : (
             <table className={styles.table}>
               <thead><tr><th>Fiscal year</th><th>Contracts with approved entered data</th></tr></thead>
               <tbody>{fiscalYears.map((fy) => {
