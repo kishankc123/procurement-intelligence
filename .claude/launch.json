@@ -1,0 +1,8 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "api", "runtimeExecutable": "/Users/kishan/.npm-global/bin/pnpm", "runtimeArgs": ["api"], "port": 3001 },
+    { "name": "planning", "runtimeExecutable": "/Users/kishan/.npm-global/bin/pnpm", "runtimeArgs": ["--filter", "@pi/planning", "dev"], "port": 5174 },
+    { "name": "shell", "runtimeExecutable": "/Users/kishan/.npm-global/bin/pnpm", "runtimeArgs": ["--filter", "@pi/shell", "dev"], "port": 5173 }
+  ]
+}

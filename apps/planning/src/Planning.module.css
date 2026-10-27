@@ -1,0 +1,15 @@
+.page { display: grid; gap: 16px; min-width: 0; }
+.head h1 { font-size: 24px; }
+.head p { color: var(--muted); }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end; }
+.form label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.form input, .form select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; color: var(--text); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.big { font-size: 32px; font-weight: 600; } .unit { color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; }
+.table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.rec { padding: 10px 0; border-bottom: 1px solid var(--border); display: grid; gap: 6px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sub { color: var(--muted); }

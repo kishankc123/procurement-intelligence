@@ -1,0 +1,4 @@
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 16px 20px; }
+.head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.head h2 { font-size: 16px; font-weight: 600; }
+.note { color: var(--muted); }

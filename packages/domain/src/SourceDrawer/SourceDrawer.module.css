@@ -1,0 +1,5 @@
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 420px; background: var(--surface); border-left: 1px solid var(--border); padding: 20px; overflow: auto; box-shadow: -8px 0 24px rgba(14,34,56,.12); z-index: 10; display: grid; gap: 10px; align-content: start; }
+.drawer header { display: flex; justify-content: space-between; align-items: center; }
+.drawer blockquote { margin: 0; padding: 10px 12px; background: var(--bg); border-left: 3px solid var(--primary); }
+.drawer dl { display: grid; grid-template-columns: 90px 1fr; gap: 4px 10px; margin: 0; }
+.drawer dt { color: var(--muted); } .drawer dd { margin: 0; }

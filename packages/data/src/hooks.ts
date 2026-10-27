@@ -1,0 +1,111 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { z } from 'zod'
+import { get, send } from './api'
+import * as S from './schemas'
+import { emit } from '@pi/events'
+import { useCurrentUser } from './store'
+
+function list<T extends z.ZodTypeAny>(key: string, path: string, schema: T) {
+  return { queryKey: [key, path], queryFn: async () => z.array(schema).parse(await get<unknown>(path)) as z.infer<T>[] }
+}
+const q = encodeURIComponent
+
+export const useMeta = () => useQuery({ queryKey: ['meta'], queryFn: async () => S.Meta.parse(await get<unknown>('/meta')) })
+export const useProjects = () => useQuery(list('projects', '/projects', S.Project))
+export const useProject = (id: string) => useQuery(list('projects', `/projects?project_id=${q(id)}`, S.Project))
+export const useContracts = (projectId: string, fy?: number) =>
+  useQuery(list('contracts', `/contracts?project_id=${q(projectId)}${fy ? `&fiscal_year=${fy}` : ''}`, S.Contract))
+export const useEnrichments = () => useQuery(list('enrichments', '/enrichments', S.Enrichment))
+export const useAmendments = () => useQuery(list('amendments', '/amendments', S.Amendment))
+export const usePlan = (projectId: string) => useQuery(list('plans', `/plans?project_id=${q(projectId)}`, S.Plan))
+export const useTenderDraft = (projectId: string) => useQuery(list('tender_drafts', `/tender_drafts?project_id=${q(projectId)}`, S.TenderDraft))
+export const useReports = (projectId: string) => useQuery(list('supervision_reports', `/supervision_reports?project_id=${q(projectId)}`, S.SupervisionReport))
+export const useCompletionReports = () => useQuery(list('completion_reports', '/completion_reports', S.CompletionReport))
+export const useCountryYears = (country: string) => useQuery(list('country_years', `/country_years?country=${q(country)}`, S.CountryYear))
+export const useGovernance = (country: string) => useQuery(list('governance', `/governance?country=${q(country)}`, S.Governance))
+export const useRecommendations = (projectId: string) => useQuery(list('recommendations', `/recommendations?project_id=${q(projectId)}`, S.Recommendation))
+export const useChunks = () => useQuery(list('chunks', '/chunks', S.Chunk))
+export const useDocs = () => useQuery(list('documents', '/documents', S.Doc))
+export const useAlertStates = () => useQuery(list('alerts', '/alerts', S.AlertState))
+export const useFeedback = () => useQuery(list('feedback', '/feedback', S.Feedback))
+export const useAuditLog = () => useQuery(list('audit_log', '/audit_log', S.AuditEvent))
+
+/** Every write also appends to audit_log, and invalidates everything so all screens refresh. */
+function useWrite<V>(fn: (v: V, role: ReturnType<typeof useCurrentUser>['role']) => Promise<{ action: string; target: string }>, after?: (v: V) => void) {
+  const qc = useQueryClient()
+  const { role } = useCurrentUser()
+  return useMutation({
+    mutationFn: async (v: V) => {
+      const { action, target } = await fn(v, role)
+      await send('POST', '/audit_log', { id: `AUD-${Date.now()}`, at: new Date().toISOString(), role, action, target })
+    },
+    onSuccess: (_d, v) => { void qc.invalidateQueries(); after?.(v) },
+  })
+}
+
+export const useSavePlan = () =>
+  useWrite<S.Plan>(async (plan) => {
+    await send('PUT', `/plans/${plan.id}`, plan)
+    return { action: 'Saved plan', target: plan.project_id }
+  })
+
+export const useSaveTenderDraft = () =>
+  useWrite<S.TenderDraft>(async (d) => {
+    await send('PUT', `/tender_drafts/${d.id}`, d)
+    return { action: 'Saved tender draft', target: d.project_id }
+  })
+
+export const useAddEnrichment = () =>
+  useWrite<Omit<S.Enrichment, 'id' | 'entered_by_role' | 'status' | 'entered_at'>>(
+    async (e, role) => {
+      const id = `ENR-${Date.now()}`
+      await send('POST', '/enrichments', { ...e, id, entered_by_role: role, status: 'pending', entered_at: new Date().toISOString() })
+      return { action: `Entered ${e.field}`, target: e.contract_ref }
+    },
+    (e) => emit('enrichment:saved', { contractRef: e.contract_ref, field: e.field }),
+  )
+
+export const useReviewEnrichment = () =>
+  useWrite<{ id: string; status: 'approved' | 'rejected' }>(async (v) => {
+    await send('PATCH', `/enrichments/${v.id}`, { status: v.status })
+    return { action: `${v.status === 'approved' ? 'Approved' : 'Rejected'} entry`, target: v.id }
+  })
+
+export const useAddAmendment = () =>
+  useWrite<Omit<S.Amendment, 'id' | 'status' | 'entered_by_role'>>(async (a, role) => {
+    await send('POST', '/amendments', { ...a, id: `AMD-${Date.now()}`, status: 'pending', entered_by_role: role })
+    return { action: 'Entered amendment', target: a.contract_ref }
+  })
+
+export const useReviewAmendment = () =>
+  useWrite<{ id: string; status: 'approved' | 'rejected' }>(async (v) => {
+    await send('PATCH', `/amendments/${v.id}`, { status: v.status })
+    return { action: `${v.status === 'approved' ? 'Approved' : 'Rejected'} amendment`, target: v.id }
+  })
+
+export const useAssignAlert = () =>
+  useWrite<{ id: string; assignee: string }>(
+    async (v) => {
+      const body = { id: v.id, assignee: v.assignee, status: 'assigned' }
+      // json-server PUT 404s for a new id, so the first assignment creates the row.
+      await send('PUT', `/alerts/${v.id}`, body).catch(() => send('POST', '/alerts', body))
+      return { action: `Assigned alert to ${v.assignee}`, target: v.id }
+    },
+    (v) => emit('alert:assigned', { alertId: v.id, assignee: v.assignee }),
+  )
+
+export const useSubmitFeedback = () =>
+  useWrite<{ target_id: string; rating: 'helpful' | 'not_helpful'; reason: string }>(
+    async (f, role) => {
+      const id = `FB-${Date.now()}`
+      await send('POST', '/feedback', { ...f, id, role, status: 'new', created_at: new Date().toISOString() })
+      return { action: `Feedback: ${f.rating.replace('_', ' ')}`, target: f.target_id }
+    },
+    (f) => emit('feedback:submitted', { feedbackId: 'new', targetId: f.target_id }),
+  )
+
+export const useReviewFeedback = () =>
+  useWrite<{ id: string; status: 'accepted' | 'rejected' | 'edited' }>(async (v) => {
+    await send('PATCH', `/feedback/${v.id}`, { status: v.status })
+    return { action: `Feedback ${v.status}`, target: v.id }
+  })

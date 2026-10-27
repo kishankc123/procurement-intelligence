@@ -1,0 +1,11 @@
+{
+  "name": "@pi/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": { "typecheck": "tsc -p ." },
+  "dependencies": {"@pi/ui":"workspace:*","@pi/data":"workspace:*","@pi/events":"workspace:*","@pi/config":"workspace:*"},
+  "peerDependencies": { "react": "^19.0.0" }
+}

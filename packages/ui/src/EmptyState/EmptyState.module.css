@@ -1,0 +1,2 @@
+.box { border: 1px dashed var(--prov-missing-border); border-radius: var(--radius-card); padding: 12px 14px; display: grid; gap: 6px; justify-items: start; color: var(--muted); }
+.box strong { color: var(--text); }

@@ -1,0 +1,16 @@
+{
+  "name": "@pi/shell",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5173 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 5173 --strictPort",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pi/config": "workspace:*", "@pi/data": "workspace:*", "@pi/domain": "workspace:*",
+    "@pi/events": "workspace:*", "@pi/ui": "workspace:*"
+  }
+}

@@ -1,0 +1,5 @@
+.chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.public { background: var(--prov-public-bg); color: var(--prov-public-fg); }
+.entered { background: var(--prov-entered-bg); color: var(--prov-entered-fg); }
+.derived { background: var(--prov-derived-bg); color: var(--prov-derived-fg); }
+.missing { border: 1px dashed var(--prov-missing-border); color: var(--prov-missing-fg); }
