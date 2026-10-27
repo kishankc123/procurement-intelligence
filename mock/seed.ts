@@ -1,5 +1,7 @@
 // Rebuilds mock/db.json from scratch. `pnpm reset-db` runs this. Everything here is mock data.
+// @ts-ignore Node.js type declarations are not included for this mock script.
 import { writeFileSync } from 'node:fs'
+// @ts-ignore Node.js type declarations are not included for this mock script.
 import { fileURLToPath } from 'node:url'
 import { fiscalYearOf } from '../packages/config/src/index'
 import { buildCountryYears } from './import-gppd'

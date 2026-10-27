@@ -1,5 +1,7 @@
 // Normalizes gppd_data.json (all values are strings, about 29% filled) into country_years rows.
+// @ts-ignore Node.js typings are not included in this project.
 import { readFileSync } from 'node:fs'
+// @ts-ignore Node.js typings are not included in this project.
 import { fileURLToPath } from 'node:url'
 
 interface Element { structure: string; name: string; value: string | null; group: number | null }
