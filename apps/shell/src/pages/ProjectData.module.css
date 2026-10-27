@@ -10,3 +10,14 @@
 .form label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); width: 100%; }
 .form input, .form select, .page input { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; color: var(--text); }
 .actions { display: flex; gap: 6px; }
+.clauses { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: start; }
+.clauses label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+.clauses input, .clauses select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; color: var(--text); }
+.clauses .actions { grid-column: 1 / -1; align-items: center; flex-wrap: wrap; }
+.changed { color: var(--prov-entered-fg); font-size: 12px; }
+.planRef { margin-bottom: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.planRef summary { cursor: pointer; }
+.planRef[open] summary { margin-bottom: 8px; }
+.planRef .table td, .planRef .table th { padding: 6px 6px; }
+.planPick { display: grid; gap: 2px; font-size: 12px; color: var(--muted); margin-top: 8px; max-width: 420px; }
+.planPick select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; color: var(--text); }

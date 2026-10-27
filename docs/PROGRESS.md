@@ -44,11 +44,17 @@ pnpm --filter @pi/shell dev       # :5173
 - Data model change: `plans` gained `name`; seed now has three plans (works, goods, consulting) with future dates, replacing the single plan whose dates were in the past.
 - Revised: the whole row is clickable (mouse, Enter or Space). The selected plan's stage timeline expands inside the same table, directly under its row, like a dropdown, with Full details and Close (clicking the row again also closes it); Full details opens the full page (KPIs, gates, country context, recommendations, similar projects), Back to plans returns.
 - Revised again: the dropdown timeline is read-only (planned, actual, reference) with Edit plan (blue), Full details and Close at the bottom. Edit plan opens the full details page with the plan editable at the top: Save plan (green), Cancel, Delete plan (red, asks to confirm). Full details opens the same page read-only with an Edit plan button. New `useDeletePlan` hook; Button gained `success` and `danger` variants. Deleting is logged to `audit_log`.
-- Tender design still reads the first plan of the project. Adding a plan picker there is not done. No "New plan" button yet.
+- No "New plan" button yet. The tender draft is still one per project (compared with whichever plan you pick).
 
 ## Block 7: colour palette, done (nothing committed)
 - Tokens in `packages/ui/src/tokens.css`: `--primary` blue (edit), `--success` green (save), `--danger` red (close, delete), `--on-solid` white text on solid fills. Missing is dark red text with a dotted border (chip and EmptyState title). A dark palette is defined under `:root[data-theme='dark']` with contrast checked, but there is no toggle yet and some screens still use light-only colours.
 - Close buttons (plan dropdown, SourceDrawer) and Delete plan are red with white text.
+
+## Block 8: Tender design comparison, done (nothing committed)
+- Tender design now shows the plan being compared with (picker, all four planned dates, category, method, derived bid opening to signing days), the draft clauses with "Saved -> now" hints and Discard changes, and a comparison table: clause, your draft, compared with, reference, difference (draft minus reference), what it means.
+- `tenderComparison` returns one row per clause with a list of comparisons: bid validity vs plan (days from bid opening to signing) and vs entered contracts; evaluation method vs plan method (stated rule); contract duration vs entered contracts; minimum similar value vs public contracts of the plan's category. Benchmarks stay gated below 10 contracts; performance security and minimum similar contracts have no source and say Missing.
+- Revised: Draft clauses is the main card. The plan sits inside it as a collapsed line ("Compared with plan: name, id"); opening it shows the plan's dates, category, method and bid opening to signing days, plus a small "Compare with another plan" select.
+- Fixed overlapping keys in the evidence drawer. Selector tests grew to 7.
 
 ## Not done
 - No known-good git tag (K asked not to commit; tag after K commits).

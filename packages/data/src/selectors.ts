@@ -48,36 +48,124 @@ export function tenderCoverage(contracts: Contract[], enrichments: Enrichment[])
   return { covered: covered.size, total: refs.size }
 }
 
-export interface ComparisonRow {
-  label: string
-  draft: string
-  benchmark: { gated: Gate } | { value: string; n: number }
-  finding: { text: string; citations: Citation[] } | null
+export type Tone = 'ok' | 'attention' | 'info'
+
+/** One thing a draft clause is compared against, with the numbers needed to check it. */
+export interface Comparison {
+  against: string                       // e.g. "Your plan", "Entered contracts (median)"
+  provenance: 'entered' | 'public' | 'derived'
+  basis: string                         // how the reference was worked out, so nothing is a guess
+  reference: string | null              // the value the draft is compared with
+  n?: number                            // sample size for derived references
+  difference: string | null             // draft minus reference, with unit and sign
+  verdict: { tone: Tone; text: string } | null
+  gated?: Gate                          // reference withheld: sample too small
+  missing?: string                      // reference withheld: no source holds it
+  citations: Citation[]
 }
 
-/** Tender draft vs. benchmarks. Benchmarks only render above the sample threshold. */
+export interface ComparisonRow {
+  id: string
+  label: string
+  draft: string
+  comparisons: Comparison[]
+}
+
+const median = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0 : 0)
+const signed = (n: number, unit: string) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(n).toLocaleString('en-US')} ${unit}`
+
+/** Evaluation method that fits each procurement method. A stated rule, shown in the UI as the basis. */
+const EXPECTED_EVALUATION: Record<string, string> = { 'Quality-based': 'Quality and cost based' }
+const DEFAULT_EVALUATION = 'Lowest evaluated price'
+
+/**
+ * Tender draft vs. the plan it belongs to and vs. benchmarks from contract data.
+ * Each clause lists what it is compared with, the reference value, the difference and what that means.
+ * Benchmarks only render above the sample threshold; with no source the row says Missing.
+ */
 export function tenderComparison(draft: TenderDraft, plan: Plan | undefined, contracts: Contract[], enrichments: Enrichment[]): ComparisonRow[] {
   const approved = approvedValues(enrichments)
+  const need = THRESHOLDS.tenderBenchmarkMinContracts
+  const planCite: Citation[] = plan ? [{ ref_type: 'record', ref_id: plan.id, label: `Plan · ${plan.name}` }] : []
+  const noPlan = 'Choose a plan to compare with.'
+
   const validity = contracts
     .map((c) => Number(approved.get(`${c.borrower_contract_reference_number}:bid_validity_days`)))
     .filter((v) => Number.isFinite(v) && v > 0)
-  const need = THRESHOLDS.tenderBenchmarkMinContracts
-  const g = gate(validity.length, need)
-  const median = validity.length ? [...validity].sort((a, b) => a - b)[Math.floor(validity.length / 2)] : 0
+  const durations = contracts.flatMap((c) => {
+    const end = approved.get(`${c.borrower_contract_reference_number}:contract_end_date`)
+    const months = end ? Math.round(dayDiff(c.contract_signing_date, end) / 30.4) : NaN
+    return Number.isFinite(months) && months > 0 ? [months] : []
+  })
+  const sameCategory = plan ? contracts.filter((c) => c.procurement_category === plan.category).map((c) => c.supplier_contract_amount_usd) : []
 
-  let finding: ComparisonRow['finding'] = null
-  if (plan) {
-    const needed = plannedDurations(plan).bidOpeningToSigning
-    finding = draft.bid_validity_days < needed
-      ? { text: `Bid validity of ${draft.bid_validity_days} days ends before the planned signing, which is ${needed} days after bid opening in your plan.`, citations: [{ ref_type: 'record', ref_id: plan.id, label: 'Your plan' }] }
-      : { text: `Bid validity of ${draft.bid_validity_days} days covers the planned ${needed} days from bid opening to signing.`, citations: [{ ref_type: 'record', ref_id: plan.id, label: 'Your plan' }] }
+  const benchmark = (against: string, provenance: Comparison['provenance'], basis: string, values: number[], draftValue: number, unit: string, wording: string): Comparison => {
+    const g = gate(values.length, need)
+    if (!g.ok) return { against, provenance, basis, reference: null, difference: null, verdict: null, gated: g, citations: [] }
+    const ref = median(values)
+    const delta = draftValue - ref
+    return {
+      against, provenance, basis, n: values.length, reference: `${ref.toLocaleString('en-US')} ${unit}`, difference: signed(delta, unit), citations: [],
+      verdict: { tone: 'info', text: delta === 0 ? `Equal to the median of ${values.length} ${wording}.` : `${Math.abs(delta).toLocaleString('en-US')} ${unit} ${delta > 0 ? 'above' : 'below'} the median of ${values.length} ${wording}.` },
+    }
   }
-  return [{
-    label: 'Bid validity (days)',
-    draft: String(draft.bid_validity_days),
-    benchmark: g.ok ? { value: `${median} days (median)`, n: validity.length } : { gated: g },
-    finding,
-  }]
+
+  // Bid validity vs the plan: bids must stay valid from bid opening until signing.
+  let validityVsPlan: Comparison
+  if (!plan) {
+    validityVsPlan = { against: 'Your plan', provenance: 'entered', basis: 'Needs a plan', reference: null, difference: null, verdict: null, missing: noPlan, citations: [] }
+  } else {
+    const required = plannedDurations(plan).bidOpeningToSigning
+    const delta = draft.bid_validity_days - required
+    validityVsPlan = {
+      against: 'Your plan', provenance: 'entered',
+      basis: `Bid opening ${plan.planned_bid_opening} to signing ${plan.planned_signing}`,
+      reference: `${required} days`, difference: signed(delta, 'days'), citations: planCite,
+      verdict: delta < 0
+        ? { tone: 'attention', text: `Bids would expire ${Math.abs(delta)} days before the planned signing. Bid validity of ${draft.bid_validity_days} days ends before the plan allows ${required} days from bid opening to signing.` }
+        : { tone: 'ok', text: `Covers the ${required} days from bid opening to signing in your plan${delta > 0 ? `, with ${delta} days to spare` : ' exactly'}.` },
+    }
+  }
+
+  // Evaluation method vs the plan's procurement method, using the stated rule above.
+  let evaluationVsPlan: Comparison
+  if (!plan) {
+    evaluationVsPlan = { against: 'Your plan', provenance: 'entered', basis: 'Needs a plan', reference: null, difference: null, verdict: null, missing: noPlan, citations: [] }
+  } else {
+    const expected = EXPECTED_EVALUATION[plan.method] ?? DEFAULT_EVALUATION
+    const match = draft.evaluation_method === expected
+    evaluationVsPlan = {
+      against: 'Your plan', provenance: 'entered',
+      basis: `Plan method is ${plan.method}. Rule: ${plan.method === 'Quality-based' ? 'quality-based selection uses quality and cost' : 'price-based methods use lowest evaluated price'}.`,
+      reference: expected, difference: match ? 'No difference' : `Draft: ${draft.evaluation_method}`, citations: planCite,
+      verdict: match ? { tone: 'ok', text: `Matches the ${plan.method} method in your plan.` } : { tone: 'attention', text: `Your plan uses ${plan.method}, which normally pairs with ${expected}. The draft uses ${draft.evaluation_method}.` },
+    }
+  }
+
+  const noSource = (what: string): Comparison => ({ against: 'No source', provenance: 'public', basis: '', reference: null, difference: null, verdict: null, missing: `No source in this demo holds ${what}. Nothing is estimated.`, citations: [] })
+
+  return [
+    {
+      id: 'bid_validity', label: 'Bid validity (days)', draft: String(draft.bid_validity_days),
+      comparisons: [
+        validityVsPlan,
+        benchmark('Entered contracts (median)', 'derived', 'Approved entered bid validity on contracts in the selected fiscal year', validity, draft.bid_validity_days, 'days', 'entered contracts'),
+      ],
+    },
+    { id: 'evaluation_method', label: 'Evaluation method', draft: draft.evaluation_method, comparisons: [evaluationVsPlan] },
+    {
+      id: 'duration', label: 'Contract duration (months)', draft: String(draft.duration_months),
+      comparisons: [benchmark('Entered contracts (median)', 'derived', 'Signing date to approved entered contract end date, in months', durations, draft.duration_months, 'months', 'contracts with an end date')],
+    },
+    {
+      id: 'similar_value', label: 'Minimum similar contract value (USD)', draft: draft.min_similar_value_usd.toLocaleString('en-US'),
+      comparisons: [plan
+        ? benchmark(`${plan.category} contracts (median)`, 'public', `Signed contract amounts for ${plan.category} in the selected fiscal year`, sameCategory, draft.min_similar_value_usd, 'USD', `${plan.category.toLowerCase()} contracts`)
+        : { against: 'Public contracts', provenance: 'public', basis: 'Needs a plan', reference: null, difference: null, verdict: null, missing: noPlan, citations: [] }],
+    },
+    { id: 'similar_count', label: 'Minimum similar contracts', draft: String(draft.min_similar_contracts), comparisons: [noSource('how many similar contracts bidders usually hold')] },
+    { id: 'security', label: 'Performance security (%)', draft: String(draft.performance_security_pct), comparisons: [noSource('performance security percentages')] },
+  ]
 }
 
 export interface DerivedAlert {

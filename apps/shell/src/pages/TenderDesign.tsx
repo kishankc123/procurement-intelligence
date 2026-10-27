@@ -1,18 +1,68 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
-import { tenderComparison, useContracts, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore, type Citation, type TenderDraft } from '@pi/data'
+import {
+  plannedDurations, tenderComparison, useContracts, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
+  type Citation, type Comparison, type Plan, type TenderDraft,
+} from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './ProjectData.module.css'
 
 const METHODS = ['Lowest evaluated price', 'Quality and cost based', 'Fixed budget']
+const TONE = { ok: { tone: 'low', label: 'OK' }, attention: { tone: 'high', label: 'Check' }, info: { tone: 'neutral', label: 'Info' } } as const
+
+type NumKey = 'duration_months' | 'bid_validity_days' | 'performance_security_pct' | 'min_similar_contracts' | 'min_similar_value_usd'
+
+/** The plan the draft is compared with: just its name until opened, then its details. */
+function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | undefined; onPick: (id: string) => void }) {
+  if (!plan) return <p className={styles.sub}>No plan to compare with. <Link to="/planning">Add one in Planning</Link>.</p>
+  const d = plannedDurations(plan)
+  return (
+    <details className={styles.planRef}>
+      <summary><span>Compared with plan: <strong>{plan.name}</strong> <span className="mono">{plan.id}</span></span></summary>
+      <div className={styles.scroll}>
+        <table className={styles.table}>
+          <thead><tr><th>Category</th><th>Method</th><th>Advertisement</th><th>Bid opening</th><th>Evaluation complete</th><th>Signing</th><th>Bid opening to signing</th></tr></thead>
+          <tbody><tr>
+            <td>{plan.category}</td><td>{plan.method}</td>
+            <td className="mono">{plan.planned_advertisement}</td><td className="mono">{plan.planned_bid_opening}</td>
+            <td className="mono">{plan.planned_evaluation_complete}</td><td className="mono">{plan.planned_signing}</td>
+            <td className="mono">{d.bidOpeningToSigning} days <ProvenanceChip kind="derived" /></td>
+          </tr></tbody>
+        </table>
+      </div>
+      {plans.length > 1 && (
+        <label className={styles.planPick}>Compare with another plan
+          <select value={plan.id} onChange={(e) => onPick(e.target.value)}>
+            {plans.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
+          </select>
+        </label>
+      )}
+    </details>
+  )
+}
+
+function ReferenceCell({ c }: { c: Comparison }) {
+  if (c.gated) {
+    return <EmptyState title="Missing" text={`Needs ${c.gated.required} contracts with this value. ${c.gated.n} so far.`} action={<Link to="/project-data">Add tender data</Link>} />
+  }
+  if (c.missing) return <EmptyState title="Missing" text={c.missing} />
+  return (
+    <>
+      <span className="mono">{c.reference}</span>
+      <p className={styles.sub}>{c.basis}</p>
+    </>
+  )
+}
 
 export function TenderDesign() {
   const { projectId, fiscalYear } = useUiStore()
   const { role } = useCurrentUser()
   const stored = useTenderDraft(projectId).data?.[0]
-  const plan = usePlan(projectId).data?.[0]
+  const plans = usePlan(projectId).data ?? []
+  const [planId, setPlanId] = useState<string | null>(null)
+  const plan = plans.find((p) => p.id === planId) ?? plans[0]
   const contracts = useContracts(projectId, fiscalYear).data ?? []
   const enrichments = useEnrichments().data ?? []
   const save = useSaveTenderDraft()
@@ -22,46 +72,75 @@ export function TenderDesign() {
 
   if (!draft || !stored) return <Card state="loading">{null}</Card>
   const allowed = can(role, 'edit_tender_draft')
-  const num = (k: 'duration_months' | 'bid_validity_days' | 'performance_security_pct' | 'min_similar_contracts' | 'min_similar_value_usd', label: string) => (
-    <label>{label}<input type="number" min={0} value={draft[k]} disabled={!allowed} onChange={(e) => setDraft({ ...draft, [k]: Number(e.target.value) })} /></label>
+  const changed = (k: keyof TenderDraft) => draft[k] !== stored[k]
+  const unsaved = (['duration_months', 'bid_validity_days', 'performance_security_pct', 'min_similar_contracts', 'min_similar_value_usd', 'evaluation_method'] as const).filter(changed).length
+  const num = (k: NumKey, label: string) => (
+    <label>{label}
+      <input type="number" min={0} value={draft[k]} disabled={!allowed} onChange={(e) => setDraft({ ...draft, [k]: Number(e.target.value) })} />
+      {changed(k) && <span className={styles.changed}>Saved: <span className="mono">{stored[k].toLocaleString('en-US')}</span> → now <span className="mono">{draft[k].toLocaleString('en-US')}</span></span>}
+    </label>
   )
-  // Comparison reflects the unsaved draft so the finding changes as K types.
+  // The comparison reflects the unsaved draft, so every edit shows its effect straight away.
   const rows = tenderComparison(draft, plan, contracts, enrichments)
 
   return (
     <div className={styles.page}>
-      <div><h1>Tender design</h1><p className={styles.sub}>Draft the clauses, then compare them with your plan and with benchmarks from entered contract data.</p></div>
-      <div className={styles.two}>
-        <Card title="Draft clauses" aside={<ProvenanceChip kind="entered" />}>
-          <form className={styles.form} onSubmit={(e) => { e.preventDefault(); save.mutate(draft) }}>
-            {num('duration_months', 'Contract duration (months)')}
-            {num('bid_validity_days', 'Bid validity (days)')}
-            {num('performance_security_pct', 'Performance security (%)')}
-            {num('min_similar_contracts', 'Minimum similar contracts')}
-            {num('min_similar_value_usd', 'Minimum similar contract value (USD)')}
-            <label>Evaluation method<select value={draft.evaluation_method} disabled={!allowed} onChange={(e) => setDraft({ ...draft, evaluation_method: e.target.value })}>
-              {METHODS.map((m) => <option key={m}>{m}</option>)}</select></label>
-            <Button type="submit" variant="primary" disabled={save.isPending} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Save draft</Button>
-            {save.isSuccess && <p role="status" className={styles.sub}>Saved.</p>}
-          </form>
-        </Card>
-        <Card title="Comparison" aside={<ProvenanceChip kind="derived" />}>
-          {rows.map((r) => (
-            <table className={styles.table} key={r.label}><tbody>
-              <tr><th>{r.label}</th><td className="mono">{r.draft}</td><td><ProvenanceChip kind="entered" detail="draft" /></td></tr>
-              <tr><th>Benchmark</th>
-                {'gated' in r.benchmark
-                  ? <td colSpan={2}><EmptyState title="Missing" text={`Needs ${r.benchmark.gated.required} contracts with this field entered. ${r.benchmark.gated.n} so far.`} action={<Link to="/project-data">Add tender data</Link>} /></td>
-                  : <><td className="mono">{r.benchmark.value}</td><td><ProvenanceChip kind="derived" detail={`n=${r.benchmark.n}`} /></td></>}
-              </tr>
-              {r.finding && <tr><th>Finding</th><td colSpan={2}>
-                <p>{r.finding.text}</p>
-                <div>{r.finding.citations.map((c) => <CitationChip key={c.ref_id} citation={c} onOpen={setOpen} />)} <Badge>Derived from your plan</Badge></div>
-              </td></tr>}
-            </tbody></table>
-          ))}
-        </Card>
-      </div>
+      <div><h1>Tender design</h1><p className={styles.sub}>Draft the clauses, then see each one against your plan and against entered contract data, with the difference worked out.</p></div>
+
+      <Card title="Draft clauses" aside={<ProvenanceChip kind="entered" />}>
+        <PlanReference plans={plans} plan={plan} onPick={setPlanId} />
+        <form className={styles.clauses} onSubmit={(e) => { e.preventDefault(); save.mutate(draft) }}>
+          {num('duration_months', 'Contract duration (months)')}
+          {num('bid_validity_days', 'Bid validity (days)')}
+          {num('performance_security_pct', 'Performance security (%)')}
+          {num('min_similar_contracts', 'Minimum similar contracts')}
+          {num('min_similar_value_usd', 'Minimum similar contract value (USD)')}
+          <label>Evaluation method
+            <select value={draft.evaluation_method} disabled={!allowed} onChange={(e) => setDraft({ ...draft, evaluation_method: e.target.value })}>
+              {METHODS.map((m) => <option key={m}>{m}</option>)}
+            </select>
+            {changed('evaluation_method') && <span className={styles.changed}>Saved: {stored.evaluation_method} → now {draft.evaluation_method}</span>}
+          </label>
+          <div className={styles.actions}>
+            <Button type="submit" variant="success" disabled={unsaved === 0 || save.isPending} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Save draft</Button>
+            <Button type="button" disabled={unsaved === 0} onClick={() => setDraft(stored)}>Discard changes</Button>
+            <span role="status" className={styles.sub}>{unsaved > 0 ? `${unsaved} unsaved ${unsaved === 1 ? 'change' : 'changes'}` : save.isSuccess ? 'Saved.' : 'No unsaved changes'}</span>
+          </div>
+        </form>
+      </Card>
+
+      <Card title="Draft vs. plan and benchmarks" aside={<ProvenanceChip kind="derived" />}>
+        <div className={styles.scroll}>
+          <table className={styles.table}>
+            <thead><tr><th>Clause</th><th>Your draft</th><th>Compared with</th><th>Reference</th><th>Difference</th><th>What it means</th></tr></thead>
+            <tbody>
+              {rows.map((r) => (
+                <Fragment key={r.id}>
+                  {r.comparisons.map((c, i) => (
+                    <tr key={c.against + i}>
+                      {i === 0 && <><td rowSpan={r.comparisons.length}><strong>{r.label}</strong></td><td rowSpan={r.comparisons.length} className="mono">{r.draft}</td></>}
+                      <td>{c.against} {c.gated || c.missing ? null : <ProvenanceChip kind={c.provenance} detail={c.n !== undefined ? `n=${c.n}` : undefined} />}</td>
+                      <td><ReferenceCell c={c} /></td>
+                      <td className="mono">{c.difference ?? <ProvenanceChip kind="missing" />}</td>
+                      <td>
+                        {c.verdict ? (
+                          <>
+                            <Badge tone={TONE[c.verdict.tone].tone}>{TONE[c.verdict.tone].label}</Badge>
+                            <p>{c.verdict.text}</p>
+                            {c.citations.map((cit) => <CitationChip key={cit.ref_id} citation={cit} onOpen={setOpen} />)}
+                          </>
+                        ) : <span className={styles.sub}>Not compared</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className={styles.sub}>Difference is your draft minus the reference. Benchmarks use contracts in FY{fiscalYear} and appear only once enough contracts have the value. Nothing is estimated where a source is missing.</p>
+      </Card>
+
       <Card title="Qualification and assistant"><EmptyState title="Planned" text="The qualification card and the retrieval assistant are specified but not built yet." /></Card>
       <SourceDrawer citation={open} onClose={() => setOpen(null)} />
     </div>

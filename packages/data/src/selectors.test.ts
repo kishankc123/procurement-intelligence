@@ -29,12 +29,22 @@ describe('tenderCoverage', () => {
 describe('tenderComparison', () => {
   const plan = { id: 'PL', project_id: 'P', name: 'Test plan', planned_advertisement: '2026-01-12', planned_bid_opening: '2026-02-16', planned_evaluation_complete: '2026-03-09', planned_signing: '2026-04-24', category: 'Works', method: 'Open' } as Plan
   const draft = (days: number) => ({ id: 'T', project_id: 'P', duration_months: 1, bid_validity_days: days, performance_security_pct: 10, min_similar_contracts: 1, min_similar_value_usd: 1, evaluation_method: 'x' }) as TenderDraft
-  it('finding changes with bid validity, and the benchmark stays gated below threshold', () => {
-    const short = tenderComparison(draft(60), plan, [contract('A')], [])[0]
-    const long = tenderComparison(draft(90), plan, [contract('A')], [])[0]
-    expect(short?.finding?.text).toContain('ends before')
-    expect(long?.finding?.text).toContain('covers')
-    expect(short?.benchmark).toEqual({ gated: gate(0, 10) })
+  const row = (days: number, id = 'bid_validity') => tenderComparison(draft(days), plan, [contract('A')], []).find((r) => r.id === id)!
+  it('compares bid validity with the plan, shows the difference, and gates the benchmark', () => {
+    const short = row(60).comparisons[0]!
+    const long = row(90).comparisons[0]!
+    expect(short.reference).toBe('67 days')
+    expect(short.difference).toBe('−7 days')
+    expect(short.verdict?.tone).toBe('attention')
+    expect(long.difference).toBe('+23 days')
+    expect(long.verdict?.tone).toBe('ok')
+    expect(row(60).comparisons[1]?.gated).toEqual(gate(0, 10))
+  })
+  it('says Missing instead of inventing a reference where no source exists', () => {
+    expect(row(60, 'security').comparisons[0]?.missing).toContain('Nothing is estimated')
+  })
+  it('flags an evaluation method that does not fit the plan method', () => {
+    expect(row(60, 'evaluation_method').comparisons[0]?.verdict?.tone).toBe('attention')
   })
 })
 
