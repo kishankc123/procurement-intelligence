@@ -56,6 +56,9 @@ pnpm --filter @pi/shell dev       # :5173
 - Revised: Draft clauses is the main card. The plan sits inside it as a collapsed line ("Compared with plan: name, id"); opening it shows the plan's dates, category, method and bid opening to signing days, plus a small "Compare with another plan" select.
 - Fixed overlapping keys in the evidence drawer. Selector tests grew to 7.
 
+## Block 9: Monitoring chart, done (nothing committed)
+- The disbursement vs. time elapsed chart now sits directly under the KPI cards, full width. Y axis has labelled ticks (0 to 100%), gridlines and a "Disbursed (%)" title; the X axis has its own title. Hover (or tab to) a point to see report, date, disbursed %, time elapsed % and the gap, with a crosshair. The dashed line is "On pace"; the red dotted line is the alert line at `THRESHOLDS.disbursementLagPoints` behind pace. Key dates and Governance context are now two separate cards below the board. The tooltip follows the pointer and sits below it (it never covers the pointer, stays inside the card at the edges); with keyboard focus it anchors under the focused point.
+
 ## Not done
 - No known-good git tag (K asked not to commit; tag after K commits).
 - Learning "Edit with note" not clicked through; full six-step script not run as one continuous pass.

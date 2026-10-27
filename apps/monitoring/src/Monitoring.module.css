@@ -10,3 +10,17 @@
 .table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; }
 .table th, .table td { padding: 6px; border-bottom: 1px solid var(--border); }
 .assign select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
+.chart { position: relative; display: grid; gap: 8px; }
+.chart svg { display: block; max-height: 420px; }
+.grid { stroke: var(--border); stroke-width: 1; }
+.tick { font-size: 12px; fill: var(--muted); }
+.axisTitle { font-size: 12px; fill: var(--text); font-weight: 500; }
+.onPace { stroke: var(--prov-public-fg); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.alertLine { stroke: var(--danger); stroke-width: 1.5; stroke-dasharray: 2 4; }
+.alertText { font-size: 12px; fill: var(--prov-missing-fg); }
+.series { stroke: var(--primary); stroke-width: 2.5; }
+.dot { fill: var(--primary); stroke: var(--surface); stroke-width: 2; cursor: pointer; transition: r 0.1s; }
+.latestDot { fill: var(--danger); stroke: var(--surface); stroke-width: 2; cursor: pointer; transition: r 0.1s; }
+.dot:focus-visible, .latestDot:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.cross line { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: 8px 10px; box-shadow: 0 4px 16px rgba(14, 34, 56, 0.15); font-size: 12px; display: grid; gap: 2px; width: 210px; z-index: 2; }
