@@ -167,42 +167,53 @@
       "entered_at": "2026-03-01T10:00:00Z"
     }
   ],
-  "amendments": [
-    {
-      "contract_ref": "REF-002",
-      "type": "Time extension",
-      "date": "2027-01-01",
-      "days_added": 90,
-      "value_change_usd": 500000,
-      "reason": "xyz",
-      "id": "AMD-1793137617721",
-      "status": "pending",
-      "entered_by_role": "admin"
-    }
-  ],
+  "amendments": [],
   "contract_milestones": [],
   "plans": [
     {
-      "id": "PLAN-P-MOCK-001",
+      "id": "PLAN-P-MOCK-001-1",
       "project_id": "P-MOCK-001",
-      "planned_advertisement": "2026-01-14",
-      "planned_bid_opening": "2026-01-19",
-      "planned_evaluation_complete": "2026-01-15",
-      "planned_signing": "2026-02-12",
+      "name": "Road resurfacing works, Lot 3",
+      "planned_advertisement": "2026-06-15",
+      "planned_bid_opening": "2026-07-20",
+      "planned_evaluation_complete": "2026-08-10",
+      "planned_signing": "2026-09-25",
+      "category": "Works",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-2",
+      "project_id": "P-MOCK-001",
+      "name": "Road safety signage supply",
+      "planned_advertisement": "2026-06-22",
+      "planned_bid_opening": "2026-07-27",
+      "planned_evaluation_complete": "2026-08-10",
+      "planned_signing": "2026-09-04",
       "category": "Goods",
-      "method": "Limited competitive"
+      "method": "Shopping"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-3",
+      "project_id": "P-MOCK-001",
+      "name": "Construction supervision consultancy",
+      "planned_advertisement": "2026-07-01",
+      "planned_bid_opening": "2026-08-12",
+      "planned_evaluation_complete": "2026-09-30",
+      "planned_signing": "2026-11-10",
+      "category": "Consulting services",
+      "method": "Quality-based"
     }
   ],
   "tender_drafts": [
     {
       "id": "TD-P-MOCK-001",
       "project_id": "P-MOCK-001",
-      "duration_months": 20,
-      "bid_validity_days": 20,
-      "performance_security_pct": 20,
-      "min_similar_contracts": 20,
+      "duration_months": 18,
+      "bid_validity_days": 60,
+      "performance_security_pct": 10,
+      "min_similar_contracts": 2,
       "min_similar_value_usd": 2000000,
-      "evaluation_method": "Quality and cost based"
+      "evaluation_method": "Lowest evaluated price"
     }
   ],
   "supervision_reports": [
@@ -2251,43 +2262,7 @@
   ],
   "alerts": [],
   "feedback": [],
-  "audit_log": [
-    {
-      "id": "AUD-1793137349252",
-      "at": "2026-10-27T21:42:29.252Z",
-      "role": "admin",
-      "action": "Saved plan",
-      "target": "P-MOCK-001"
-    },
-    {
-      "id": "AUD-1793137405696",
-      "at": "2026-10-27T21:43:25.696Z",
-      "role": "admin",
-      "action": "Saved tender draft",
-      "target": "P-MOCK-001"
-    },
-    {
-      "id": "AUD-1793137409244",
-      "at": "2026-10-27T21:43:29.244Z",
-      "role": "admin",
-      "action": "Saved tender draft",
-      "target": "P-MOCK-001"
-    },
-    {
-      "id": "AUD-1793137457554",
-      "at": "2026-10-27T21:44:17.554Z",
-      "role": "admin",
-      "action": "Saved tender draft",
-      "target": "P-MOCK-001"
-    },
-    {
-      "id": "AUD-1793137617741",
-      "at": "2026-10-27T21:46:57.741Z",
-      "role": "admin",
-      "action": "Entered amendment",
-      "target": "REF-002"
-    }
-  ],
+  "audit_log": [],
   "sources": [
     {
       "id": "SRC-MOCK-1",

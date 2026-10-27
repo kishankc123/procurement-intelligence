@@ -110,8 +110,15 @@ const db = {
     closing_date_planned: '2027-12-31', closing_date_revised: '2028-06-30',
   }],
   contracts, enrichments, amendments: [], contract_milestones: [],
-  plans: [{ id: `PLAN-${P}`, project_id: P, planned_advertisement: '2026-01-12', planned_bid_opening: '2026-02-16',
-    planned_evaluation_complete: '2026-03-09', planned_signing: '2026-04-24', category: 'Works', method: 'Open competitive' }],
+  // Future tenders this project team is preparing to run (dates are after as_of_date). Entered by the planner.
+  plans: [
+    { id: `PLAN-${P}-1`, project_id: P, name: 'Road resurfacing works, Lot 3', planned_advertisement: '2026-06-15', planned_bid_opening: '2026-07-20',
+      planned_evaluation_complete: '2026-08-10', planned_signing: '2026-09-25', category: 'Works', method: 'Open competitive' },
+    { id: `PLAN-${P}-2`, project_id: P, name: 'Road safety signage supply', planned_advertisement: '2026-06-22', planned_bid_opening: '2026-07-27',
+      planned_evaluation_complete: '2026-08-10', planned_signing: '2026-09-04', category: 'Goods', method: 'Shopping' },
+    { id: `PLAN-${P}-3`, project_id: P, name: 'Construction supervision consultancy', planned_advertisement: '2026-07-01', planned_bid_opening: '2026-08-12',
+      planned_evaluation_complete: '2026-09-30', planned_signing: '2026-11-10', category: 'Consulting services', method: 'Quality-based' },
+  ],
   tender_drafts: [{ id: `TD-${P}`, project_id: P, duration_months: 18, bid_validity_days: 60, performance_security_pct: 10,
     min_similar_contracts: 2, min_similar_value_usd: 2_000_000, evaluation_method: 'Lowest evaluated price' }],
   supervision_reports, completion_reports, documents, chunks,

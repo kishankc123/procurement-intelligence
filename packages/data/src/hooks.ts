@@ -51,6 +51,12 @@ export const useSavePlan = () =>
     return { action: 'Saved plan', target: plan.project_id }
   })
 
+export const useDeletePlan = () =>
+  useWrite<S.Plan>(async (plan) => {
+    await send('DELETE', `/plans/${plan.id}`)
+    return { action: 'Deleted plan', target: plan.id }
+  })
+
 export const useSaveTenderDraft = () =>
   useWrite<S.TenderDraft>(async (d) => {
     await send('PUT', `/tender_drafts/${d.id}`, d)

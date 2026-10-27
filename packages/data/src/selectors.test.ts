@@ -27,7 +27,7 @@ describe('tenderCoverage', () => {
 })
 
 describe('tenderComparison', () => {
-  const plan = { id: 'PL', project_id: 'P', planned_advertisement: '2026-01-12', planned_bid_opening: '2026-02-16', planned_evaluation_complete: '2026-03-09', planned_signing: '2026-04-24', category: 'Works', method: 'Open' } as Plan
+  const plan = { id: 'PL', project_id: 'P', name: 'Test plan', planned_advertisement: '2026-01-12', planned_bid_opening: '2026-02-16', planned_evaluation_complete: '2026-03-09', planned_signing: '2026-04-24', category: 'Works', method: 'Open' } as Plan
   const draft = (days: number) => ({ id: 'T', project_id: 'P', duration_months: 1, bid_validity_days: days, performance_security_pct: 10, min_similar_contracts: 1, min_similar_value_usd: 1, evaluation_method: 'x' }) as TenderDraft
   it('finding changes with bid validity, and the benchmark stays gated below threshold', () => {
     const short = tenderComparison(draft(60), plan, [contract('A')], [])[0]

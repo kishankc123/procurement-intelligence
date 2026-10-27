@@ -1,3 +1,5 @@
 .btn { font: inherit; padding: 6px 14px; border-radius: var(--radius-ctl); cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
 .primary { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 500; }
+.success { background: #1E7B4B; border-color: #1E7B4B; color: #fff; font-weight: 500; }
+.danger { background: #B3261E; border-color: #B3261E; color: #fff; font-weight: 500; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }

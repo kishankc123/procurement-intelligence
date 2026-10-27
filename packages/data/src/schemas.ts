@@ -75,6 +75,7 @@ export type Amendment = z.infer<typeof Amendment>
 export const Plan = z.object({
   id: z.string(),
   project_id: z.string(),
+  name: z.string(),
   planned_advertisement: date,
   planned_bid_opening: date,
   planned_evaluation_complete: date,
