@@ -2237,36 +2237,158 @@
       "citations": []
     }
   ],
-  "alerts": [],
-  "feedback": [],
-  "audit_log": [],
+  "alerts": [
+    {
+      "id": "ALR-P-MOCK-001-risk",
+      "assignee": "Contract manager",
+      "status": "assigned"
+    },
+    {
+      "id": "ALR-P-MOCK-001-lag",
+      "assignee": "Admin",
+      "status": "assigned"
+    }
+  ],
+  "feedback": [
+    {
+      "target_id": "REC-MOCK-1",
+      "rating": "helpful",
+      "reason": "",
+      "id": "FB-1793130082980",
+      "role": "admin",
+      "status": "accepted",
+      "created_at": "2026-10-27T19:41:22.980Z"
+    },
+    {
+      "target_id": "REC-MOCK-1",
+      "rating": "not_helpful",
+      "reason": "",
+      "id": "FB-1793130086460",
+      "role": "admin",
+      "status": "rejected",
+      "created_at": "2026-10-27T19:41:26.460Z"
+    }
+  ],
+  "audit_log": [
+    {
+      "id": "AUD-1793130082999",
+      "at": "2026-10-27T19:41:22.999Z",
+      "role": "admin",
+      "action": "Feedback: helpful",
+      "target": "REC-MOCK-1"
+    },
+    {
+      "id": "AUD-1793130086470",
+      "at": "2026-10-27T19:41:26.470Z",
+      "role": "admin",
+      "action": "Feedback: not helpful",
+      "target": "REC-MOCK-1"
+    },
+    {
+      "id": "AUD-1793133092776",
+      "at": "2026-10-27T20:31:32.776Z",
+      "role": "planner",
+      "action": "Saved plan",
+      "target": "P-MOCK-001"
+    },
+    {
+      "id": "AUD-1793133202912",
+      "at": "2026-10-27T20:33:22.912Z",
+      "role": "reviewer",
+      "action": "Assigned alert to Contract manager",
+      "target": "ALR-P-MOCK-001-risk"
+    },
+    {
+      "id": "AUD-1793133216542",
+      "at": "2026-10-27T20:33:36.542Z",
+      "role": "reviewer",
+      "action": "Assigned alert to Admin",
+      "target": "ALR-P-MOCK-001-lag"
+    },
+    {
+      "id": "AUD-1793133244696",
+      "at": "2026-10-27T20:34:04.696Z",
+      "role": "reviewer",
+      "action": "Feedback accepted",
+      "target": "FB-1793130082980"
+    },
+    {
+      "id": "AUD-1793133246608",
+      "at": "2026-10-27T20:34:06.608Z",
+      "role": "reviewer",
+      "action": "Feedback rejected",
+      "target": "FB-1793130086460"
+    },
+    {
+      "id": "AUD-1793133249049",
+      "at": "2026-10-27T20:34:09.049Z",
+      "role": "reviewer",
+      "action": "Feedback rejected",
+      "target": "FB-1793130086460"
+    },
+    {
+      "id": "AUD-1793133257419",
+      "at": "2026-10-27T20:34:17.419Z",
+      "role": "reviewer",
+      "action": "Feedback accepted",
+      "target": "FB-1793130086460"
+    },
+    {
+      "id": "AUD-1793133261053",
+      "at": "2026-10-27T20:34:21.053Z",
+      "role": "reviewer",
+      "action": "Feedback rejected",
+      "target": "FB-1793130086460"
+    },
+    {
+      "id": "AUD-1793133279311",
+      "at": "2026-10-27T20:34:39.311Z",
+      "role": "reviewer",
+      "action": "Simulated fetch",
+      "target": "SRC-MOCK-1"
+    },
+    {
+      "id": "AUD-1793133283337",
+      "at": "2026-10-27T20:34:43.337Z",
+      "role": "reviewer",
+      "action": "Simulated fetch",
+      "target": "SRC-MOCK-2"
+    },
+    {
+      "id": "AUD-1793133288841",
+      "at": "2026-10-27T20:34:48.841Z",
+      "role": "reviewer",
+      "action": "Simulated fetch",
+      "target": "SRC-MOCK-3"
+    }
+  ],
   "sources": [
     {
       "id": "SRC-MOCK-1",
       "name": "Mock contract awards extract",
       "publisher": "Mock registry",
       "kind": "Contract awards",
-      "status": "registered",
-      "last_fetched": null,
-      "simulated": false
+      "status": "fetched",
+      "last_fetched": "2026-05-31",
+      "simulated": true
     },
     {
       "id": "SRC-MOCK-2",
       "name": "Mock supervision reports (ISR)",
       "publisher": "Mock registry",
       "kind": "Supervision reports",
-      "status": "registered",
-      "last_fetched": null,
-      "simulated": false
+      "status": "fetched",
+      "last_fetched": "2026-05-31",
+      "simulated": true
     },
     {
       "id": "SRC-MOCK-3",
       "name": "Mock completion reports (ICR)",
       "publisher": "Mock registry",
       "kind": "Completion reports",
-      "status": "registered",
-      "last_fetched": null,
-      "simulated": false
+      "status": "fetched",
+      "last_fetched": "2026-05-31",
+      "simulated": true
     },
     {
       "id": "SRC-GPPD",
