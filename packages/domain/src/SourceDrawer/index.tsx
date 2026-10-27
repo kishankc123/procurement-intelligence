@@ -27,7 +27,7 @@ export function SourceDrawer({ citation, onClose }: Props) {
 
   return (
     <aside className={styles.drawer} role="dialog" aria-label="Source evidence">
-      <header><h2>Evidence</h2><Button onClick={onClose}>Close</Button></header>
+      <header><h2>Evidence</h2><Button variant="danger" onClick={onClose}>Close</Button></header>
       <p className="mono">{citation.label}</p>
       {chunk && doc ? (
         <>

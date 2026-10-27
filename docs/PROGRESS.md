@@ -46,6 +46,10 @@ pnpm --filter @pi/shell dev       # :5173
 - Revised again: the dropdown timeline is read-only (planned, actual, reference) with Edit plan (blue), Full details and Close at the bottom. Edit plan opens the full details page with the plan editable at the top: Save plan (green), Cancel, Delete plan (red, asks to confirm). Full details opens the same page read-only with an Edit plan button. New `useDeletePlan` hook; Button gained `success` and `danger` variants. Deleting is logged to `audit_log`.
 - Tender design still reads the first plan of the project. Adding a plan picker there is not done. No "New plan" button yet.
 
+## Block 7: colour palette, done (nothing committed)
+- Tokens in `packages/ui/src/tokens.css`: `--primary` blue (edit), `--success` green (save), `--danger` red (close, delete), `--on-solid` white text on solid fills. Missing is dark red text with a dotted border (chip and EmptyState title). A dark palette is defined under `:root[data-theme='dark']` with contrast checked, but there is no toggle yet and some screens still use light-only colours.
+- Close buttons (plan dropdown, SourceDrawer) and Delete plan are red with white text.
+
 ## Not done
 - No known-good git tag (K asked not to commit; tag after K commits).
 - Learning "Edit with note" not clicked through; full six-step script not run as one continuous pass.

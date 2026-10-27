@@ -67,7 +67,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
       <div className={styles.row}>
         <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>
         <Button onClick={onFull}>Full details</Button>
-        <Button onClick={onClose}>Close</Button>
+        <Button variant="danger" onClick={onClose}>Close</Button>
       </div>
     </div>
   )
