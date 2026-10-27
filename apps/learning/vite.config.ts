@@ -7,7 +7,11 @@ const shared = Object.fromEntries(
   ['react', 'react-dom', 'react-router', '@tanstack/react-query', 'zustand', '@pi/data', '@pi/events', '@pi/config', '@pi/ui', '@pi/domain'].map(singleton),
 )
 
+// On Vercel every remote is served from /remotes/<name>/ on the same origin.
+const base = process.env.DEPLOY === 'vercel' ? '/remotes/learning/' : '/'
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     federation({

@@ -66,4 +66,6 @@ export const DEFAULT_PROJECT_ID = 'P-MOCK-001'
 
 /** World Bank country codes differ from ISO for some countries. */
 export const WB_TO_ISO: Record<string, string> = { ROM: 'RO', EST: 'EE' }
-export const API_BASE = 'http://localhost:3001'
+// Deployed builds call the same-origin /api function; localhost uses json-server on :3001.
+export const API_BASE =
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api' : 'http://localhost:3001'

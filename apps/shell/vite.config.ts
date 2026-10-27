@@ -8,15 +8,19 @@ const shared = Object.fromEntries(
   ['react', 'react-dom', 'react-router', '@tanstack/react-query', 'zustand', '@pi/data', '@pi/events', '@pi/config', '@pi/ui', '@pi/domain'].map(singleton),
 )
 
+// Local dev and preview use one port per remote; on Vercel they live under /remotes/<name>/.
+const remoteEntry = (name: string, port: number) =>
+  process.env.DEPLOY === 'vercel' ? `/remotes/${name}/remoteEntry.js` : `http://localhost:${port}/remoteEntry.js`
+
 export default defineConfig({
   plugins: [
     react(),
     federation({
       name: 'shell',
       remotes: {
-        learning: { type: 'module', name: 'learning', entry: 'http://localhost:5176/remoteEntry.js' },
-        monitoring: { type: 'module', name: 'monitoring', entry: 'http://localhost:5175/remoteEntry.js' },
-        planning: { type: 'module', name: 'planning', entry: 'http://localhost:5174/remoteEntry.js' },
+        learning: { type: 'module', name: 'learning', entry: remoteEntry('learning', 5176) },
+        monitoring: { type: 'module', name: 'monitoring', entry: remoteEntry('monitoring', 5175) },
+        planning: { type: 'module', name: 'planning', entry: remoteEntry('planning', 5174) },
       },
       shared,
     }),
