@@ -192,3 +192,19 @@ export type AuditEvent = z.infer<typeof AuditEvent>
 
 export const Meta = z.object({ dataset_label: z.string(), as_of_date: date })
 export type Meta = z.infer<typeof Meta>
+
+export const Source = z.object({
+  id: z.string(), name: z.string(), publisher: z.string(), kind: z.string(),
+  status: z.enum(['registered', 'fetched']), last_fetched: date.nullable(), simulated: z.boolean(),
+})
+export type Source = z.infer<typeof Source>
+
+const ConflictSide = z.object({ label: z.string(), value: z.string(), provenance: Provenance, citation: Citation })
+export const Conflict = z.object({
+  id: z.string(), project_id: z.string(), type: z.string(), subject: z.string(),
+  left: ConflictSide, right: ConflictSide, rule_applied: z.string(),
+  status: z.enum(['open', 'resolved']), resolution: z.string().nullable(),
+  // Entered record to reject if the reviewer keeps the public value.
+  entered_ref: z.string(),
+})
+export type Conflict = z.infer<typeof Conflict>

@@ -48,6 +48,15 @@
         "dev"
       ],
       "port": 5173
+    },
+    {
+      "name": "preview-all",
+      "runtimeExecutable": "/bin/zsh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=$HOME/.npm-global/bin:$PATH; pnpm preview"
+      ],
+      "port": 5173
     }
   ]
 }

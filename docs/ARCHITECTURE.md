@@ -1,6 +1,6 @@
 # Architecture
 
-Front-end-only demo of a Procurement Intelligence platform on a mocked backend. Status: shell, Planning, Monitoring and Learning are built, plus Project data and a thin Tender design page in the shell. Knowledge base and Evidence workbench are still Planned.
+Front-end-only demo of a Procurement Intelligence platform on a mocked backend. Status: shell, Planning, Monitoring and Learning are built, plus Project data and a thin Tender design page in the shell. Knowledge base and Evidence workbench are built in simple form as shell pages.
 
 ## 1. Big picture
 
@@ -10,7 +10,7 @@ Front-end-only demo of a Procurement Intelligence platform on a mocked backend. 
  │ SHELL (host)  apps/shell                                     │
  │  layout · nav · filters · role switcher · routing            │
  │  owns the single QueryClient                                 │
- │  pages built in the shell: Project data, Tender design (+ Planned stubs)    │
+ │  pages built in the shell: Project data, Tender design, Knowledge base, Evidence workbench    │
  │                                                              │
  │   lazy(import('planning/Planning'))   lazy(import('monitoring/Monitoring'))
  └───────────┬───────────────────────────────────┬──────────────┘
@@ -82,7 +82,9 @@ All collections support `?field=value` filters (for example `?project_id=` and `
 | `documents`, `chunks` | SourceDrawer, retrieval | seed only |
 | `country_years` | Planning country context | seed only (real GPPD for RO, EE via `import-gppd.ts`) |
 | `governance` | Monitoring | seed only (illustrative values) |
-| `recommendations` | Planning | seed only |
+| `recommendations` | Planning, Evidence workbench | seed only |
+| `sources` | Knowledge base | PATCH (simulated fetch) |
+| `conflicts` | Evidence workbench | PATCH (resolve); resolving can also reject the linked `enrichments` row |
 | `alerts` | Monitoring | PUT/POST assignee only. Alerts themselves are derived, not stored |
 | `feedback` | Planning, Learning | POST, PATCH status and reason |
 | `audit_log` | Project data, Learning | POST on every write |
@@ -103,7 +105,7 @@ Contract manager enters REF-004 end date (Project data) → `enrichments` row, s
 | monitoring | 5175 | `pnpm --filter @pi/monitoring dev` |
 | learning | 5176 | `pnpm --filter @pi/learning dev` |
 
-Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`.
+Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`. Demo build: `pnpm demo` (build + `vite preview` on the same ports).
 
 ## 9. Adding a new remote
 
@@ -116,11 +118,11 @@ Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`.
 
 | Dimension | Demonstrated by | Status |
 | --- | --- | --- |
-| Data ingestion and sources | Provenance chips, public vs entered split, GPPD normalisation (`import-gppd.ts`), source facts honoured (contract awards have no tender dates) | Partial; Knowledge base page planned |
-| Knowledge graph | Consistent IDs across collections, citations linking claims to chunks and records | Graph view not built |
+| Data ingestion and sources | Provenance chips, public vs entered split, GPPD normalisation (`import-gppd.ts`), source facts honoured (contract awards have no tender dates) | Partial: source registry with simulated fetch, document and chunk views |
+| Knowledge graph | Consistent IDs across collections, citations linking claims to chunks and records | Graph view not built (IDs and citations are in place) |
 | Risk models | Monitoring signals, disbursement-lag rule, derived KPIs; model cards are gated and labelled Simulated | Rules built; simulated model run not built (cards are gated) |
 | Grounded retrieval | Citations on every claim, SourceDrawer, Withheld state when no support | Keyword assistant not built |
-| Evidence conflict handling | Public vs entered kept apart, validation, review queue | Evidence workbench planned |
+| Evidence conflict handling | Public vs entered kept apart, validation, review queue, conflict with rule applied and resolution | Built (one seeded conflict) |
 | Continuous learning | Helpful / Not helpful → `feedback` → Learning queue and update log | Built: queue with Accept/Edit/Reject, derived KPIs, update log |
 | Architecture | Module Federation, shared singletons, package boundaries, ADR 0001 | Built |
 

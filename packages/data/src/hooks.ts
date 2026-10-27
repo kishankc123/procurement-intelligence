@@ -28,6 +28,8 @@ export const useChunks = () => useQuery(list('chunks', '/chunks', S.Chunk))
 export const useDocs = () => useQuery(list('documents', '/documents', S.Doc))
 export const useAlertStates = () => useQuery(list('alerts', '/alerts', S.AlertState))
 export const useFeedback = () => useQuery(list('feedback', '/feedback', S.Feedback))
+export const useSources = () => useQuery(list('sources', '/sources', S.Source))
+export const useConflicts = () => useQuery(list('conflicts', '/conflicts', S.Conflict))
 export const useAuditLog = () => useQuery(list('audit_log', '/audit_log', S.AuditEvent))
 
 /** Every write also appends to audit_log, and invalidates everything so all screens refresh. */
@@ -108,4 +110,19 @@ export const useReviewFeedback = () =>
   useWrite<{ id: string; status: 'accepted' | 'rejected' | 'edited'; reason?: string }>(async (v) => {
     await send('PATCH', `/feedback/${v.id}`, v.reason === undefined ? { status: v.status } : { status: v.status, reason: v.reason })
     return { action: `Feedback ${v.status}`, target: v.id }
+  })
+
+/** Simulated fetch: no network call to a real source, labelled as simulated everywhere. */
+export const useFetchSource = (asOf: string) =>
+  useWrite<{ id: string }>(async (v) => {
+    await send('PATCH', `/sources/${v.id}`, { status: 'fetched', last_fetched: asOf, simulated: true })
+    return { action: 'Simulated fetch', target: v.id }
+  })
+
+export const useResolveConflict = () =>
+  useWrite<{ conflict: S.Conflict; keep: 'public' | 'entered' }>(async ({ conflict, keep }) => {
+    const resolution = keep === 'public' ? 'Kept the public value; entered value rejected' : 'Kept the entered value; flagged for follow-up'
+    await send('PATCH', `/conflicts/${conflict.id}`, { status: 'resolved', resolution })
+    if (keep === 'public') await send('PATCH', `/enrichments/${conflict.entered_ref}`, { status: 'rejected' })
+    return { action: `Resolved conflict: ${resolution}`, target: conflict.id }
   })

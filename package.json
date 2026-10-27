@@ -9,6 +9,7 @@
     "reset-db": "tsx mock/seed.ts",
     "import-gppd": "tsx mock/import-gppd.ts",
     "build": "pnpm -r --filter './apps/*' build",
+    "demo": "pnpm build && pnpm preview",
     "preview": "pnpm -r --parallel --filter './apps/*' preview",
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run"

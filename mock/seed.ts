@@ -34,6 +34,8 @@ const enrichments = [
   enr('ENR-S2', 'REF-001', 'bids_opened_date', '2025-09-08', 'Mock bid opening minutes'),
   enr('ENR-S3', 'REF-001', 'bidders_received', '3', 'Mock bid opening minutes'),
   enr('ENR-S4', 'REF-002', 'bidders_received', '4', 'Mock bid opening minutes'),
+  // Deliberately inconsistent with the public signing date (2025-11-18): drives the Evidence workbench conflict.
+  enr('ENR-S5', 'REF-002', 'advertised_date', '2025-12-02', 'Mock tender notice, transcribed by hand'),
 ]
 
 const chunk = (n: number, doc: string, page: number, section: string, text: string) => ({
@@ -120,6 +122,19 @@ const db = {
     { id: 'EE-2023', country: 'EE', year: 2023, wgi: { regulatory_quality: 90, government_effectiveness: 88, control_of_corruption: 90 }, cpia_16: null },
   ],
   recommendations, alerts: [], feedback: [], audit_log: [],
+  sources: [
+    { id: 'SRC-MOCK-1', name: 'Mock contract awards extract', publisher: 'Mock registry', kind: 'Contract awards', status: 'registered', last_fetched: null, simulated: false },
+    { id: 'SRC-MOCK-2', name: 'Mock supervision reports (ISR)', publisher: 'Mock registry', kind: 'Supervision reports', status: 'registered', last_fetched: null, simulated: false },
+    { id: 'SRC-MOCK-3', name: 'Mock completion reports (ICR)', publisher: 'Mock registry', kind: 'Completion reports', status: 'registered', last_fetched: null, simulated: false },
+    { id: 'SRC-GPPD', name: 'GPPD country profiles (local file)', publisher: 'gppd_data.json supplied by K', kind: 'Country indicators', status: 'registered', last_fetched: null, simulated: false },
+  ],
+  conflicts: [{
+    id: 'CNF-MOCK-1', project_id: P, type: 'Public vs entered date', subject: 'REF-002 advertised after it was signed',
+    left: { label: 'Public contract award record', value: 'Signed 2025-11-18', provenance: 'public', citation: { ref_type: 'record', ref_id: 'REF-002', label: 'Contract REF-002 · signing date' } },
+    right: { label: 'Entered by a contract manager', value: 'Advertised 2025-12-02', provenance: 'entered', citation: { ref_type: 'record', ref_id: 'ENR-S5', label: 'Entered · REF-002 advertised date' } },
+    rule_applied: 'Advertisement must not be after contract signing. Public record outranks entered data for signing.',
+    status: 'open', resolution: null, entered_ref: 'ENR-S5',
+  }],
 }
 
 const out = fileURLToPath(new URL('./db.json', import.meta.url))

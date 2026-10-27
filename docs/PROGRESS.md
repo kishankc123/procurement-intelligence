@@ -30,5 +30,15 @@ pnpm --filter @pi/shell dev       # :5173
 - Docs: DEMO.md (script + live-edit guide), ARCHITECTURE.md updated.
 - Verified in the browser: steps 3 and 6 of the script (bid validity finding flips; feedback rejected, KPI and log change).
 
-## Next (not started, wait for K)
-Rehearse at 1440x900 and fix layout; build for `vite preview` demo and tag a known-good commit; Knowledge base and Evidence workbench pages; Playwright smoke test; remaining deferred items in CLAUDE.md section 14.
+## Block 4: rehearsal pass, done (nothing committed)
+- `pnpm build` + `vite preview` verified: all five screens load through federation from the production build, no console errors. `pnpm demo` builds and serves everything.
+- Knowledge base (registry with simulated Fetch, document search/filter, chunk detail) and Evidence workbench (one seeded conflict with Resolve, provenance trail, grounding table) added as shell pages. New collections: `sources`, `conflicts`; seed adds entered record ENR-S5 to create the conflict.
+- Checked all 7 screens at 1440x900: no horizontal overflow, no empty links. Resolve conflict, Fetch and doc detail verified in the browser.
+
+## Not done
+- No known-good git tag (K asked not to commit; tag after K commits).
+- Learning "Edit with note" and role-disabled states were not clicked through in the browser.
+- No Playwright test. Qualification card, retrieval assistant, risk network, graph: not built.
+
+## Next (wait for K)
+K reviews and commits; rehearse the full script once from `pnpm reset-db` + `pnpm demo`; tag the commit.

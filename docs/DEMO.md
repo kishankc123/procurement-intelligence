@@ -1,14 +1,13 @@
 # Demo script and live-edit guide
 
-## Before every rehearsal
+## Before every rehearsal (demo from the preview build, not the dev servers)
 ```
 pnpm reset-db        # restores the seed (also clears feedback, entries, alerts, audit log)
-pnpm api             # :3001
-pnpm --filter @pi/planning dev     # :5174
-pnpm --filter @pi/monitoring dev   # :5175
-pnpm --filter @pi/learning dev     # :5176
-pnpm --filter @pi/shell dev        # :5173
+pnpm api             # :3001, leave running in one terminal
+pnpm demo            # builds all four apps, then serves them with vite preview on :5173-5176
 ```
+Rebuild (`pnpm demo`) after any code change; `pnpm reset-db` only needs the API running. For live code edits use the dev servers instead:
+`pnpm dev` runs all four apps in dev mode.
 Open http://localhost:5173. Role is stored in localStorage; the role switcher is in the top bar.
 If you restart the API after reset-db, refresh the browser.
 
@@ -19,6 +18,9 @@ If you restart the API after reset-db, refresh the browser.
 4. **Project data**: as Contract manager, pick REF-004, field Contract end date, value 2026-04-30, Submit. Add an amendment too. Switch role to Reviewer and Approve both. The coverage meter goes 2 → 3 of 6. Optional: enter bids opened before advertised on REF-001 to show validation.
 5. **Monitoring**: a new alert, "Contract past its end date", appears. Assign it, open See evidence (SourceDrawer shows the entered record). Show the disbursement chart below the on-pace line.
 6. **Learning** (Reviewer): the Not helpful feedback is in the queue. Reject it. "Feedback accepted" now shows 0 of 1 reviewed, and the update log gained the decision.
+
+7. **Evidence workbench** (Reviewer, optional): the open conflict (REF-002 advertised after it was signed) shows both sources with chips and citations. Resolve: keep public value; the entered record is rejected and the provenance trail updates. Reset restores it.
+8. **Knowledge base** (optional): press Fetch on a source (simulated, labelled), search documents, open a document to see its chunks.
 
 ## Live edits: where to change things
 | Want to change | Edit |
@@ -35,7 +37,7 @@ If you restart the API after reset-db, refresh the browser.
 Tip: to make the lag alert disappear live, change `disbursementLagPoints` to 30 and refresh Monitoring.
 
 ## Known gaps to say out loud
-Planned screens (Knowledge base, Evidence workbench, qualification card, assistant, risk network) show a "Planned" state. Governance values are illustrative. Duration and restructuring models are gated because only 3 completion reports exist.
+Not built: the qualification card, the retrieval assistant on Tender design, the risk network, the knowledge graph and pipeline view. Knowledge base and Evidence workbench are simple versions (one conflict, simulated fetch). Governance values are illustrative. Duration and restructuring models are gated because only 3 completion reports exist.
 
 ## Tests
 `pnpm test` runs the selector tests (fiscal year, coverage, tender comparison, alerts). `pnpm typecheck` checks all packages.

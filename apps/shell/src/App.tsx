@@ -7,6 +7,8 @@ import { RemoteBoundary } from './RemoteBoundary'
 import { Planned } from './pages/Planned'
 import { ProjectData } from './pages/ProjectData'
 import { TenderDesign } from './pages/TenderDesign'
+import { Knowledge } from './pages/Knowledge'
+import { Evidence } from './pages/Evidence'
 import styles from './App.module.css'
 
 const Planning = lazy(() => import('planning/Planning'))
@@ -84,6 +86,8 @@ export function App() {
             <Route path="/monitoring" element={<RemoteBoundary name="Monitoring"><Monitoring /></RemoteBoundary>} />
             <Route path="/learning" element={<RemoteBoundary name="Learning"><Learning /></RemoteBoundary>} />
             <Route path="/tender-design" element={<TenderDesign />} />
+            <Route path="/knowledge" element={<Knowledge />} />
+            <Route path="/evidence" element={<Evidence />} />
             <Route path="/project-data" element={<ProjectData />} />
             <Route path="*" element={<Planned />} />
           </Routes>
