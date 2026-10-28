@@ -74,6 +74,7 @@ export interface Comparison {
   verdict: { tone: Tone; text: string } | null
   gated?: Gate                          // reference withheld: sample too small
   missing?: string                      // reference withheld: no source holds it
+  numeric?: { draft: number; reference: number; unit: string } // the two numbers behind the text, for charts
   citations: Citation[]
 }
 
@@ -113,6 +114,7 @@ export function tenderComparison(draft: TenderDraft, plan: Plan | undefined, con
     const delta = draftValue - ref
     return {
       against, provenance, basis, n: values.length, reference: `${ref.toLocaleString('en-US')} ${unit}`, difference: signed(delta, unit), citations: [],
+      numeric: { draft: draftValue, reference: ref, unit },
       verdict: { tone: 'info', text: delta === 0 ? `Equal to the median of ${values.length} ${wording}.` : `${Math.abs(delta).toLocaleString('en-US')} ${unit} ${delta > 0 ? 'above' : 'below'} the median of ${values.length} ${wording}.` },
     }
   }
@@ -128,6 +130,7 @@ export function tenderComparison(draft: TenderDraft, plan: Plan | undefined, con
       against: 'Your plan', provenance: 'entered',
       basis: `Bid opening ${plan.planned_bid_opening} to signing ${plan.planned_signing}`,
       reference: `${required} days`, difference: signed(delta, 'days'), citations: planCite,
+      numeric: { draft: draft.bid_validity_days, reference: required, unit: 'days' },
       verdict: delta < 0
         ? { tone: 'attention', text: `Bids would expire ${Math.abs(delta)} days before the planned signing. Bid validity of ${draft.bid_validity_days} days ends before the plan allows ${required} days from bid opening to signing.` }
         : { tone: 'ok', text: `Covers the ${required} days from bid opening to signing in your plan${delta > 0 ? `, with ${delta} days to spare` : ' exactly'}.` },

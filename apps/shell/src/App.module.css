@@ -44,7 +44,7 @@
 
 .topNav { margin-left: auto; display: flex; align-items: center; gap: 12px; }
 /* Plain-text menu triggers: they look like links but open a dropdown. */
-.navTrigger { background: none; border: 0; padding: 6px 4px; font: inherit; font-weight: 500; color: var(--text); cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.navTrigger { background: none; border: 0; padding: 6px 4px; font: inherit; font-weight: 500; color: var(--text); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
 .navTrigger:hover { text-decoration: underline; }
 .navTrigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 .aiLink { padding: 6px 16px; border-radius: var(--radius-ctl); background: var(--primary); color: var(--on-solid); text-decoration: none; font-weight: 500; white-space: nowrap; }

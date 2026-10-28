@@ -1,13 +1,21 @@
 import { Fragment, useEffect, useState } from 'react'
+import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router'
 import { THRESHOLDS, can, fiscalYearOf, whyDisabled } from '@pi/config'
 import {
   countryReference, evaluationFinding, gate, plannedDurations, useCompletionReports, useCountryYears,
-  useCurrentUser, useDeletePlan, usePlan, useProject, useRecommendations, useSavePlan, useUiStore,
+  useCurrentUser, useDeletePlan, useMeta, usePlan, useProject, useRecommendations, useSavePlan, useUiStore,
   type Citation, type Plan,
 } from '@pi/data'
-import { Badge, Button, Card, DataGate, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import {
+  ArrowLeft, Badge, Button, Card, DataGate, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState,
+  ProvenanceChip, Select, TableScroll, Paged, Carousel } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
+import { PlanAgenda } from './PlanAgenda'
 import styles from './Planning.module.css'
+
+/** Where this remote is mounted in the shell. Each plan's full details have their own address under it. */
+const BASE = '/planning'
+const detailPath = (planId: string) => `${BASE}/full-details/${encodeURIComponent(planId)}`
 
 const CATEGORIES = ['Works', 'Goods', 'Consulting services']
 const METHODS = ['Open competitive', 'Limited competitive', 'Shopping', 'Quality-based']
@@ -40,10 +48,29 @@ function useStageReferences(projectId: string): Partial<Record<DateKey, string>>
   }
 }
 
+/** Read-only stage table: planned dates, actual (missing) and the country reference. */
+function StageTable({ plan }: { plan: Plan }) {
+  const refs = useStageReferences(plan.project_id)
+  return (
+    <TableScroll><table className={styles.table}>
+      <thead><tr><th>Stage</th><th>Planned</th><th>Actual</th><th>Reference</th></tr></thead>
+      <tbody>
+        {STAGES.map((st) => (
+          <tr key={st.key}>
+            <td>{st.label}</td>
+            <td className="mono">{plan[st.key]}</td>
+            <td><ProvenanceChip kind="missing" /></td>
+            <td>{refs[st.key] ?? <span className={styles.sub}>None</span>}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table></TableScroll>
+  )
+}
+
 /** The dropdown under a plan row: read-only stage timeline, with Edit plan, Full details and Close at the bottom. */
 function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: () => void; onFull: () => void; onClose: () => void }) {
   const { role } = useCurrentUser()
-  const refs = useStageReferences(plan.project_id)
   const allowed = can(role, 'edit_plan')
   return (
     <div className={styles.expanded}>
@@ -51,19 +78,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
         <strong>Stage timeline</strong>
         <ProvenanceChip kind="entered" />
       </div>
-      <TableScroll><table className={styles.table}>
-        <thead><tr><th>Stage</th><th>Planned</th><th>Actual</th><th>Reference</th></tr></thead>
-        <tbody>
-          {STAGES.map((st) => (
-            <tr key={st.key}>
-              <td>{st.label}</td>
-              <td className="mono">{plan[st.key]}</td>
-              <td><ProvenanceChip kind="missing" /></td>
-              <td>{refs[st.key] ?? <span className={styles.sub}>None</span>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table></TableScroll>
+      <StageTable plan={plan} />
       <div className={styles.row}>
         <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>
         <Button onClick={onFull}>Full details</Button>
@@ -73,65 +88,52 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
   )
 }
 
-/** Top of the full details page: read-only until Edit plan, then Save plan (green) and Delete plan (red). */
-function PlanEditor({ plan, startEditing, onDeleted }: { plan: Plan; startEditing: boolean; onDeleted: () => void }) {
-  const { role } = useCurrentUser()
-  const refs = useStageReferences(plan.project_id)
+/** Edit a plan in a modal: change the category, method or dates, then Save plan, Cancel or Delete plan. No page change. */
+function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; open: boolean; onOpenChange: (open: boolean) => void; onDeleted: () => void }) {
   const save = useSavePlan()
   const remove = useDeletePlan()
-  const [editing, setEditing] = useState(startEditing)
-  const [confirming, setConfirming] = useState(false)
   const [draft, setDraft] = useState(plan)
-  useEffect(() => setDraft(plan), [plan])
-  const allowed = can(role, 'edit_plan')
-  const reason = allowed ? undefined : whyDisabled('edit_plan')
+  const [confirming, setConfirming] = useState(false)
+  useEffect(() => { if (open) { setDraft(plan); setConfirming(false) } }, [open, plan])
   const set = <K extends keyof Plan>(k: K, v: Plan[K]) => setDraft((d) => ({ ...d, [k]: v }))
   const invalid = draft.planned_bid_opening < draft.planned_advertisement
-  const cancel = () => { setDraft(plan); setEditing(false); setConfirming(false) }
 
   return (
-    <Card title="Plan and stage timeline" aside={<ProvenanceChip kind="entered" />}>
-      <form onSubmit={(e) => { e.preventDefault(); save.mutate(draft, { onSuccess: () => setEditing(false) }) }}>
-        <div className={styles.form}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit plan</DialogTitle>
+          <DialogDescription>{plan.name} · <span className="mono">{plan.id}</span></DialogDescription>
+        </DialogHeader>
+        <form className={styles.dialogForm} onSubmit={(e) => { e.preventDefault(); save.mutate(draft, { onSuccess: () => onOpenChange(false) }) }}>
           <label>Category
-            <Select value={draft.category} onValueChange={(v) => set('category', v)} disabled={!editing} options={CATEGORIES.map((c) => ({ value: c, label: c }))} />
+            <Select value={draft.category} onValueChange={(v) => set('category', v)} options={CATEGORIES.map((c) => ({ value: c, label: c }))} />
           </label>
           <label>Method
-            <Select value={draft.method} onValueChange={(v) => set('method', v)} disabled={!editing} options={METHODS.map((m) => ({ value: m, label: m }))} />
+            <Select value={draft.method} onValueChange={(v) => set('method', v)} options={METHODS.map((m) => ({ value: m, label: m }))} />
           </label>
-        </div>
-        <TableScroll><table className={styles.table}>
-          <thead><tr><th>Stage</th><th>Planned</th><th>Actual</th><th>Reference</th></tr></thead>
-          <tbody>
+          <div className={styles.dialogDates}>
             {STAGES.map((st) => (
-              <tr key={st.key}>
-                <td>{st.label}</td>
-                <td><input type="date" aria-label={`Planned ${st.label.toLowerCase()}`} value={draft[st.key]} onChange={(e) => set(st.key, e.target.value)} disabled={!editing} /></td>
-                <td><ProvenanceChip kind="missing" /></td>
-                <td>{refs[st.key] ?? <span className={styles.sub}>None</span>}</td>
-              </tr>
+              <label key={st.key}>{st.label}
+                <input type="date" value={draft[st.key]} onChange={(e) => set(st.key, e.target.value)} />
+              </label>
             ))}
-          </tbody>
-        </table></TableScroll>
-        <div className={styles.row}>
-          {editing ? (
-            <>
-              <Button type="submit" variant="success" disabled={invalid || save.isPending}>Save plan</Button>
-              <Button type="button" onClick={cancel}>Cancel</Button>
-              {confirming ? (
-                <>
-                  <span role="alert">Delete this plan for good?</span>
-                  <Button type="button" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate(plan, { onSuccess: onDeleted })}>Confirm delete</Button>
-                  <Button type="button" onClick={() => setConfirming(false)}>Keep plan</Button>
-                </>
-              ) : <Button type="button" variant="danger" onClick={() => setConfirming(true)}>Delete plan</Button>}
-            </>
-          ) : <Button type="button" variant="primary" onClick={() => setEditing(true)} disabledReason={reason}>Edit plan</Button>}
-          {invalid && <span role="alert">Bid opening cannot be before advertisement.</span>}
-          {save.isSuccess && !editing && <span role="status" className={styles.sub}>Saved.</span>}
-        </div>
-      </form>
-    </Card>
+          </div>
+          {invalid && <p role="alert" className={styles.problem}>Bid opening cannot be before advertisement.</p>}
+          <div className={styles.dialogActions}>
+            <Button type="submit" variant="success" disabled={invalid || save.isPending}>Save plan</Button>
+            <Button type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+            {confirming ? (
+              <>
+                <span role="alert">Delete this plan for good?</span>
+                <Button type="button" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate(plan, { onSuccess: () => { onOpenChange(false); onDeleted() } })}>Confirm delete</Button>
+                <Button type="button" onClick={() => setConfirming(false)}>Keep plan</Button>
+              </>
+            ) : <Button type="button" variant="danger" onClick={() => setConfirming(true)}>Delete plan</Button>}
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -139,10 +141,10 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
   return (
     <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
-        <TableScroll><table className={`${styles.table} ${styles.plans}`}>
+        <Paged items={plans} label="plans">{(pageRows) =><table className={`${styles.table} ${styles.plans}`}>
           <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th></tr></thead>
           <tbody>
-            {plans.map((p) => (
+            {pageRows.map((p) => (
               <Fragment key={p.id}>
               <tr
                 className={`${styles.clickable} ${p.id === selectedId ? styles.selected : ''}`}
@@ -168,14 +170,16 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
               </Fragment>
             ))}
           </tbody>
-        </table></TableScroll>
+        </table>}</Paged>
       )}
       <p className={styles.sub}>Each row is a tender you are preparing to run. Click a row to see and edit its stage timeline.</p>
     </Card>
   )
 }
 
-function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; startEditing: boolean; onBack: () => void; onDeleted: () => void }) {
+function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => void; onDeleted: () => void }) {
+  const { role } = useCurrentUser()
+  const [editing, setEditing] = useState(false)
   const project = useProject(plan.project_id).data?.[0]
   const country = project?.borrower_country_code ?? ''
   const years = useCountryYears(country).data ?? []
@@ -197,14 +201,20 @@ function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; sta
   return (
     <>
       <div className={styles.head}>
-        <Button onClick={onBack}>Back to plans</Button>
+        <div className={styles.row}>
+          <Button onClick={onBack}><ArrowLeft size={16} aria-hidden="true" />Back to plans</Button>
+          <Button variant="primary" onClick={() => setEditing(true)} disabledReason={can(role, 'edit_plan') ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>
+        </div>
         <h1>{plan.name}</h1>
         <p>{plan.category} · {plan.method} · {project.project_name}, {project.borrower_country}</p>
       </div>
 
-      <PlanEditor plan={plan} startEditing={startEditing} onDeleted={onDeleted} />
+      <Card title="Stage timeline" aside={<ProvenanceChip kind="entered" />}>
+        <StageTable plan={plan} />
+      </Card>
+      <EditPlanDialog plan={plan} open={editing} onOpenChange={setEditing} onDeleted={onDeleted} />
 
-      <div className={styles.kpis}>
+      <Carousel ariaLabel="Key figures for this plan">
         <Card title="Planned: advertisement to signing">
           <p><span className={styles.big}>{dur.advertisementToSigning}</span> <span className={styles.unit}>days</span></p>
           <ProvenanceChip kind="derived" detail="from your plan" />
@@ -228,7 +238,7 @@ function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; sta
           <p className={styles.sub}>have a citation in this brief</p>
           <ProvenanceChip kind="derived" />
         </Card>
-      </div>
+      </Carousel>
 
       <Card title="Duration model" aside={<Badge>Simulated</Badge>}>
         <DataGate gate={durationGate} title="Duration curve locked" unit="completed projects with key dates">
@@ -314,26 +324,19 @@ function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; sta
   )
 }
 
-export default function Planning() {
+/** /planning: the plans table with its timeline. Edit plan opens a modal; Full details goes to its own address. */
+function PlanListPage() {
+  const navigate = useNavigate()
   const projectId = useUiStore((s) => s.projectId)
   const fiscalYear = useUiStore((s) => s.fiscalYear)
   const project = useProject(projectId).data?.[0]
   const plans = usePlan(projectId).data
+  const asOf = useMeta().data?.as_of_date
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [detailId, setDetailId] = useState<string | null>(null)
-  const [detailEdit, setDetailEdit] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   if (!project || !plans) return <Card state="loading">{null}</Card>
-  const detail = plans.find((p) => p.id === detailId)
-
-  const openDetail = (id: string, edit: boolean) => { setDetailEdit(edit); setDetailId(id) }
-  if (detail) {
-    return (
-      <div className={styles.page}>
-        <PlanDetail plan={detail} startEditing={detailEdit} onBack={() => setDetailId(null)} onDeleted={() => { setDetailId(null); setSelectedId(null) }} />
-      </div>
-    )
-  }
+  const editing = plans.find((p) => p.id === editingId)
 
   return (
     <div className={styles.page}>
@@ -341,10 +344,46 @@ export default function Planning() {
         <h1>Plan procurement packages</h1>
         <p>{project.project_name} · {project.borrower_country}. The tenders you are preparing, compared with what public data and your own entered contracts show.</p>
       </div>
-      <PlanList plans={plans} selectedId={selectedId} onSelect={setSelectedId} onFull={(id) => openDetail(id, false)} onEdit={(id) => openDetail(id, true)} />
+      {asOf && <PlanAgenda plans={plans} asOf={asOf} />}
+      <PlanList plans={plans} selectedId={selectedId} onSelect={setSelectedId} onFull={(id) => navigate(detailPath(id))} onEdit={setEditingId} />
       {plans.some((p) => fiscalYearOf(p.planned_signing) !== fiscalYear) && (
         <p role="status" className={styles.sub}>Some plans sign outside the selected FY{fiscalYear}.</p>
       )}
+      {editing && <EditPlanDialog plan={editing} open onOpenChange={(o) => { if (!o) setEditingId(null) }} onDeleted={() => { setEditingId(null); setSelectedId(null) }} />}
     </div>
+  )
+}
+
+/** /planning/full-details/:planId: everything about one plan. */
+function PlanDetailPage() {
+  const { planId } = useParams()
+  const navigate = useNavigate()
+  const projectId = useUiStore((s) => s.projectId)
+  const plans = usePlan(projectId).data
+  if (!plans) return <Card state="loading">{null}</Card>
+  const plan = plans.find((p) => p.id === planId)
+  if (!plan) {
+    return (
+      <div className={styles.page}>
+        <Card title="Plan not found">
+          <EmptyState title="This plan is not on the selected project" text="It may have been deleted, or belong to another project." action={<Button onClick={() => navigate(BASE)}>Back to plans</Button>} />
+        </Card>
+      </div>
+    )
+  }
+  return (
+    <div className={styles.page}>
+      <PlanDetail plan={plan} onBack={() => navigate(BASE)} onDeleted={() => navigate(BASE)} />
+    </div>
+  )
+}
+
+export default function Planning() {
+  return (
+    <Routes>
+      <Route index element={<PlanListPage />} />
+      <Route path="full-details/:planId" element={<PlanDetailPage />} />
+      <Route path="*" element={<Navigate to={BASE} replace />} />
+    </Routes>
   )
 }

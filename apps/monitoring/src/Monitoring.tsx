@@ -4,7 +4,7 @@ import {
   deriveAlerts, timeElapsedPct, useAlertStates, useAmendments, useAssignAlert, useContracts, useCurrentUser,
   useEnrichments, useGovernance, useMeta, useProject, useReports, useUiStore, type Citation,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Carousel } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import { ScheduleCard } from './ScheduleCard'
 import styles from './Monitoring.module.css'
@@ -151,7 +151,7 @@ export default function Monitoring() {
         <p>Warning signals from supervision reports and from the contract data your team enters, ranked by severity. Latest data as of {asOf}.</p>
       </div>
 
-      <div className={styles.kpis}>
+      <Carousel ariaLabel="Key figures">
         <Card title="Rating drops"><p><span className={styles.big}>{count('rating_drop')}</span></p><ProvenanceChip kind="public" detail="supervision reports" /></Card>
         <Card title="Disbursed vs. time elapsed">
           {latest && elapsed !== null ? (<>
@@ -162,7 +162,7 @@ export default function Monitoring() {
         </Card>
         <Card title="Contracts past entered end date"><p><span className={styles.big}>{count('contract_past_end')}</span> <span className={styles.unit}>of {contracts.length}</span></p><ProvenanceChip kind="entered" /></Card>
         <Card title="Approved amendments"><p><span className={styles.big}>{count('amendment')}</span></p><ProvenanceChip kind="entered" /></Card>
-      </div>
+      </Carousel>
 
       <Card title="Disbursement vs. time elapsed" aside={<ProvenanceChip kind="public" detail="one point per report" />}>
         {points.length < 2 ? <EmptyState title="Needs at least 2 supervision reports" text={`${points.length} available.`} /> : <DisbursementChart points={points} />}

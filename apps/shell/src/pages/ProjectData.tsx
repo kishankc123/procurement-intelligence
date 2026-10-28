@@ -5,7 +5,7 @@ import {
   useContracts, useCurrentUser, useEnrichments, useReviewAmendment, useReviewEnrichment, useUiStore,
   type EnrichmentField,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
 import styles from './ProjectData.module.css'
 
 const FIELD_LABEL: Record<EnrichmentField, string> = {
@@ -49,6 +49,11 @@ export function ProjectData() {
   const allowedField = can(role, permissionFor(field))
   const pendingEnr = enrichments.filter((e) => e.status === 'pending')
   const pendingAmd = amendments.filter((a) => a.status === 'pending')
+  // One list so the review queue pages as a whole.
+  const pending = [
+    ...pendingEnr.map((entry) => ({ kind: 'enrichment' as const, entry })),
+    ...pendingAmd.map((entry) => ({ kind: 'amendment' as const, entry })),
+  ]
   const canReview = can(role, 'approve_entries')
 
   const cell = (contractRef: string, f: EnrichmentField) => {
@@ -65,13 +70,13 @@ export function ProjectData() {
       <Card title="Contracts" aside={<input aria-label="Search contracts" placeholder="Search contracts" value={search} onChange={(e) => setSearch(e.target.value)} />}>
         {visible.length === 0 ? <EmptyState title="No contracts match" text="Check the project and fiscal-year filters." /> : (
           <div className={styles.scroll}>
-            <TableScroll><table className={styles.table}>
+            <Paged items={visible} label="contracts" resetKey={search} maxHeight="520px">{(pageRows) =><table className={styles.table}>
               <thead><tr>
                 <th>Reference</th><th>Supplier</th><th>Category</th><th>Amount (USD)</th><th>Signed</th>
                 {ENRICHMENT_FIELDS.map((f) => <th key={f}>{FIELD_LABEL[f]}</th>)}
               </tr></thead>
               <tbody>
-                {visible.map((c) => {
+                {pageRows.map((c) => {
                   const r = c.borrower_contract_reference_number
                   return (
                     <tr key={r}>
@@ -85,7 +90,7 @@ export function ProjectData() {
                   )
                 })}
               </tbody>
-            </table></TableScroll>
+            </table>}</Paged>
           </div>
         )}
       </Card>
@@ -122,34 +127,33 @@ export function ProjectData() {
 
       <Card title="Awaiting review" aside={<span className={styles.sub}>Reviewer approves or rejects</span>}>
         {pendingEnr.length + pendingAmd.length === 0 ? <EmptyState title="Nothing pending" text="Entries from planners and contract managers appear here." /> : (
-          <TableScroll><table className={styles.table}>
+          <Paged items={pending} label="pending entries">{(pageRows) => <table className={styles.table}>
             <thead><tr><th>Entry</th><th>Contract</th><th>By</th><th>Decision</th></tr></thead>
             <tbody>
-              {pendingEnr.map((e) => (
-                <tr key={e.id}><td>{FIELD_LABEL[e.field]}: <span className="mono">{e.value}</span></td><td className="mono">{e.contract_ref}</td><td>{e.entered_by_role.replace('_', ' ')}</td>
+              {pageRows.map((item) => item.kind === 'enrichment' ? (
+                <tr key={item.entry.id}><td>{FIELD_LABEL[item.entry.field]}: <span className="mono">{item.entry.value}</span></td><td className="mono">{item.entry.contract_ref}</td><td>{item.entry.entered_by_role.replace('_', ' ')}</td>
                   <td className={styles.actions}>
-                    <Button onClick={() => reviewEnrichment.mutate({ id: e.id, status: 'approved' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Approve</Button>
-                    <Button onClick={() => reviewEnrichment.mutate({ id: e.id, status: 'rejected' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Reject</Button></td></tr>
-              ))}
-              {pendingAmd.map((a) => (
-                <tr key={a.id}><td>{a.type}: +{a.days_added} days ({a.reason})</td><td className="mono">{a.contract_ref}</td><td>{a.entered_by_role.replace('_', ' ')}</td>
+                    <Button onClick={() => reviewEnrichment.mutate({ id: item.entry.id, status: 'approved' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Approve</Button>
+                    <Button onClick={() => reviewEnrichment.mutate({ id: item.entry.id, status: 'rejected' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Reject</Button></td></tr>
+              ) : (
+                <tr key={item.entry.id}><td>{item.entry.type}: +{item.entry.days_added} days ({item.entry.reason})</td><td className="mono">{item.entry.contract_ref}</td><td>{item.entry.entered_by_role.replace('_', ' ')}</td>
                   <td className={styles.actions}>
-                    <Button onClick={() => reviewAmendment.mutate({ id: a.id, status: 'approved' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Approve</Button>
-                    <Button onClick={() => reviewAmendment.mutate({ id: a.id, status: 'rejected' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Reject</Button></td></tr>
+                    <Button onClick={() => reviewAmendment.mutate({ id: item.entry.id, status: 'approved' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Approve</Button>
+                    <Button onClick={() => reviewAmendment.mutate({ id: item.entry.id, status: 'rejected' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Reject</Button></td></tr>
               ))}
             </tbody>
-          </table></TableScroll>
+          </table>}</Paged>
         )}
       </Card>
 
       <Card title="Audit trail">
         {audit.length === 0 ? <EmptyState title="No changes yet" /> : (
-          <TableScroll><table className={styles.table}>
+          <Paged items={[...audit].reverse()} label="audit entries" maxHeight="520px">{(pageRows) =><table className={styles.table}>
             <thead><tr><th>When</th><th>Role</th><th>Action</th><th>Target</th></tr></thead>
-            <tbody>{[...audit].reverse().slice(0, 8).map((a) => (
+            <tbody>{pageRows.slice(0, 8).map((a) => (
               <tr key={a.id}><td className="mono">{a.at.slice(0, 19).replace('T', ' ')}</td><td>{a.role.replace('_', ' ')}</td><td>{a.action}</td><td className="mono">{a.target}</td></tr>
             ))}</tbody>
-          </table></TableScroll>
+          </table>}</Paged>
         )}
       </Card>
     </div>

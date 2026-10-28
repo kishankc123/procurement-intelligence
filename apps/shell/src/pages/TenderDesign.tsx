@@ -1,17 +1,17 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
 import {
-  SPEC_STATUS_LABEL, countryReference, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
-  type Citation, type Comparison, type Plan, type TenderDraft,
+  countryReference, glanceGaps, glanceRows, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
+  type Citation, type GlanceRow, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Button, Card, EmptyState, PairedBars, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
+import { SpecGroups } from './SpecGroups'
+import { ValidityCoverage } from './ValidityCoverage'
 import styles from './ProjectData.module.css'
 
 const METHODS = ['Lowest evaluated price', 'Quality and cost based', 'Fixed budget']
-const SPEC_TONE = { pass: 'low', warn: 'medium', fail: 'high', not_checkable: 'neutral' } as const
-const TONE = { ok: { tone: 'low', label: 'OK' }, attention: { tone: 'high', label: 'Check' }, info: { tone: 'neutral', label: 'Info' } } as const
 
 type NumKey = 'duration_months' | 'bid_validity_days' | 'performance_security_pct' | 'min_similar_contracts' | 'min_similar_value_usd'
 
@@ -42,15 +42,14 @@ function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | un
   )
 }
 
-function ReferenceCell({ c }: { c: Comparison }) {
-  if (c.gated) {
-    return <EmptyState title="Missing" text={`Needs ${c.gated.required} contracts with this value. ${c.gated.n} so far.`} action={<Link to="/project-data">Add tender data</Link>} />
-  }
-  if (c.missing) return <EmptyState title="Missing" text={c.missing} />
+/** Content of the info icon next to a result: what it means, how the reference was worked out, and the evidence. */
+function WhatItMeans({ row, onCite }: { row: GlanceRow; onCite: (c: Citation) => void }) {
   return (
     <>
-      <span className="mono">{c.reference}</span>
-      <p className={styles.sub}>{c.basis}</p>
+      <strong>What it means</strong>
+      <span>{row.meaning}</span>
+      <span className={styles.sub}>How the reference was worked out: {row.basis}</span>
+      {row.citations.length > 0 && <span>{row.citations.map((c) => <span key={c.ref_id}><CitationChip citation={c} onOpen={onCite} />{' '}</span>)}</span>}
     </>
   )
 }
@@ -101,11 +100,12 @@ export function TenderDesign() {
       evaluationReference: countryReference(years, project.borrower_country_code, 'C5.2'),
     })
     : []
-  const count = (st: string) => checks.filter((c) => c.status === st).length
+  const glance = glanceRows(rows, checks)
+  const gaps = glanceGaps(rows)
 
   return (
     <div className={styles.page}>
-      <div><h1>Tender design</h1><p className={styles.sub}>Draft the clauses, then see each one against your plan and against entered contract data, with the difference worked out.</p></div>
+      <div><h1>Tender design</h1><p className={styles.sub}>Draft the clauses, then see each one against your plan and your contract data.</p></div>
 
       <Card title="Draft clauses" aside={<ProvenanceChip kind="entered" />}>
         <PlanReference plans={plans} plan={plan} onPick={setPlanId} />
@@ -128,60 +128,31 @@ export function TenderDesign() {
       </Card>
 
       <Card title="Draft vs. plan and benchmarks" aside={<ProvenanceChip kind="derived" />}>
-        <div className={styles.scroll}>
-          <TableScroll><table className={styles.table}>
-            <thead><tr><th>Clause</th><th>Your draft</th><th>Compared with</th><th>Reference</th><th>Difference</th><th>What it means</th></tr></thead>
-            <tbody>
-              {rows.map((r) => (
-                <Fragment key={r.id}>
-                  {r.comparisons.map((c, i) => (
-                    <tr key={c.against + i}>
-                      {i === 0 && <><td rowSpan={r.comparisons.length}><strong>{r.label}</strong></td><td rowSpan={r.comparisons.length} className="mono">{r.draft}</td></>}
-                      <td>{c.against} {c.gated || c.missing ? null : <ProvenanceChip kind={c.provenance} detail={c.n !== undefined ? `n=${c.n}` : undefined} />}</td>
-                      <td><ReferenceCell c={c} /></td>
-                      <td className="mono">{c.difference ?? <ProvenanceChip kind="missing" />}</td>
-                      <td>
-                        {c.verdict ? (
-                          <>
-                            <Badge tone={TONE[c.verdict.tone].tone}>{TONE[c.verdict.tone].label}</Badge>
-                            <p>{c.verdict.text}</p>
-                            {c.citations.map((cit) => <CitationChip key={cit.ref_id} citation={cit} onOpen={setOpen} />)}
-                          </>
-                        ) : <span className={styles.sub}>Not compared</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table></TableScroll>
+        <div className={styles.stack}>
+          {plan ? (
+            <>
+              <h3>Bid validity vs signing</h3>
+              <ValidityCoverage plan={plan} draft={draft} />
+            </>
+          ) : <EmptyState title="No plan to compare with" text="Add a plan in Planning to see the bid validity diagram." action={<Link to="/planning">Open Planning</Link>} />}
+          <h3>Draft vs reference</h3>
+          {glance.length === 0 && gaps.length === 0
+            ? <EmptyState title="Nothing to compare yet" text="Charts need two numbers, a draft value and a reference." />
+            : (
+              <PairedBars
+                ariaLabel="Draft against reference"
+                rows={glance.map((r) => ({ ...r, info: <WhatItMeans row={r} onCite={setOpen} /> }))}
+                gaps={gaps.map((g) => ({ ...g, action: g.canAdd ? <Link to="/project-data">Add tender data</Link> : undefined }))}
+              />
+            )}
         </div>
-        <p className={styles.sub}>Difference is your draft minus the reference. Benchmarks use contracts in FY{fiscalYear} and appear only once enough contracts have the value. Nothing is estimated where a source is missing.</p>
       </Card>
 
       <Card title="Specification checks" aside={<ProvenanceChip kind="derived" detail={`${checks.length} rules`} />}>
         <p className={styles.sub}>
-          The draft above, including unsaved changes, checked against {plan ? <>the plan <strong>{plan.name}</strong></> : 'a plan (none chosen)'}, the project, contract data and the guidance note. Each rule is shown, with what it found and its evidence.
+          The draft above, including unsaved changes, checked against {plan ? <>the plan <strong>{plan.name}</strong></> : 'a plan (none chosen)'}, the project, contract data and the guidance note. The bars count the results; click a bar or a row below to open its checks, with the rule, the numbers compared and the evidence.
         </p>
-        <p role="status">
-          <Badge tone="low">{count('pass')} pass</Badge> <Badge tone="medium">{count('warn')} to check</Badge> <Badge tone="high">{count('fail')} fail</Badge> <Badge>{count('not_checkable')} cannot check</Badge>
-        </p>
-        <TableScroll>
-          <table className={styles.table}>
-            <thead><tr><th>Clause and rule</th><th>Result</th><th>Your draft</th><th>Compared with</th><th>What it found</th></tr></thead>
-            <tbody>
-              {checks.map((c) => (
-                <tr key={c.id}>
-                  <td><strong>{c.clause}</strong><p className={styles.sub}>{c.rule}</p></td>
-                  <td><Badge tone={SPEC_TONE[c.status]}>{SPEC_STATUS_LABEL[c.status]}</Badge></td>
-                  <td className="mono">{c.draftValue}</td>
-                  <td>{c.reference ?? <ProvenanceChip kind="missing" />}</td>
-                  <td>{c.detail}{c.citations.length > 0 && <div>{c.citations.map((cit) => <span key={cit.ref_id}><CitationChip citation={cit} onOpen={setOpen} />{' '}</span>)}</div>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableScroll>
+        <SpecGroups checks={checks} onCite={setOpen} />
         <p className={styles.sub}>Performance security uses the range in the mock guidance note (change it in <span className="mono">SPEC_RULES</span>). "Cannot check" means no source here holds the number; nothing is estimated.</p>
         <div><span className={styles.sub}>Was this check useful? </span><FeedbackWidget targetId={`AI-LAYER-spec-${projectId}`} /></div>
       </Card>

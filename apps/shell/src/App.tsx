@@ -1,11 +1,16 @@
-import { lazy } from 'react'
+import { lazy, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { PLATFORM_AREAS } from '@pi/config'
 import { useProjects, useUiStore } from '@pi/data'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@pi/ui'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
+  BookOpen, ChevronDown, Database, FolderKanban, Scale, Truck, Wrench, type LucideIcon,
+} from '@pi/ui'
 import { RemoteBoundary } from './RemoteBoundary'
 import { Home } from './pages/Home'
+import { Breadcrumbs } from './Breadcrumbs'
 import { StepNav } from './StepNav'
+import { FilterRail } from './FilterRail'
 import { Planned } from './pages/Planned'
 import { ProjectData } from './pages/ProjectData'
 import { TenderDesign } from './pages/TenderDesign'
@@ -20,6 +25,11 @@ const Learning = lazy(() => import('learning/Learning'))
 const Monitoring = lazy(() => import('monitoring/Monitoring'))
 const WorkWithAI = lazy(() => import('ai/WorkWithAI'))
 
+/** One icon per platform tool, by route. */
+const TOOL_ICON: Record<string, LucideIcon> = {
+  '/project-data': Database, '/knowledge': BookOpen, '/suppliers': Truck, '/evidence': Scale,
+}
+
 /** Top-bar "Projects" menu: plain text that opens a list. Picking a project sets it for every screen. */
 function ProjectMenu() {
   const navigate = useNavigate()
@@ -28,7 +38,7 @@ function ProjectMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" className={styles.navTrigger}>Projects <span aria-hidden="true">▾</span></button>
+        <button type="button" className={styles.navTrigger}><FolderKanban size={16} aria-hidden="true" />Projects<ChevronDown size={14} aria-hidden="true" /></button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-72" align="start">
         <DropdownMenuLabel>Open a project overview</DropdownMenuLabel>
@@ -48,24 +58,29 @@ function ToolsMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button type="button" className={styles.navTrigger}>Tools <span aria-hidden="true">▾</span></button>
+        <button type="button" className={styles.navTrigger}><Wrench size={16} aria-hidden="true" />Tools<ChevronDown size={14} aria-hidden="true" /></button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="start">
-        {PLATFORM_AREAS.map((area) => (
-          <DropdownMenuItem key={area.to} asChild>
-            <Link to={area.to}>{area.label}</Link>
-          </DropdownMenuItem>
-        ))}
+        {PLATFORM_AREAS.map((area) => {
+          const Icon = TOOL_ICON[area.to]
+          return (
+            <DropdownMenuItem key={area.to} asChild>
+              <Link to={area.to} className="no-underline">{Icon && <Icon size={16} aria-hidden="true" />}{area.label}</Link>
+            </DropdownMenuItem>
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   )
 }
 
 export function App() {
+  const [railOpen, setRailOpen] = useState(false)
   const { pathname } = useLocation()
 
   return (
-    <div className={styles.layout}>
+    <div className={`${styles.layout} ${railOpen ? styles.layoutRailOpen : ''}`}>
+      <FilterRail open={railOpen} onOpenChange={setRailOpen} />
       <div className={styles.main}>
         <header className={styles.top}>
           <Link to="/" className={styles.brand}>ProcureIntel</Link>
@@ -77,10 +92,11 @@ export function App() {
         </header>
         {/* <div className={styles.banner} role="note"><strong>Mock data.</strong> {meta?.dataset_label ?? '…'}. Every figure is bound to data and shows its source.</div> */}
         <main className={styles.content}>
+          <Breadcrumbs />
           {pathname !== '/' && <StepNav />}
           <Routes>
             <Route index element={<Home />} />
-            <Route path="/planning" element={<RemoteBoundary name="Planning"><Planning /></RemoteBoundary>} />
+            <Route path="/planning/*" element={<RemoteBoundary name="Planning"><Planning /></RemoteBoundary>} />
             <Route path="/monitoring" element={<RemoteBoundary name="Monitoring"><Monitoring /></RemoteBoundary>} />
             <Route path="/learning" element={<RemoteBoundary name="Learning"><Learning /></RemoteBoundary>} />
             <Route path="/tender-design" element={<TenderDesign />} />

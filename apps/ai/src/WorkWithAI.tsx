@@ -6,7 +6,7 @@ import {
   useAddSourceLink, useAllPlans, useTenderHistory, useChunks, useContracts, useCurrentUser, useDocs, useIngestionRuns, useProject, useRecordIngestionRun,
   useProjects, useReports, useSourceLinks, useUiStore, type Citation, type RetenderMatch, type TenderStatus, type UrlCheck,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './WorkWithAI.module.css'
 
@@ -160,11 +160,11 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {links.length === 0 ? (
           <EmptyState title="No source links on this project yet" text="Paste a link above, check it, then save it to the project." />
         ) : (
-          <TableScroll>
+          <Paged items={links} label="source links">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Link</th><th>Publisher</th><th>Server</th><th>Checked</th><th>Added by</th></tr></thead>
               <tbody>
-                {links.map((l) => (
+                {pageRows.map((l) => (
                   <tr key={l.id}>
                     <td className={`${styles.url} mono`}>{l.url}</td>
                     <td>{l.publisher ? `${l.publisher}: ${l.kind}` : <ProvenanceChip kind="missing" detail="unclassified" />}</td>
@@ -174,8 +174,8 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
         <LayerFeedback layer="link" projectId={projectId} />
       </Layer>
@@ -218,11 +218,11 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {linked.length === 0 ? (
           <EmptyState title="No links found for this project" text="No document text names this project's contracts, and no document matches a report date." />
         ) : (
-          <TableScroll>
+          <Paged items={linked} label="record links" maxHeight="520px">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Structured record</th><th>Document text</th><th>Why they are linked</th></tr></thead>
               <tbody>
-                {linked.map((l) => (
+                {pageRows.map((l) => (
                   <tr key={l.id}>
                     <td>
                       <CitationChip citation={{ ref_type: 'record', ref_id: l.structured.id, label: l.structured.label }} onOpen={setOpen} />{' '}
@@ -236,8 +236,8 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
         <LayerFeedback layer="records" projectId={projectId} />
       </Layer>

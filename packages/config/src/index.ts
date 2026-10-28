@@ -121,3 +121,4 @@ export const KNOWN_SOURCE_HOSTS = [
 export const SPEC_RULES = {
   performanceSecurityPct: { min: 5, max: 10, category: 'Works' },
 } as const
+export { breadcrumbTrail, type Crumb } from './breadcrumbs'

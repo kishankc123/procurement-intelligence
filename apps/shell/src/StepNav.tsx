@@ -3,10 +3,11 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { LIFECYCLE_STEPS, PLATFORM_AREAS, fiscalYearLabel } from '@pi/config'
 import { useProjects, useUiStore } from '@pi/data'
 import { DonutNav } from '@pi/ui'
+import { BackButton } from './BackButton'
 import { STEP_COLOR } from './stepColors'
 import styles from './StepNav.module.css'
 
-/** Mini donut at the top of every inner page: the current step stays lit, any slice switches step, the centre goes back to the dashboard. */
+/** Back button and mini donut at the top of every inner page: the current step stays lit, any slice switches step, the centre goes back to the dashboard. */
 export function StepNav() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -14,7 +15,7 @@ export function StepNav() {
   const project = useProjects().data?.find((p) => p.project_id === projectId)
   const [hoverId, setHoverId] = useState<string | null>(null)
 
-  const current = LIFECYCLE_STEPS.find((s) => s.to === pathname)
+  const current = LIFECYCLE_STEPS.find((s) => pathname === s.to || pathname.startsWith(`${s.to}/`))
   const platform = PLATFORM_AREAS.find((a) => a.to === pathname)
   const hovered = LIFECYCLE_STEPS.find((s) => s.id === hoverId)
   const overview = pathname === '/project'
@@ -23,6 +24,7 @@ export function StepNav() {
 
   return (
     <nav className={styles.bar} aria-label="Lifecycle steps">
+      <BackButton />
       <div className={styles.donut}>
         <DonutNav
           compact

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Card as ShadcnCard, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { SkeletonText } from '../Skeleton'
 
 interface Props { title?: string; aside?: ReactNode; children: ReactNode; state?: 'loading' | 'error' | 'ready' }
 
@@ -15,7 +16,7 @@ export function Card({ title, aside, children, state = 'ready' }: Props) {
         </CardHeader>
       )}
       <CardContent className="min-w-0">
-        {state === 'loading' && <p className="text-muted-foreground" role="status">Loading…</p>}
+        {state === 'loading' && <SkeletonText lines={3} />}
         {state === 'error' && <p className="text-muted-foreground" role="alert">Could not load this data. Is the API running on port 3001?</p>}
         {state === 'ready' && children}
       </CardContent>

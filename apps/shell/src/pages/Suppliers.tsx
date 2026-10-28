@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { THRESHOLDS } from '@pi/config'
 import { supplierProfiles, useAllContracts, useAmendments, useContractMilestones, useUiStore, type Citation, type SupplierProfile } from '@pi/data'
-import { Badge, Card, EmptyState, ProvenanceChip, TableScroll } from '@pi/ui'
+import { Badge, Card, EmptyState, ProvenanceChip, TableScroll, Paged } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './Suppliers.module.css'
 
@@ -40,11 +40,11 @@ export function Suppliers() {
 
       <Card title="Suppliers" aside={<ProvenanceChip kind="derived" detail={`n=${profiles.length}`} />}>
         {profiles.length === 0 ? <EmptyState title="No contracts on record" text="Supplier history is built from contract awards." /> : (
-          <TableScroll>
+          <Paged items={profiles} label="suppliers">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Supplier</th><th>Contracts</th><th>Projects</th><th>Committed (USD)</th><th>Price change</th><th>Avg milestone delay</th><th>Flags</th></tr></thead>
               <tbody>
-                {profiles.map((p) => (
+                {pageRows.map((p) => (
                   <tr key={p.supplierId} className={`${styles.clickable} ${p.supplierId === selected?.supplierId ? styles.selected : ''}`} onClick={() => setPickedId(p.supplierId === pickedId ? null : p.supplierId)}>
                     <td><button type="button" className={styles.pick} aria-pressed={p.supplierId === pickedId}>{p.name}<br /><span className="mono">{p.supplierId}</span></button></td>
                     <td className="mono">{p.contracts.length}</td>
@@ -56,8 +56,8 @@ export function Suppliers() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
         <p className={styles.sub}>Click a supplier to see its contract history. Grey numbers are shown for reference only: the supplier has fewer than {THRESHOLDS.supplierProfileMinContracts} contracts, so no verdict is given.</p>
       </Card>

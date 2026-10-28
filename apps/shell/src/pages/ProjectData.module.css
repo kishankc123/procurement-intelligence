@@ -21,3 +21,5 @@
 .planRef .table td, .planRef .table th { padding: 6px 6px; }
 .planPick { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 2px; font-size: 12px; color: var(--muted); margin-top: 8px; max-width: 420px; }
 .planPick select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); color: var(--text); }
+.stack { display: grid; gap: 14px; min-width: 0; }
+.stack h3 { font-size: 14px; font-weight: 600; }

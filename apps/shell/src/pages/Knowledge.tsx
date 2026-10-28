@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useChunks, useDocs, useFetchSource, useMeta, useSources } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
 import styles from './ProjectData.module.css'
 
 export function Knowledge() {
@@ -46,15 +46,15 @@ export function Knowledge() {
             <Select aria-label="Filter by type" value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v)} options={[{ value: 'all', label: 'All types' }, ...types.map((t) => ({ value: t, label: t }))]} />
           </div>
           {visible.length === 0 ? <EmptyState title="No documents match" /> : (
-            <TableScroll><table className={styles.table}>
+            <Paged items={visible} label="documents" resetKey={`${query}|${type}`}>{(pageRows) =><table className={styles.table}>
               <thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Parse</th></tr></thead>
-              <tbody>{visible.map((d) => (
+              <tbody>{pageRows.map((d) => (
                 <tr key={d.doc_id}>
                   <td><Button type="button" onClick={() => setDocId(d.doc_id)}>{d.title}</Button><br /><span className="mono">{d.doc_id}</span></td>
                   <td>{d.type}</td><td className="mono">{d.date}</td><td>{d.parse_status}</td>
                 </tr>
               ))}</tbody>
-            </table></TableScroll>
+            </table>}</Paged>
           )}
         </Card>
 

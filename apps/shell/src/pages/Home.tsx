@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { LIFECYCLE_STEPS, PLATFORM_AREAS } from '@pi/config'
 import { useFeedback, usePlan, useProjects, useReports, useTenderDraft, useUiStore } from '@pi/data'
-import { Card, DonutNav, EmptyState, ProvenanceChip, WheelPicker, type Provenance, TableScroll } from '@pi/ui'
+import { Card, DonutNav, EmptyState, ProvenanceChip, WheelPicker, type Provenance, TableScroll, Paged } from '@pi/ui'
 import { STEP_COLOR } from '../stepColors'
 import styles from './Home.module.css'
 
@@ -15,7 +15,7 @@ export function Home() {
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [pinnedId, setPinnedId] = useState<string | null>(null)
 
-  // The global project filter is the single source of truth: the wheel, the table and the top bar all move it.
+  // The global project filter is the single source of truth: the wheel, the table, the menus and the filter rail all move it.
   const selected = projects.data?.find((p) => p.project_id === projectId) ?? projects.data?.[0] ?? null
   const selectedId = selected?.project_id ?? null
   // Empty id matches nothing in json-server, so these stay empty until a project is picked.
@@ -115,13 +115,13 @@ export function Home() {
         {(projects.data ?? []).length === 0 ? (
           <EmptyState title="No projects found" text="Add a project to mock/db.json and run pnpm reset-db." />
         ) : (
-          <TableScroll><table className={styles.table}>
+          <Paged items={(projects.data ?? [])} label="projects">{(pageRows) =><table className={styles.table}>
             <caption className={styles.caption}>Click a project name to open its overview, or scroll the wheel in the donut to open its four lifecycle steps.</caption>
             <thead>
               <tr><th scope="col">Project</th><th scope="col">Country</th><th scope="col">Sector</th><th scope="col">Region</th></tr>
             </thead>
             <tbody>
-              {(projects.data ?? []).map((p) => (
+              {pageRows.map((p) => (
                 <tr key={p.project_id} className={p.project_id === selectedId ? styles.selected : undefined} onClick={() => setProject(p.project_id)}>
                   <td>
                     <button type="button" className={styles.rowButton} aria-pressed={p.project_id === selectedId} title="Open project overview" onClick={(e) => { e.stopPropagation(); setProject(p.project_id); navigate('/project') }}>
@@ -134,7 +134,7 @@ export function Home() {
                 </tr>
               ))}
             </tbody>
-          </table></TableScroll>
+          </table>}</Paged>
         )}
       </Card>
 

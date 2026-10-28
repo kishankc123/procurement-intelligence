@@ -16,10 +16,12 @@ export interface SpecCheck {
   /** What the draft was compared with, or null when nothing could be. */
   reference: string | null
   detail: string
+  /** The two numbers behind the result, when there are two, for charts. */
+  numeric?: { draft: number; reference: number; unit: string }
   citations: Citation[]
 }
 
-export const SPEC_STATUS_LABEL: Record<SpecStatus, string> = { pass: 'Pass', warn: 'Check', fail: 'Fail', not_checkable: 'Cannot check' }
+export const SPEC_STATUS_LABEL: Record<SpecStatus, string> = { pass: 'Pass', warn: 'To check', fail: 'Fail', not_checkable: 'Cannot check' }
 
 export interface SpecInput {
   draft: TenderDraft
@@ -105,7 +107,7 @@ export function specificationChecks(input: SpecInput): SpecCheck[] {
   else {
     const finding = evaluationFinding(plan, evaluationReference)
     out.push(finding
-      ? { ...evalBase, status: finding.within ? 'pass' : 'warn', reference: `${finding.reference} days (GPPD C5.2, ${finding.year})`, detail: finding.within ? 'Within the country reference.' : 'Longer than the country reference, which raises the risk of bids expiring.', citations: planCite(plan) }
+      ? { ...evalBase, numeric: { draft: finding.planned, reference: finding.reference, unit: 'days' }, status: finding.within ? 'pass' : 'warn', reference: `${finding.reference} days (GPPD C5.2, ${finding.year})`, detail: finding.within ? 'Within the country reference.' : 'Longer than the country reference, which raises the risk of bids expiring.', citations: planCite(plan) }
       : { ...evalBase, status: 'not_checkable', reference: null, detail: 'No year of GPPD data reports bid evaluation days for this country, so there is nothing to compare with.', citations: planCite(plan) })
   }
 
@@ -116,7 +118,8 @@ export function specificationChecks(input: SpecInput): SpecCheck[] {
   else {
     const end = addMonths(plan.planned_signing, draft.duration_months)
     const margin = dayDiff(end, closing)
-    out.push({ ...closeBase, status: margin < 0 ? 'fail' : 'pass', reference: `Project closes ${closing}`, detail: margin < 0 ? `The contract would end ${end}, ${-margin} days after the project closes.` : `The contract would end ${end}, ${margin} days before the project closes.`, citations: planCite(plan) })
+    const availableMonths = Math.round((dayDiff(plan.planned_signing, closing) / 30.4) * 10) / 10
+    out.push({ ...closeBase, numeric: { draft: draft.duration_months, reference: availableMonths, unit: 'months' }, status: margin < 0 ? 'fail' : 'pass', reference: `Project closes ${closing}`, detail: margin < 0 ? `The contract would end ${end}, ${-margin} days after the project closes.` : `The contract would end ${end}, ${margin} days before the project closes.`, citations: planCite(plan) })
   }
 
   // 7. Qualification value against signed contracts of the same category
