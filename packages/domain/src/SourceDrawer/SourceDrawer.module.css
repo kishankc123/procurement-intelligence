@@ -3,3 +3,5 @@
 .drawer blockquote { margin: 0; padding: 10px 12px; background: var(--bg); border-left: 3px solid var(--primary); }
 .drawer dl { display: grid; grid-template-columns: minmax(90px, max-content) 1fr; gap: 4px 12px; margin: 0; }
 .drawer dt { color: var(--muted); overflow-wrap: anywhere; } .drawer dd { margin: 0; }
+.docLink { all: unset; cursor: pointer; color: var(--link); text-decoration: underline; }
+.docLink:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }

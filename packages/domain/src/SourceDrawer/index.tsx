@@ -1,6 +1,7 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { useAllContracts, useAmendments, useChunks, useContractMilestones, useDocs, useEnrichments, usePlan, useRecommendations, useReports, useUiStore, type Citation } from '@pi/data'
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@pi/ui'
+import { DocumentDialog } from '../DocumentDialog'
 import styles from './SourceDrawer.module.css'
 
 interface Props { citation: Citation | null; onClose: () => void }
@@ -8,6 +9,7 @@ interface Props { citation: Citation | null; onClose: () => void }
 /** Shared evidence drawer: chunk text, page, document and every recommendation that cites it. */
 export function SourceDrawer({ citation, onClose }: Props) {
   const projectId = useUiStore((s) => s.projectId)
+  const [docOpen, setDocOpen] = useState<string | null>(null)
   const chunks = useChunks().data ?? []
   const docs = useDocs().data ?? []
   const recs = useRecommendations(projectId).data ?? []
@@ -27,6 +29,7 @@ export function SourceDrawer({ citation, onClose }: Props) {
 
   // A modal dialog styled as a right-hand panel: focus is trapped, Escape and a click outside close it.
   return (
+    <>
     <Dialog open={citation !== null} onOpenChange={(open) => { if (!open) onClose() }}>
       <DialogContent
         showCloseButton={false} aria-describedby={undefined}
@@ -41,7 +44,7 @@ export function SourceDrawer({ citation, onClose }: Props) {
           <>
             <blockquote>{chunk.text}</blockquote>
             <dl>
-              <dt>Document</dt><dd>{doc.title} ({doc.doc_id})</dd>
+              <dt>Document</dt><dd><button type="button" className={styles.docLink} onClick={() => setDocOpen(doc.doc_id)}>{doc.title}</button> ({doc.doc_id})</dd>
               <dt>Page</dt><dd>{chunk.page}</dd>
               <dt>Section</dt><dd>{chunk.section_path}</dd>
               <dt>Chunk</dt><dd className="mono">{chunk.chunk_id}</dd>
@@ -56,5 +59,7 @@ export function SourceDrawer({ citation, onClose }: Props) {
         {citedBy.length === 0 ? <p>No recommendation cites this on the selected project.</p> : <ul>{citedBy.map((r) => <li key={r.id}>{r.title}</li>)}</ul>}
       </DialogContent>
     </Dialog>
+      <DocumentDialog docId={docOpen} onClose={() => setDocOpen(null)} />
+    </>
   )
 }

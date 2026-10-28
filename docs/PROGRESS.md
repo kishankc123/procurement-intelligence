@@ -185,6 +185,11 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - The Projects and Tools menus are now non-modal (`modal={false}`), so a click on the page while one is open closes it and still reaches what was clicked.
 - Not changed: on narrow screens (720px and below) the open filter rail is a drawer, and a click on the page still closes it by design.
 
+## Block 37: documents open full screen (step 2)
+- New `DocumentDialog` in `@pi/domain`: a document opens full screen with a title bar (document icon, title, type and ID, Close), a page-style card with type, date, pages, project, parse status and source chip, then its text grouped by section with page numbers (paged, 4 sections per page). A document with no chunks (pending or failed parse) shows "No text to show" with the parse status; nothing is estimated.
+- Knowledge base: the split "Document detail" card is gone. Documents is one full-width, paged, scrolling table whose rows are a document icon tile plus title and ID (not a button), with a type column, date, pages and a coloured parse badge. Clicking a row opens the dialog. Search and type filter share one row.
+- Evidence drawer: the document name is a link that opens the same full-screen document (`DocumentDialog` is used from `SourceDrawer`).
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

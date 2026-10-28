@@ -23,3 +23,14 @@
 .planPick select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); color: var(--text); }
 .stack { display: grid; gap: 14px; min-width: 0; }
 .stack h3 { font-size: 14px; font-weight: 600; }
+
+/* A document in a list: icon tile plus title, so it reads as a document and not a plain button. */
+.docRow { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 6px; margin: -4px -6px; border-radius: var(--radius-ctl); }
+.docRow:hover { background: var(--selected); }
+.docRow:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.docIcon { display: grid; place-items: center; width: 32px; height: 38px; border-radius: 6px; background: var(--cite-bg); color: var(--cite-fg); flex-shrink: 0; }
+.docText { display: grid; gap: 1px; min-width: 0; }
+.docText strong { color: var(--link); font-weight: 600; }
+.filterRow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.filterRow input { flex: 1 1 240px; }
+.filterRow > :last-child { flex: 0 0 200px; }
