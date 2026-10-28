@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { useAmendments, useChunks, useContracts, useDocs, useEnrichments, usePlan, useRecommendations, useReports, useUiStore, type Citation } from '@pi/data'
+import { useAllContracts, useAmendments, useChunks, useContractMilestones, useDocs, useEnrichments, usePlan, useRecommendations, useReports, useUiStore, type Citation } from '@pi/data'
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@pi/ui'
 import styles from './SourceDrawer.module.css'
 
@@ -15,9 +15,10 @@ export function SourceDrawer({ citation, onClose }: Props) {
   const amendments = useAmendments().data ?? []
   const reports = useReports(projectId).data ?? []
   const plans = usePlan(projectId).data ?? []
-  const contracts = (useContracts(projectId).data ?? []).map((c) => ({ ...c, id: c.borrower_contract_reference_number }))
+  const milestones = useContractMilestones().data ?? []
+  const contracts = (useAllContracts().data ?? []).map((c) => ({ ...c, id: c.borrower_contract_reference_number }))
   const record: Record<string, unknown> | undefined = citation?.ref_type === 'record'
-    ? [...enrichments, ...amendments, ...reports, ...plans, ...contracts].find((r) => r.id === citation.ref_id)
+    ? [...enrichments, ...amendments, ...reports, ...plans, ...contracts, ...milestones].find((r) => r.id === citation.ref_id)
     : undefined
 
   const chunk = citation?.ref_type === 'chunk' ? chunks.find((c) => c.chunk_id === citation.ref_id) : undefined

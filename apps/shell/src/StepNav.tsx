@@ -17,8 +17,9 @@ export function StepNav() {
   const current = LIFECYCLE_STEPS.find((s) => s.to === pathname)
   const platform = PLATFORM_AREAS.find((a) => a.to === pathname)
   const hovered = LIFECYCLE_STEPS.find((s) => s.id === hoverId)
-  const title = hovered?.label ?? current?.label ?? platform?.label ?? 'ProcureIntel'
-  const eyebrow = hovered ? 'Go to' : current ? 'Lifecycle step' : 'Platform tool'
+  const overview = pathname === '/project'
+  const title = hovered?.label ?? current?.label ?? platform?.label ?? (overview ? 'Project overview' : 'ProcureIntel')
+  const eyebrow = hovered ? 'Go to' : current ? 'Lifecycle step' : overview ? 'Project' : 'Platform tool'
 
   return (
     <nav className={styles.bar} aria-label="Lifecycle steps">

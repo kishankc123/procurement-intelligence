@@ -19,7 +19,7 @@
 .panelTitle { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin-top: -30px; margin-bottom: 4px; }
 
 /* Sticky top bar with only the brand, centred. */
-.top { position: sticky; top: 0; z-index: 20; display: flex; justify-content: center; padding: 12px 24px; background: var(--bg); }
+.top { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; justify-content: center; padding: 12px 24px; background: var(--bg); }
 .brand { font-size: 17px; font-weight: 600; color: var(--text); text-decoration: none; }
 .brand:hover { color: var(--link); }
 .banner { background: var(--banner-bg); border-bottom: 1px solid var(--banner-border); padding: 8px 24px; font-size: 13px; }
@@ -41,3 +41,11 @@
   .layoutRailOpen .main { transform: translateX(min(288px, 86vw)); }
   .railOpen .scrim { display: block; position: fixed; inset: 0; z-index: -1; border: 0; padding: 0; background: rgba(0, 0, 0, .35); cursor: default; }
 }
+
+.topNav { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+/* Plain-text menu triggers: they look like links but open a dropdown. */
+.navTrigger { background: none; border: 0; padding: 6px 4px; font: inherit; font-weight: 500; color: var(--text); cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+.navTrigger:hover { text-decoration: underline; }
+.navTrigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.aiLink { padding: 6px 16px; border-radius: var(--radius-ctl); background: var(--primary); color: var(--on-solid); text-decoration: none; font-weight: 500; white-space: nowrap; }
+.aiLink:hover { filter: brightness(0.92); }

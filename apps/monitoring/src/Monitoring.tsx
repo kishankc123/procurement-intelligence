@@ -6,6 +6,7 @@ import {
 } from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
+import { ScheduleCard } from './ScheduleCard'
 import styles from './Monitoring.module.css'
 
 function AssignControl({ alertId, current }: { alertId: string; current: string | null }) {
@@ -166,6 +167,8 @@ export default function Monitoring() {
       <Card title="Disbursement vs. time elapsed" aside={<ProvenanceChip kind="public" detail="one point per report" />}>
         {points.length < 2 ? <EmptyState title="Needs at least 2 supervision reports" text={`${points.length} available.`} /> : <DisbursementChart points={points} />}
       </Card>
+
+      <ScheduleCard project={project} />
 
       <Card title="Early-warning board" aside={<span className={styles.sub}>every flag shows where it comes from</span>}>
         {alerts.length === 0 ? <EmptyState title="No alerts for this selection" text="Signals appear when supervision ratings change or approved entered data crosses a rule." /> : alerts.map((a) => (

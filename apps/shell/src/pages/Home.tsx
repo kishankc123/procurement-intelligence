@@ -116,7 +116,7 @@ export function Home() {
           <EmptyState title="No projects found" text="Add a project to mock/db.json and run pnpm reset-db." />
         ) : (
           <TableScroll><table className={styles.table}>
-            <caption className={styles.caption}>Select a project here, or scroll the wheel in the donut, to open its four lifecycle steps.</caption>
+            <caption className={styles.caption}>Click a project name to open its overview, or scroll the wheel in the donut to open its four lifecycle steps.</caption>
             <thead>
               <tr><th scope="col">Project</th><th scope="col">Country</th><th scope="col">Sector</th><th scope="col">Region</th></tr>
             </thead>
@@ -124,7 +124,7 @@ export function Home() {
               {(projects.data ?? []).map((p) => (
                 <tr key={p.project_id} className={p.project_id === selectedId ? styles.selected : undefined} onClick={() => setProject(p.project_id)}>
                   <td>
-                    <button type="button" className={styles.rowButton} aria-pressed={p.project_id === selectedId}>
+                    <button type="button" className={styles.rowButton} aria-pressed={p.project_id === selectedId} title="Open project overview" onClick={(e) => { e.stopPropagation(); setProject(p.project_id); navigate('/project') }}>
                       <span className={`${styles.id} mono`}>{p.project_id}</span> {p.project_name}
                     </button>
                   </td>

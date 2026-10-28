@@ -209,3 +209,43 @@ export const Conflict = z.object({
   entered_ref: z.string(),
 })
 export type Conflict = z.infer<typeof Conflict>
+
+export const SourceLink = z.object({
+  id: z.string(), project_id: z.string(), url: z.string(), host: z.string(),
+  reachability: z.enum(['reachable', 'unreachable']), checked_at: z.string(),
+  publisher: z.string().nullable(), kind: z.string().nullable(), added_by_role: RoleSchema,
+})
+export type SourceLink = z.infer<typeof SourceLink>
+
+export const IngestionStep = z.object({
+  id: z.string(), label: z.string(), status: z.enum(['done', 'failed', 'skipped', 'planned']), detail: z.string(),
+})
+export type IngestionStep = z.infer<typeof IngestionStep>
+
+export const IngestionRun = z.object({
+  id: z.string(), project_id: z.string(), link_id: z.string(), ran_at: z.string(),
+  simulated: z.literal(true), steps: z.array(IngestionStep),
+})
+export type IngestionRun = z.infer<typeof IngestionRun>
+
+export const SCHEDULE_GROUPS = ['Procurement', 'Works', 'Supplies', 'Manpower', 'Milestone'] as const
+export const ScheduleItem = z.object({
+  id: z.string(), project_id: z.string(), name: z.string(), group: z.enum(SCHEDULE_GROUPS),
+  start: date, end: date, // a milestone has start equal to end
+  progress_pct: z.number().nullable(),
+})
+export type ScheduleItem = z.infer<typeof ScheduleItem>
+
+export const TenderRecord = z.object({
+  id: z.string(), project_id: z.string(), name: z.string(),
+  status: z.enum(['awarded', 'cancelled', 're_tendered']),
+  date: date.nullable(), reason: z.string().nullable(),
+  contract_ref: z.string().nullable(), replaces: z.string().nullable(),
+  citation: Citation.nullable(),
+})
+export type TenderRecord = z.infer<typeof TenderRecord>
+
+export const ContractMilestone = z.object({
+  id: z.string(), contract_ref: z.string(), name: z.string(), planned_date: date, actual_date: date.nullable(),
+})
+export type ContractMilestone = z.infer<typeof ContractMilestone>

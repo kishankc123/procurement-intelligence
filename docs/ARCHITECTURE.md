@@ -15,7 +15,7 @@ Front-end-only demo of a Procurement Intelligence platform on a mocked backend. 
  │   lazy(import('planning/Planning'))   lazy(import('monitoring/Monitoring'))
  └───────────┬───────────────────────────────────┬──────────────┘
              │ fetch remoteEntry.js              │ fetch remoteEntry.js
-   ┌─────────▼─────────┐               ┌─────────▼─────────┐        LEARNING :5176 (same pattern)
+   ┌─────────▼─────────┐               ┌─────────▼─────────┐        LEARNING :5176, AI :5177 (same pattern)
    │ PLANNING  :5174   │               │ MONITORING :5175  │
    │ exposes ./Planning│               │ exposes ./Monitoring
    └─────────┬─────────┘               └─────────┬─────────┘
@@ -104,6 +104,7 @@ Contract manager enters REF-004 end date (Project data) → `enrichments` row, s
 | planning | 5174 | `pnpm --filter @pi/planning dev` |
 | monitoring | 5175 | `pnpm --filter @pi/monitoring dev` |
 | learning | 5176 | `pnpm --filter @pi/learning dev` |
+| ai (Work with AI) | 5177 | `pnpm --filter @pi/ai dev` |
 
 Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`. Demo build: `pnpm demo` (build + `vite preview` on the same ports).
 
@@ -132,3 +133,11 @@ Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`. Demo build: `pnpm demo
 - No real auth; roles are a demo switcher.
 - Project data and Tender design live in the shell rather than remotes (2-day scope).
 - `pnpm test` covers the selectors only; there is no Playwright test.
+
+## 12. The AI remote
+
+`apps/ai` (port 5177, federation name `ai`) exposes only `./WorkWithAI`. The shell lazy-loads it behind a `RemoteBoundary`, so if the AI remote is down, `/work-with-ai` shows "Work with AI could not load" and every other screen keeps working (checked by stopping :5177 alone). `pnpm preview` and `pnpm dev` use `--no-bail`, so one remote stopping does not stop the others. The page reads shared data through `@pi/data` hooks and the pure selectors in `ai.ts`, `retender.ts` and `spec.ts`; it owns no state of its own. Suppliers stays a shell page. The project schedule (Gantt) is a card inside the Monitoring remote (`apps/monitoring/src/ScheduleCard.tsx`); the old `/schedule` URL redirects to `/monitoring`. The top-bar button always reads "Work with AI". The page opens on a list of projects; selecting one sets the shared project (`setProject`) and shows the AI layers for it, with a Change project button to go back to the list.
+
+## 13. Project overview
+
+`/project` (shell page) summarises the selected project from Planning, Tender design, Monitoring and Learning data, with a link to each section. Plans, draft clauses and contract data readiness come from `@pi/data` hooks and selectors; the schedule is `monitoring/ScheduleCard`, exposed by the Monitoring remote and loaded behind a `RemoteBoundary`, so the Gantt chart has one implementation. Clicking a project name (Home table or Projects menu) sets the shared project and opens this page.

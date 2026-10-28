@@ -88,8 +88,8 @@ const median = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math
 const signed = (n: number, unit: string) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(n).toLocaleString('en-US')} ${unit}`
 
 /** Evaluation method that fits each procurement method. A stated rule, shown in the UI as the basis. */
-const EXPECTED_EVALUATION: Record<string, string> = { 'Quality-based': 'Quality and cost based' }
-const DEFAULT_EVALUATION = 'Lowest evaluated price'
+export const EXPECTED_EVALUATION: Record<string, string> = { 'Quality-based': 'Quality and cost based' }
+export const DEFAULT_EVALUATION = 'Lowest evaluated price'
 
 /**
  * Tender draft vs. the plan it belongs to and vs. benchmarks from contract data.
