@@ -5,6 +5,7 @@ import { writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { fiscalYearOf } from '../packages/config/src/index'
 import { buildCountryYears } from './import-gppd'
+import * as X from './seed-extra'
 
 const P = 'P-MOCK-001'
 const contractRows: [string, string, string, string, number, string][] = [
@@ -45,7 +46,7 @@ const otherContracts = otherRows.map(([ref, sup, project, cat, method, amt, sign
   supplier_contract_amount_usd: amt, contract_signing_date: signed, fiscal_year: fiscalYearOf(signed),
   contract_description: `Mock ${cat.toLowerCase()} package for ${project}`,
 }))
-const allContracts = [...contracts, ...otherContracts]
+const allContracts = [...contracts, ...otherContracts, ...X.extraContracts]
 
 // Approved changes after signing, and milestones with planned and actual dates (mock history).
 const amd = (n: number, ref: string, type: string, date: string, days: number, value: number, reason: string) => ({
@@ -163,7 +164,7 @@ const db = {
     approval_date: '2025-05-22', effectiveness_planned: '2025-09-15', effectiveness_actual: null,
     closing_date_planned: '2030-03-31', closing_date_revised: null,
   }],
-  contracts: allContracts, enrichments, amendments: amendmentRows, contract_milestones: milestoneRows,
+  contracts: allContracts, enrichments: [...enrichments, ...X.extraEnrichments], amendments: [...amendmentRows, ...X.extraAmendments], contract_milestones: [...milestoneRows, ...X.extraMilestones],
   // Future tenders this project team is preparing to run (dates are after as_of_date). Entered by the planner.
   plans: [
     { id: `PLAN-${P}-1`, project_id: P, name: 'Road resurfacing works, Lot 3', planned_advertisement: '2026-06-15', planned_bid_opening: '2026-07-20',
@@ -172,19 +173,23 @@ const db = {
       planned_evaluation_complete: '2026-08-10', planned_signing: '2026-09-04', category: 'Goods', method: 'Shopping' },
     { id: `PLAN-${P}-3`, project_id: P, name: 'Construction supervision consultancy', planned_advertisement: '2026-07-01', planned_bid_opening: '2026-08-12',
       planned_evaluation_complete: '2026-09-30', planned_signing: '2026-11-10', category: 'Consulting services', method: 'Quality-based' },
+    ...X.extraPlans,
   ],
   tender_drafts: [{ id: `TD-${P}`, project_id: P, duration_months: 18, bid_validity_days: 60, performance_security_pct: 10,
-    min_similar_contracts: 2, min_similar_value_usd: 2_000_000, evaluation_method: 'Lowest evaluated price' }],
-  supervision_reports, completion_reports, documents, chunks,
+    min_similar_contracts: 2, min_similar_value_usd: 2_000_000, evaluation_method: 'Lowest evaluated price' }, ...X.extraDrafts],
+  supervision_reports: [...supervision_reports, ...X.extraReports], completion_reports: [...completion_reports, ...X.extraCompletionReports],
+  documents: [...documents, ...X.extraDocuments], chunks: [...chunks, ...X.extraChunks],
   country_years: buildCountryYears(countries),
   // Illustrative placeholders: the Mock data label covers them. Replace with real WGI/CPIA before sharing outside the demo.
   governance: [
     { id: 'RO-2023', country: 'RO', year: 2023, wgi: { regulatory_quality: 68, government_effectiveness: 52, control_of_corruption: 55 }, cpia_16: null },
     { id: 'EE-2023', country: 'EE', year: 2023, wgi: { regulatory_quality: 90, government_effectiveness: 88, control_of_corruption: 90 }, cpia_16: null },
+    ...X.extraGovernance,
   ],
-  recommendations, alerts: [], feedback: [], audit_log: [],
+  recommendations, alerts: [], feedback: X.extraFeedback, audit_log: X.extraAuditLog,
   // Mock operational records for the Schedule page: running projects in different phases. Progress values are mock inputs, not measurements.
   schedule_items: [
+    ...X.extraSchedule,
     ...([
       ['Lot 1 earthworks (REF-001)', 'Works', '2025-10-20', '2026-09-30', 38],
       ['Bridge works (REF-002)', 'Works', '2025-11-18', '2026-12-15', 30],
@@ -210,6 +215,7 @@ const db = {
   ],
   // Mock record of earlier tenders across projects, so a new tender can be checked against them. Cancelled and re-tendered ones carry the reason.
   tender_history: [
+    ...X.extraTenderHistory,
     { id: 'TND-MOCK-001', project_id: P, name: 'Lot 1 earthworks and drainage', status: 'awarded', date: '2025-10-20', reason: null, contract_ref: 'REF-001', replaces: null,
       citation: { ref_type: 'record', ref_id: 'REF-001', label: 'Contract REF-001' } },
     { id: 'TND-MOCK-002', project_id: P, name: 'Bridge works', status: 'awarded', date: '2025-11-18', reason: null, contract_ref: 'REF-002', replaces: null,
@@ -223,12 +229,13 @@ const db = {
     { id: 'TND-MOCK-007', project_id: 'P-MOCK-002', name: 'Pipe supply tender', status: 'cancelled', date: '2026-03-12', reason: 'No compliant bids were received (mock record).', contract_ref: null, replaces: null, citation: null },
     { id: 'TND-MOCK-008', project_id: 'P-MOCK-002', name: 'Pipe supply tender (re-issued)', status: 're_tendered', date: '2026-04-15', reason: 'Re-issued after the first tender was cancelled.', contract_ref: null, replaces: 'TND-MOCK-007', citation: null },
   ],
-  source_links: [], ingestion_runs: [],
+  source_links: X.extraSourceLinks, ingestion_runs: X.extraIngestionRuns,
   sources: [
     { id: 'SRC-MOCK-1', name: 'Mock contract awards extract', publisher: 'Mock registry', kind: 'Contract awards', status: 'registered', last_fetched: null, simulated: false },
     { id: 'SRC-MOCK-2', name: 'Mock supervision reports (ISR)', publisher: 'Mock registry', kind: 'Supervision reports', status: 'registered', last_fetched: null, simulated: false },
     { id: 'SRC-MOCK-3', name: 'Mock completion reports (ICR)', publisher: 'Mock registry', kind: 'Completion reports', status: 'registered', last_fetched: null, simulated: false },
     { id: 'SRC-GPPD', name: 'GPPD country profiles (local file)', publisher: 'gppd_data.json supplied by K', kind: 'Country indicators', status: 'registered', last_fetched: null, simulated: false },
+    ...X.extraSources,
   ],
   conflicts: [{
     id: 'CNF-MOCK-1', project_id: P, type: 'Public vs entered date', subject: 'REF-002 advertised after it was signed',
