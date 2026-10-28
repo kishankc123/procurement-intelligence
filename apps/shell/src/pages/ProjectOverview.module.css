@@ -1,0 +1,12 @@
+.page { display: grid; gap: 16px; min-width: 0; }
+.page h1 { font-size: 24px; }
+.sub { color: var(--muted); }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px 24px; margin: 0; }
+.facts dt { color: var(--muted); font-size: 12px; }
+.facts dd { margin: 0; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+.table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.more { display: flex; justify-content: flex-end; padding-top: 4px; }
+.stack { display: grid; gap: 12px; min-width: 0; }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { THRESHOLDS } from '@pi/config'
 import {
@@ -16,7 +16,7 @@ const BADGE = { good: 'low', attention: 'medium', bad: 'high', neutral: 'neutral
  * The selected project's schedule inside Monitoring: tender rows from its plans plus mock operational items,
  * each flagged on track, behind or overdue against the data date. Owns only the selected-bar state.
  */
-export function ScheduleCard({ project }: { project: Project }) {
+export function ScheduleCard({ project, badge, footer }: { project: Project; badge?: ReactNode; footer?: ReactNode }) {
   const items = useScheduleItems()
   const plans = usePlan(project.project_id).data ?? []
   const asOf = useMeta().data?.as_of_date
@@ -31,7 +31,7 @@ export function ScheduleCard({ project }: { project: Project }) {
   const flagged = rows.filter((r) => r.status === 'behind' || r.status === 'overdue').length
 
   return (
-    <Card title="Project schedule" aside={<ProvenanceChip kind="derived" detail={`n=${rows.length}`} />}>
+    <Card title="Project schedule" aside={<span className={styles.row}>{badge}<ProvenanceChip kind="derived" detail={`n=${rows.length}`} /></span>}>
       <div className={styles.stack}>
         <p className={styles.sub}>
           Phase: <strong>{projectPhase(project, rows, asOf)}</strong> · {flagged} behind or overdue as of <span className="mono">{asOf}</span>. Tender rows come from your plans; works, supplies and manpower rows are <Badge>Mock</Badge> operational records.
@@ -82,7 +82,10 @@ export function ScheduleCard({ project }: { project: Project }) {
           <span>Was this schedule view useful?</span>
           <FeedbackWidget targetId={`AI-LAYER-schedule-${project.project_id}`} />
         </div>
+        {footer}
       </div>
     </Card>
   )
 }
+
+export default ScheduleCard

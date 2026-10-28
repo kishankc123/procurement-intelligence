@@ -113,12 +113,19 @@ Why: the assessment asks for ingestion of public data, linking structured record
 
 ## Block 19: AI remote and project-aware button (nothing committed)
 - Work with AI moved out of the shell into its own federated remote `apps/ai` (:5177, exposes `./WorkWithAI`, base `/remotes/ai/` on Vercel). The shell lazy-loads it behind `RemoteBoundary`. Verified: with only :5177 stopped, `/work-with-ai` shows an error card and Planning, Monitoring, Learning, Schedule and Suppliers still work. `run.sh`, `scripts/assemble-vercel.mjs`, the shell remote list and docs know about the fourth remote; root `dev` and `preview` use `pnpm -r --no-bail` so one failing remote no longer stops the rest (before this, stopping one preview server took all of them down).
-- The top-bar button reads "Work with AI" until a project is picked on purpose (donut wheel, projects table or filter), then "Work with AI on <project name>" (truncated with a tooltip on narrow screens). New store flag `projectChosen`.
+- (Superseded by Block 21: the button no longer shows a project name.)
 - Schedule and Suppliers remain shell pages.
 
 ## Block 20: schedule inside Monitoring, wrapped AI button (nothing committed)
 - The schedule moved into the Monitoring remote as a "Project schedule" card (`ScheduleCard`), after the disbursement chart, for whichever project is selected: phase, behind or overdue count, Gantt, detail strip and feedback. The shell Schedule page, its top-bar link and its Home table row are gone; `/schedule` redirects to `/monitoring`. The earlier cross-project table of phases went with the page.
 - The Work with AI button is two lines ("Work with AI", then "on <project>" in smaller text), wraps long names, keeps a 150px minimum width, and the top bar wraps so on a phone it drops to its own row.
+
+## Block 21: project list before the AI features (nothing committed)
+- The Work with AI button is plain again (no project name). `/work-with-ai` always opens on a Projects list inside the AI remote; Select sets the shared project and then shows the five layers for it, with Change project to return. The `projectChosen` store flag and the two-line button styles were removed as unused.
+
+## Block 22: Project overview page (nothing committed)
+- Clicking a project name opens `/project` ("Project overview") for it: from the Home projects table (name button, tooltip "Open project overview") and from the top-bar Projects menu. There is no separate overview link or menu item. The page shows a Project card (dates, phase) and four sections labelled "From <section>" with "View more in <section>" links: Plans (Planning), Draft clauses (Tender design), Project schedule (Monitoring), Contract data readiness (Learning, same stacked bars).
+- The schedule section is the same `ScheduleCard` Monitoring shows, including the Gantt chart: the Monitoring remote now exposes `./ScheduleCard` (optional `badge` and `footer` props) and the shell lazy-loads it behind a `RemoteBoundary`. If Monitoring is down, only that section shows an error card; the rest of the overview still loads (the other sections read shared data through `@pi/data`).
 
 ## Status of the screens
 | Screen | Where | State |
