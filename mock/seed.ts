@@ -108,6 +108,17 @@ const db = {
     region: 'Europe and Central Asia', project_global_practice: 'Transport',
     approval_date: '2024-09-15', effectiveness_planned: '2025-01-15', effectiveness_actual: '2025-03-15',
     closing_date_planned: '2027-12-31', closing_date_revised: '2028-06-30',
+  }, {
+    // Placeholder projects for the Home picker: no contracts or plans yet, so their pages show the missing-data states.
+    project_id: 'P-MOCK-002', project_name: 'Mock Rural Water Supply Program', borrower_country: 'Estonia', borrower_country_code: 'EE',
+    region: 'Europe and Central Asia', project_global_practice: 'Water',
+    approval_date: '2025-02-10', effectiveness_planned: '2025-06-01', effectiveness_actual: '2025-07-20',
+    closing_date_planned: '2029-06-30', closing_date_revised: null,
+  }, {
+    project_id: 'P-MOCK-003', project_name: 'Mock Urban Health Clinics Upgrade', borrower_country: 'Romania', borrower_country_code: 'RO',
+    region: 'Europe and Central Asia', project_global_practice: 'Health',
+    approval_date: '2025-05-22', effectiveness_planned: '2025-09-15', effectiveness_actual: null,
+    closing_date_planned: '2030-03-31', closing_date_revised: null,
   }],
   contracts, enrichments, amendments: [], contract_milestones: [],
   // Future tenders this project team is preparing to run (dates are after as_of_date). Entered by the planner.

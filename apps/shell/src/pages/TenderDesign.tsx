@@ -57,7 +57,8 @@ function ReferenceCell({ c }: { c: Comparison }) {
 export function TenderDesign() {
   const { projectId, fiscalYear } = useUiStore()
   const { role } = useCurrentUser()
-  const stored = useTenderDraft(projectId).data?.[0]
+  const storedQuery = useTenderDraft(projectId)
+  const stored = storedQuery.data?.[0]
   const plans = usePlan(projectId).data ?? []
   const [planId, setPlanId] = useState<string | null>(null)
   const plan = plans.find((p) => p.id === planId) ?? plans[0]
@@ -68,6 +69,13 @@ export function TenderDesign() {
   const [open, setOpen] = useState<Citation | null>(null)
   useEffect(() => setDraft(stored), [stored])
 
+  if (storedQuery.isSuccess && !stored) {
+    return (
+      <Card title="Draft clauses" aside={<ProvenanceChip kind="missing" />}>
+        <EmptyState title="No tender draft for this project yet" text="Tender clauses are entered by a planner once a draft exists. Nothing is estimated in the meantime." />
+      </Card>
+    )
+  }
   if (!draft || !stored) return <Card state="loading">{null}</Card>
   const allowed = can(role, 'edit_tender_draft')
   const changed = (k: keyof TenderDraft) => draft[k] !== stored[k]
