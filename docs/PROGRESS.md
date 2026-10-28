@@ -190,6 +190,9 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Knowledge base: the split "Document detail" card is gone. Documents is one full-width, paged, scrolling table whose rows are a document icon tile plus title and ID (not a button), with a type column, date, pages and a coloured parse badge. Clicking a row opens the dialog. Search and type filter share one row.
 - Evidence drawer: the document name is a link that opens the same full-screen document (`DocumentDialog` is used from `SourceDrawer`).
 
+## Block 38: supplier icons (step 3)
+- New `SupplierName` in `@pi/ui`: a very small round organization icon (12px in an 18px circle) before a supplier name. All suppliers get the same icon because the public record has no person type; no data change. Used in the Suppliers list and the Project data contracts table.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

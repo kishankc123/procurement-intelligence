@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { THRESHOLDS } from '@pi/config'
 import { supplierProfiles, useAllContracts, useAmendments, useContractMilestones, useUiStore, type Citation, type SupplierProfile } from '@pi/data'
-import { Badge, Card, EmptyState, ProvenanceChip, TableScroll, Paged } from '@pi/ui'
+import { Badge, Card, EmptyState, ProvenanceChip, SupplierName, TableScroll, Paged } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './Suppliers.module.css'
 
@@ -46,7 +46,7 @@ export function Suppliers() {
               <tbody>
                 {pageRows.map((p) => (
                   <tr key={p.supplierId} className={`${styles.clickable} ${p.supplierId === selected?.supplierId ? styles.selected : ''}`} onClick={() => setPickedId(p.supplierId === pickedId ? null : p.supplierId)}>
-                    <td><button type="button" className={styles.pick} aria-pressed={p.supplierId === pickedId}>{p.name}<br /><span className="mono">{p.supplierId}</span></button></td>
+                    <td><button type="button" className={styles.pick} aria-pressed={p.supplierId === pickedId}><SupplierName name={p.name} /><span className={`mono ${styles.pickId}`}>{p.supplierId}</span></button></td>
                     <td className="mono">{p.contracts.length}</td>
                     <td className="mono">{p.projects.length}</td>
                     <td className="mono">{usd(p.committedUsd)}</td>
