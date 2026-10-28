@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fiscalYearOf } from '@pi/config'
-import { deriveAlerts, gate, tenderComparison, tenderCoverage, type Contract, type Enrichment, type Plan, type Project, type SupervisionReport, type TenderDraft } from './index'
+import { dataReadiness, deriveAlerts, gate, tenderComparison, tenderCoverage, type Contract, type Enrichment, type Plan, type Project, type SupervisionReport, type TenderDraft } from './index'
 
 const contract = (ref: string): Contract => ({
   borrower_contract_reference_number: ref, wb_contract_number: 'W', project_id: 'P', supplier: 's', supplier_id: 'i', supplier_country: 'c',
@@ -45,6 +45,52 @@ describe('tenderComparison', () => {
   })
   it('flags an evaluation method that does not fit the plan method', () => {
     expect(row(60, 'evaluation_method').comparisons[0]?.verdict?.tone).toBe('attention')
+  })
+})
+
+describe('dataReadiness', () => {
+  const at = (n: number) => ({ entered_at: `2026-01-0${n}T00:00:00Z` })
+  const e = (ref: string, field: Enrichment['field'], value: string, status: Enrichment['status'], n = 1): Enrichment => ({ ...enr(ref, status, field, value), id: `E-${ref}-${field}-${status}-${n}`, ...at(n) })
+  const cs = [contract('A'), contract('B'), contract('C'), contract('D'), contract('E')]
+  const row = (field: string, es: Enrichment[], contracts = cs) => dataReadiness(contracts, es).rows.find((r) => r.field === field)!
+
+  it('classifies usable, pending, invalid and missing, counting each contract once', () => {
+    const r = row('bid_validity_days', [
+      e('A', 'bid_validity_days', '90', 'approved'),
+      e('B', 'bid_validity_days', '60', 'pending'),
+      e('C', 'bid_validity_days', '0', 'approved'),       // approved but not a positive number
+      e('D', 'bid_validity_days', '45', 'rejected'),      // rejected entries do not count as present
+    ])
+    expect([r.usable, r.pending, r.invalid, r.missing]).toEqual([1, 1, 1, 2])
+    expect(r.usable + r.pending + r.invalid + r.missing).toBe(cs.length)
+  })
+
+  it('uses the latest approved value, and a pending entry never counts as usable', () => {
+    const fixed = row('bid_validity_days', [e('A', 'bid_validity_days', '0', 'approved', 1), e('A', 'bid_validity_days', '90', 'approved', 2)])
+    expect(fixed.usable).toBe(1)
+    const waiting = row('bid_validity_days', [e('A', 'bid_validity_days', '0', 'approved', 1), e('A', 'bid_validity_days', '90', 'pending', 2)])
+    expect([waiting.usable, waiting.pending, waiting.invalid]).toEqual([0, 1, 0])
+  })
+
+  it('needs a valid end date after the public signing date for duration', () => {
+    const r = row('contract_end_date', [
+      e('A', 'contract_end_date', '2027-01-01', 'approved'),   // after signing 2026-01-01
+      e('B', 'contract_end_date', '2025-06-01', 'approved'),   // before signing
+      e('C', 'contract_end_date', 'not a date', 'approved'),
+      e('D', 'contract_end_date', '2027-01-01', 'pending'),
+    ])
+    expect([r.usable, r.invalid, r.pending, r.missing]).toEqual([1, 2, 1, 1])
+  })
+
+  it('ignores entries for contracts outside the given population', () => {
+    const r = row('bid_validity_days', [e('ZZ', 'bid_validity_days', '90', 'approved')], [contract('A')])
+    expect([r.usable, r.missing]).toEqual([0, 1])
+  })
+
+  it('handles no contracts with zero counts', () => {
+    const out = dataReadiness([], [e('A', 'bid_validity_days', '90', 'approved')])
+    expect(out.eligible).toBe(0)
+    for (const r of out.rows) expect([r.usable, r.pending, r.invalid, r.missing]).toEqual([0, 0, 0, 0])
   })
 })
 

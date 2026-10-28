@@ -64,6 +64,10 @@ Other commands: `pnpm reset-db`, `pnpm typecheck`, `pnpm test` (7 selector tests
 - `run.sh`: one command to free the ports, reset data, build and start everything.
 - Git: history rewritten earlier to remove the Claude co-author trailer (remote has none); a stale `rebase-merge` state left over from that was cleared with `git rebase --quit`. `main` matches `origin/main`.
 
+## Block 11: Learning contract data readiness chart, done (nothing committed)
+- Learning has a "Contract data readiness" card above the coverage table: horizontal stacked bars (usable, pending review, not usable, missing) per entered field that Tender design or Monitoring reads (bid validity, contract end date), on one zero-based count axis with the common denominator (contracts in the selected project and fiscal year, the same population as the coverage table). Counts are always visible as text; a screen-reader table and per-bar labels are included. Non-interactive (no reliable field/status filter exists in Project data).
+- `dataReadiness` in `packages/data/src/selectors.ts` does the counting; `bidValidityDays` and `contractDurationMonths` are the shared validity rules, now also used by `tenderComparison`, so benchmark and chart cannot disagree. `StackedBars` in `@pi/ui` is presentational only. No new dependencies, no data-model or seed changes. 12 tests pass.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

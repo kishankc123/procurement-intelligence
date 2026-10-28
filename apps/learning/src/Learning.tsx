@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { THRESHOLDS, can, whyDisabled } from '@pi/config'
 import {
-  feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
+  dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
   tenderCoverage,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars } from '@pi/ui'
 import styles from './Learning.module.css'
 
 const STATUS_TONE = { new: 'medium', accepted: 'low', rejected: 'high', edited: 'neutral' } as const
@@ -22,8 +22,10 @@ export default function Learning() {
   const feedback = useFeedback()
   const recs = useRecommendations(projectId).data ?? []
   const audit = useAuditLog().data ?? []
-  const contracts = useContracts(projectId).data ?? []
-  const enrichments = useEnrichments().data ?? []
+  const contractsQuery = useContracts(projectId)
+  const contracts = contractsQuery.data ?? []
+  const enrichmentsQuery = useEnrichments()
+  const enrichments = enrichmentsQuery.data ?? []
   const review = useReviewFeedback()
   const [editing, setEditing] = useState<string | null>(null)
   const [reason, setReason] = useState('')
@@ -36,6 +38,10 @@ export default function Learning() {
   const allowed = can(role, 'review_feedback')
   const reason_ = allowed ? undefined : whyDisabled('review_feedback')
   const fiscalYears = [...new Set(contracts.map((c) => c.fiscal_year))].filter((fy) => fy === fiscalYear)
+  // Same population as the coverage table below: this project's contracts in the selected fiscal year.
+  const inYear = contracts.filter((c) => c.fiscal_year === fiscalYear)
+  const readiness = dataReadiness(inYear, enrichments)
+  const readinessState = contractsQuery.isError || enrichmentsQuery.isError ? 'error' : contractsQuery.isLoading || enrichmentsQuery.isLoading ? 'loading' : 'ready'
   const titleOf = (id: string) => recs.find((r) => r.id === id)?.title ?? id
 
   return (
@@ -83,6 +89,35 @@ export default function Learning() {
               ))}
             </tbody>
           </table>
+        )}
+      </Card>
+
+      <Card title="Contract data readiness" aside={<ProvenanceChip kind="derived" detail={`n=${readiness.eligible}`} />} state={readinessState}>
+        {readiness.eligible === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the top bar." /> : (
+          <div className={styles.stack}>
+            <p className={styles.sub}>
+              {readiness.eligible} contracts in FY{fiscalYear}. Each bar shows how many have a usable value for a field that Tender design or Monitoring reads.
+              This is data-entry status only, not risk or performance.
+            </p>
+            <StackedBars
+              title="Contract data readiness"
+              total={readiness.eligible}
+              unit="contracts"
+              bars={readiness.rows.map((r) => ({
+                id: r.field, label: r.label, detail: `Used by: ${r.usedBy}`,
+                segments: [
+                  { key: 'usable', label: 'Usable', value: r.usable, tone: 'good' },
+                  { key: 'pending', label: 'Pending review', value: r.pending, tone: 'pending' },
+                  { key: 'invalid', label: 'Not usable', value: r.invalid, tone: 'bad' },
+                  { key: 'missing', label: 'Missing', value: r.missing, tone: 'missing' },
+                ],
+              }))}
+            />
+            <p className={styles.sub}>
+              Usable means the latest approved entry passes the rule the comparison uses (bid validity above 0 days; an end date after the signing date).
+              Not usable is an approved entry that fails that rule. Pending entries are not counted as usable. The coverage table below counts a contract once any field has an approved entry, so its total can be higher than these bars.
+            </p>
+          </div>
         )}
       </Card>
 

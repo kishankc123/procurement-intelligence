@@ -13,3 +13,4 @@
 .actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .actions input { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
 .table td { vertical-align: top; }
+.stack { display: grid; gap: 14px; min-width: 0; }

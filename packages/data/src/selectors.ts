@@ -1,7 +1,7 @@
 // Pure functions over API data. No React, no fetch: easy to test and to explain.
 import { THRESHOLDS } from '@pi/config'
 import type {
-  Amendment, AlertState, Citation, Contract, CountryYear, Enrichment, Feedback, Plan, SupervisionReport, TenderDraft, Project,
+  Amendment, AlertState, Citation, Contract, CountryYear, Enrichment, EnrichmentField, Feedback, Plan, SupervisionReport, TenderDraft, Project,
 } from './schemas'
 
 const DAY = 86_400_000
@@ -51,6 +51,19 @@ export function tenderCoverage(contracts: Contract[], enrichments: Enrichment[])
 export type Tone = 'ok' | 'attention' | 'info'
 
 /** One thing a draft clause is compared against, with the numbers needed to check it. */
+/** A usable bid validity is a positive number of days. Shared by the tender benchmark and the readiness counts. */
+export function bidValidityDays(value: string | undefined): number | null {
+  const n = Number(value)
+  return value !== undefined && value !== '' && Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** Contract duration needs the public signing date and a valid entered end date after it. Returns months, or null. */
+export function contractDurationMonths(contract: Contract, endDate: string | undefined): number | null {
+  if (!endDate) return null
+  const months = Math.round(dayDiff(contract.contract_signing_date, endDate) / 30.4)
+  return Number.isFinite(months) && months > 0 ? months : null
+}
+
 export interface Comparison {
   against: string                       // e.g. "Your plan", "Entered contracts (median)"
   provenance: 'entered' | 'public' | 'derived'
@@ -89,14 +102,8 @@ export function tenderComparison(draft: TenderDraft, plan: Plan | undefined, con
   const planCite: Citation[] = plan ? [{ ref_type: 'record', ref_id: plan.id, label: `Plan · ${plan.name}` }] : []
   const noPlan = 'Choose a plan to compare with.'
 
-  const validity = contracts
-    .map((c) => Number(approved.get(`${c.borrower_contract_reference_number}:bid_validity_days`)))
-    .filter((v) => Number.isFinite(v) && v > 0)
-  const durations = contracts.flatMap((c) => {
-    const end = approved.get(`${c.borrower_contract_reference_number}:contract_end_date`)
-    const months = end ? Math.round(dayDiff(c.contract_signing_date, end) / 30.4) : NaN
-    return Number.isFinite(months) && months > 0 ? [months] : []
-  })
+  const validity = contracts.flatMap((c) => bidValidityDays(approved.get(`${c.borrower_contract_reference_number}:bid_validity_days`)) ?? [])
+  const durations = contracts.flatMap((c) => contractDurationMonths(c, approved.get(`${c.borrower_contract_reference_number}:contract_end_date`)) ?? [])
   const sameCategory = plan ? contracts.filter((c) => c.procurement_category === plan.category).map((c) => c.supplier_contract_amount_usd) : []
 
   const benchmark = (against: string, provenance: Comparison['provenance'], basis: string, values: number[], draftValue: number, unit: string, wording: string): Comparison => {
@@ -166,6 +173,44 @@ export function tenderComparison(draft: TenderDraft, plan: Plan | undefined, con
     { id: 'similar_count', label: 'Minimum similar contracts', draft: String(draft.min_similar_contracts), comparisons: [noSource('how many similar contracts bidders usually hold')] },
     { id: 'security', label: 'Performance security (%)', draft: String(draft.performance_security_pct), comparisons: [noSource('performance security percentages')] },
   ]
+}
+
+export interface ReadinessRow {
+  field: EnrichmentField
+  label: string
+  usedBy: string
+  usable: number    // latest approved entered value that passes the rule the comparison uses
+  pending: number   // no usable approved value, an entry is waiting for review
+  invalid: number   // approved value exists but fails the rule, and nothing is pending
+  missing: number   // no approved or pending entry (rejected entries do not count)
+}
+
+/**
+ * Contract data readiness: for each entered field that Tender design or Monitoring uses, how many of the
+ * given contracts have a usable value. Each contract is counted once per field, so
+ * usable + pending + invalid + missing equals the number of contracts for every row.
+ * Contract awards hold neither field publicly, so there is no public-vs-entered precedence to resolve.
+ */
+export function dataReadiness(contracts: Contract[], enrichments: Enrichment[]): { eligible: number; rows: ReadinessRow[] } {
+  const approved = approvedValues(enrichments)
+  const pending = new Set(enrichments.filter((e) => e.status === 'pending').map((e) => `${e.contract_ref}:${e.field}`))
+  const rules: { field: EnrichmentField; label: string; usedBy: string; usable: (c: Contract, v: string | undefined) => boolean }[] = [
+    { field: 'bid_validity_days', label: 'Bid validity (days)', usedBy: 'Tender design benchmark', usable: (_c, v) => bidValidityDays(v) !== null },
+    { field: 'contract_end_date', label: 'Contract end date', usedBy: 'Tender design duration benchmark and Monitoring past-end alert', usable: (c, v) => contractDurationMonths(c, v) !== null },
+  ]
+  const rows = rules.map((rule): ReadinessRow => {
+    const row: ReadinessRow = { field: rule.field, label: rule.label, usedBy: rule.usedBy, usable: 0, pending: 0, invalid: 0, missing: 0 }
+    for (const c of contracts) {
+      const key = `${c.borrower_contract_reference_number}:${rule.field}`
+      const value = approved.get(key)
+      if (value !== undefined && rule.usable(c, value)) row.usable++
+      else if (pending.has(key)) row.pending++
+      else if (value !== undefined) row.invalid++
+      else row.missing++
+    }
+    return row
+  })
+  return { eligible: contracts.length, rows }
 }
 
 export interface DerivedAlert {
