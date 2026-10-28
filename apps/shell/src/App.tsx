@@ -1,5 +1,5 @@
 import { lazy, useState } from 'react'
-import { Link, Route, Routes } from 'react-router'
+import { Link, Navigate, Route, Routes } from 'react-router'
 import { FISCAL_YEARS, ROLES, fiscalYearLabel, type Role } from '@pi/config'
 import { Select } from '@pi/ui'
 import { useMeta, useProjects, useUiStore } from '@pi/data'
@@ -10,7 +10,6 @@ import { ProjectData } from './pages/ProjectData'
 import { TenderDesign } from './pages/TenderDesign'
 import { Knowledge } from './pages/Knowledge'
 import { Evidence } from './pages/Evidence'
-import { Schedule } from './pages/Schedule'
 import { Suppliers } from './pages/Suppliers'
 import styles from './App.module.css'
 
@@ -64,8 +63,13 @@ function FilterRail({ open, onOpenChange }: { open: boolean; onOpenChange: (open
 function AiLink() {
   const { projectId, projectChosen } = useUiStore()
   const name = useProjects().data?.find((p) => p.project_id === projectId)?.project_name
-  const label = projectChosen && name ? `Work with AI on ${name}` : 'Work with AI'
-  return <Link to="/work-with-ai" className={styles.aiLink} title={label}>{label}</Link>
+  const on = projectChosen && name ? name : null
+  return (
+    <Link to="/work-with-ai" className={styles.aiLink} title={on ? `Work with AI on ${on}` : 'Work with AI'}>
+      <span className={styles.aiMain}>Work with AI</span>{' '}
+      {on && <span className={styles.aiOn}>on {on}</span>}
+    </Link>
+  )
 }
 
 export function App() {
@@ -79,7 +83,6 @@ export function App() {
         <header className={styles.top}>
           <Link to="/" className={styles.brand}>ProcureIntel</Link>
           <Link to="/suppliers" className={styles.navLink}>Suppliers</Link>
-          <Link to="/schedule" className={styles.navLinkNext}>Schedule</Link>
           <AiLink />
         </header>
         {/* <div className={styles.banner} role="note"><strong>Mock data.</strong> {meta?.dataset_label ?? '…'}. Every figure is bound to data and shows its source.</div> */}
@@ -94,7 +97,7 @@ export function App() {
             <Route path="/evidence" element={<Evidence />} />
             <Route path="/project-data" element={<ProjectData />} />
             <Route path="/work-with-ai" element={<RemoteBoundary name="Work with AI"><WorkWithAI /></RemoteBoundary>} />
-            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/schedule" element={<Navigate to="/monitoring" replace />} />
             <Route path="/suppliers" element={<Suppliers />} />
             <Route path="*" element={<Planned />} />
           </Routes>

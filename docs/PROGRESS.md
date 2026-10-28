@@ -116,6 +116,10 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - The top-bar button reads "Work with AI" until a project is picked on purpose (donut wheel, projects table or filter), then "Work with AI on <project name>" (truncated with a tooltip on narrow screens). New store flag `projectChosen`.
 - Schedule and Suppliers remain shell pages.
 
+## Block 20: schedule inside Monitoring, wrapped AI button (nothing committed)
+- The schedule moved into the Monitoring remote as a "Project schedule" card (`ScheduleCard`), after the disbursement chart, for whichever project is selected: phase, behind or overdue count, Gantt, detail strip and feedback. The shell Schedule page, its top-bar link and its Home table row are gone; `/schedule` redirects to `/monitoring`. The earlier cross-project table of phases went with the page.
+- The Work with AI button is two lines ("Work with AI", then "on <project>" in smaller text), wraps long names, keeps a 150px minimum width, and the top bar wraps so on a phone it drops to its own row.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

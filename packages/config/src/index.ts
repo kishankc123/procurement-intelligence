@@ -101,7 +101,6 @@ export const PLATFORM_AREAS = [
   { to: '/project-data', label: 'Project data', summary: 'Public contract awards, plus the tender facts, amendments and end dates your team enters. Reviewers approve entries here.' },
   { to: '/knowledge', label: 'Knowledge base', summary: 'The source registry, documents and the text chunks that recommendations cite.' },
   { to: '/suppliers', label: 'Suppliers', summary: 'Each supplier\'s history across projects: contracts, approved price changes, time extensions and milestone delays, with shortfall flags once there are enough contracts to judge.' },
-  { to: '/schedule', label: 'Schedule', summary: 'A Gantt chart per project: tender stages from your plans and mock operational tasks (works, supplies, manpower), each flagged on track, behind or overdue.' },
   { to: '/evidence', label: 'Evidence workbench', summary: 'Conflicts between sources and how each one was resolved.' },
 ] as const
 
