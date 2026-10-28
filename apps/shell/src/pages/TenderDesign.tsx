@@ -1,18 +1,17 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
 import {
-  countryReference, glanceRows, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
-  type Citation, type Comparison, type Plan, type TenderDraft,
+  countryReference, glanceGaps, glanceRows, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
+  type Citation, type GlanceRow, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, PairedBars, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Button, Card, EmptyState, PairedBars, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import { SpecGroups } from './SpecGroups'
 import { ValidityCoverage } from './ValidityCoverage'
 import styles from './ProjectData.module.css'
 
 const METHODS = ['Lowest evaluated price', 'Quality and cost based', 'Fixed budget']
-const TONE = { ok: { tone: 'low', label: 'OK' }, attention: { tone: 'high', label: 'Check' }, info: { tone: 'neutral', label: 'Info' } } as const
 
 type NumKey = 'duration_months' | 'bid_validity_days' | 'performance_security_pct' | 'min_similar_contracts' | 'min_similar_value_usd'
 
@@ -43,15 +42,14 @@ function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | un
   )
 }
 
-function ReferenceCell({ c }: { c: Comparison }) {
-  if (c.gated) {
-    return <EmptyState title="Missing" text={`Needs ${c.gated.required} contracts with this value. ${c.gated.n} so far.`} action={<Link to="/project-data">Add tender data</Link>} />
-  }
-  if (c.missing) return <EmptyState title="Missing" text={c.missing} />
+/** Content of the info icon next to a result: what it means, how the reference was worked out, and the evidence. */
+function WhatItMeans({ row, onCite }: { row: GlanceRow; onCite: (c: Citation) => void }) {
   return (
     <>
-      <span className="mono">{c.reference}</span>
-      <p className={styles.sub}>{c.basis}</p>
+      <strong>What it means</strong>
+      <span>{row.meaning}</span>
+      <span className={styles.sub}>How the reference was worked out: {row.basis}</span>
+      {row.citations.length > 0 && <span>{row.citations.map((c) => <span key={c.ref_id}><CitationChip citation={c} onOpen={onCite} />{' '}</span>)}</span>}
     </>
   )
 }
@@ -103,11 +101,11 @@ export function TenderDesign() {
     })
     : []
   const glance = glanceRows(rows, checks)
-  const waiting = rows.flatMap((r) => r.comparisons).filter((c) => c.gated).length
+  const gaps = glanceGaps(rows)
 
   return (
     <div className={styles.page}>
-      <div><h1>Tender design</h1><p className={styles.sub}>Draft the clauses, then see each one against your plan and against entered contract data, with the difference worked out.</p></div>
+      <div><h1>Tender design</h1><p className={styles.sub}>Draft the clauses, then see each one against your plan and your contract data.</p></div>
 
       <Card title="Draft clauses" aside={<ProvenanceChip kind="entered" />}>
         <PlanReference plans={plans} plan={plan} onPick={setPlanId} />
@@ -129,53 +127,25 @@ export function TenderDesign() {
         </form>
       </Card>
 
-      <Card title="At a glance" aside={<ProvenanceChip kind="derived" />}>
+      <Card title="Draft vs. plan and benchmarks" aside={<ProvenanceChip kind="derived" />}>
         <div className={styles.stack}>
-          <p className={styles.sub}>The same comparisons as the table below, drawn. Each chart has its own key. They follow the draft above, including unsaved changes.</p>
           {plan ? (
             <>
-              <h3>Do bids stay valid until signing?</h3>
+              <h3>Bid validity vs signing</h3>
               <ValidityCoverage plan={plan} draft={draft} />
             </>
           ) : <EmptyState title="No plan to compare with" text="Add a plan in Planning to see the bid validity diagram." action={<Link to="/planning">Open Planning</Link>} />}
-          <h3>Draft against its reference</h3>
-          {glance.length === 0 ? <EmptyState title="Nothing to draw yet" text="Charts need two numbers, a draft value and a reference." /> : <PairedBars ariaLabel="Draft against reference" rows={glance} />}
-          {waiting > 0 && (
-            <p className={styles.sub}>{waiting} more comparison{waiting === 1 ? '' : 's'} with contract data {waiting === 1 ? 'is' : 'are'} not drawn: too few contracts have the value entered. <Link to="/project-data">Add tender data</Link></p>
-          )}
+          <h3>Draft vs reference</h3>
+          {glance.length === 0 && gaps.length === 0
+            ? <EmptyState title="Nothing to compare yet" text="Charts need two numbers, a draft value and a reference." />
+            : (
+              <PairedBars
+                ariaLabel="Draft against reference"
+                rows={glance.map((r) => ({ ...r, info: <WhatItMeans row={r} onCite={setOpen} /> }))}
+                gaps={gaps.map((g) => ({ ...g, action: g.canAdd ? <Link to="/project-data">Add tender data</Link> : undefined }))}
+              />
+            )}
         </div>
-      </Card>
-
-      <Card title="Draft vs. plan and benchmarks" aside={<ProvenanceChip kind="derived" />}>
-        <div className={styles.scroll}>
-          <TableScroll><table className={styles.table}>
-            <thead><tr><th>Clause</th><th>Your draft</th><th>Compared with</th><th>Reference</th><th>Difference</th><th>What it means</th></tr></thead>
-            <tbody>
-              {rows.map((r) => (
-                <Fragment key={r.id}>
-                  {r.comparisons.map((c, i) => (
-                    <tr key={c.against + i}>
-                      {i === 0 && <><td rowSpan={r.comparisons.length}><strong>{r.label}</strong></td><td rowSpan={r.comparisons.length} className="mono">{r.draft}</td></>}
-                      <td>{c.against} {c.gated || c.missing ? null : <ProvenanceChip kind={c.provenance} detail={c.n !== undefined ? `n=${c.n}` : undefined} />}</td>
-                      <td><ReferenceCell c={c} /></td>
-                      <td className="mono">{c.difference ?? <ProvenanceChip kind="missing" />}</td>
-                      <td>
-                        {c.verdict ? (
-                          <>
-                            <Badge tone={TONE[c.verdict.tone].tone}>{TONE[c.verdict.tone].label}</Badge>
-                            <p>{c.verdict.text}</p>
-                            {c.citations.map((cit) => <CitationChip key={cit.ref_id} citation={cit} onOpen={setOpen} />)}
-                          </>
-                        ) : <span className={styles.sub}>Not compared</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table></TableScroll>
-        </div>
-        <p className={styles.sub}>Difference is your draft minus the reference. Benchmarks use contracts in FY{fiscalYear} and appear only once enough contracts have the value. Nothing is estimated where a source is missing.</p>
       </Card>
 
       <Card title="Specification checks" aside={<ProvenanceChip kind="derived" detail={`${checks.length} rules`} />}>

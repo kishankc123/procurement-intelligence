@@ -22,6 +22,7 @@ export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 export * from './icons'
 export { Calendar } from './components/ui/calendar'
 export { PairedBars } from './PairedBars'
-export type { PairRow, PairTone } from './PairedBars'
+export type { PairGap, PairRow, PairTone } from './PairedBars'
+export { InfoTip } from './InfoTip'
 export { ColumnChart } from './ColumnChart'
 export type { Column, ColumnTone } from './ColumnChart'

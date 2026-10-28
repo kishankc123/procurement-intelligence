@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+import { InfoTip } from '../InfoTip'
 import styles from './PairedBars.module.css'
 
 export type PairTone = 'good' | 'attention' | 'bad' | 'neutral'
@@ -14,7 +16,17 @@ export interface PairRow {
   referenceLabel: string
   /** How the draft fared: it sets the colour of the draft bar. */
   tone: PairTone
-  note?: string
+  /** What the result means: opens from the icon next to the difference. */
+  info?: ReactNode
+}
+
+/** A clause with nothing to draw yet: shown as an empty row with the reason and, when data can fix it, an action. */
+export interface PairGap {
+  id: string
+  label: string
+  referenceLabel: string
+  reason: string
+  action?: ReactNode
 }
 
 const cls = (name: string) => styles[name] ?? ''
@@ -33,16 +45,17 @@ const TONE_MEANING: Record<PairTone, string> = {
  * each with its value written at the end. A legend says what the bars and colours mean.
  * Each row has its own scale, because the rows use different units. Presentational only.
  */
-export function PairedBars({ rows, ariaLabel }: { rows: PairRow[]; ariaLabel: string }) {
+export function PairedBars({ rows, gaps = [], ariaLabel }: { rows: PairRow[]; gaps?: PairGap[]; ariaLabel: string }) {
   const tones = (['good', 'attention', 'bad', 'neutral'] as PairTone[]).filter((t) => rows.some((r) => r.tone === t))
 
   return (
     <div className={cls('root')}>
       <ul className={cls('legend')} aria-label="Legend">
         {tones.map((t) => <li key={t}><span className={`${cls('swatch')} ${cls(t)}`} aria-hidden="true" />{TONE_MEANING[t]}</li>)}
-        <li><span className={`${cls('swatch')} ${cls('ref')}`} aria-hidden="true" />Reference: what the draft is compared with</li>
+        <li><span className={`${cls('swatch')} ${cls('ref')}`} aria-hidden="true" />Reference</li>
+        {gaps.length > 0 && <li><span className={`${cls('swatch')} ${cls('blank')}`} aria-hidden="true" />Nothing to compare yet</li>}
       </ul>
-      <p className={cls('hint')}>In each pair the top bar is your draft and the bottom bar is its reference. Both start at zero on the same scale; scales differ between rows because the units differ.</p>
+      <p className={cls('hint')}>Top bar: your draft. Bottom bar: its reference. Each row has its own scale from zero.</p>
       <ul className={cls('list')} aria-label={ariaLabel}>
         {rows.map((r) => {
           const max = Math.max(r.draft, r.reference, 1) * 1.3
@@ -63,12 +76,23 @@ export function PairedBars({ rows, ariaLabel }: { rows: PairRow[]; ariaLabel: st
                     <span className={cls('value')} style={{ left: `calc(${(r.reference / max) * 100}% + 8px)` }}>{fmt(r.reference)} {r.unit}</span>
                   </div>
                 </div>
-                <p className={cls('diff')}>Difference <strong className="mono">{signed(delta)} {r.unit}</strong> (draft minus reference)</p>
-                {r.note && <p className={cls('sub')}>{r.note}</p>}
+                <p className={cls('diff')}>
+                  Difference <strong className="mono">{signed(delta)} {r.unit}</strong>
+                  {r.info && <InfoTip tone={r.tone} label={`What ${r.label} means`}>{r.info}</InfoTip>}
+                </p>
               </div>
             </li>
           )
         })}
+        {gaps.map((g) => (
+          <li key={g.id} className={cls('row')}>
+            <div className={cls('label')}><strong>{g.label}</strong><span className={cls('sub')}>vs {g.referenceLabel}</span></div>
+            <div className={cls('gap')}>
+              <span>{g.reason}</span>
+              {g.action}
+            </div>
+          </li>
+        ))}
       </ul>
     </div>
   )

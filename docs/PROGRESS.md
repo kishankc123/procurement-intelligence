@@ -155,6 +155,9 @@ Why: the assessment asks for ingestion of public data, linking structured record
 ## Block 30: legends on the Tender design charts (nothing committed)
 - The "At a glance" charts now explain themselves. The bid validity diagram has a key (draft validity bar, planned signing line, uncovered days, days left after signing), day numbers and dates on its axis, and "Valid N days, until <date>" inside the bar. The marker chart was replaced by `PairedBars` in `@pi/ui` (`BulletChart` removed): for each clause two labelled bars on one zero-based scale, the draft on top (colour = how it fared) and its reference below (hatched grey), each with its value at the end, the difference written out, a key for the colours and a line saying each row has its own scale.
 
+## Block 31: Tender design comparison table replaced by the charts (nothing committed)
+- The "Draft vs. plan and benchmarks" table is gone; the card of that name now holds the charts. Each pair of bars has an info icon next to its difference: "i" for fine, "!" for something to look at, "?" for unknown. It opens on hover, focus or click (Escape closes) with what the result means, how the reference was worked out and the evidence chip, which still opens the source drawer (`InfoTip` in `@pi/ui`; content from `WhatItMeans`). Clauses that cannot be drawn yet stay as blank dashed rows with the reason and, when contract data would fix it, an "Add tender data" link (`glanceGaps`; `PairedBars` takes a `gaps` prop). The bid validity diagram has less text: a short key and a one-line result. Evaluation method (a text comparison) is only in the Specification checks. 56 tests.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

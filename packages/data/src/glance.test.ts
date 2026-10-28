@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { glanceRows, validityCoverage } from './glance'
+import { glanceGaps, glanceRows, validityCoverage } from './glance'
 import { specificationChecks } from './spec'
 import { tenderComparison } from './selectors'
 import type { Contract, Plan, Project, TenderDraft } from './schemas'
@@ -25,6 +25,19 @@ describe('glanceRows', () => {
     expect(build(draft(90))[0]?.tone).toBe('good')
     const many = Array.from({ length: 10 }, (_, i) => ({ borrower_contract_reference_number: `R${i}`, procurement_category: 'Works', supplier_contract_amount_usd: 1_000_000, contract_signing_date: '2025-01-01' }) as Contract)
     expect(build(draft(60), many).some((r) => r.label === 'Minimum similar contract value (USD)')).toBe(true)
+  })
+})
+
+describe('glanceGaps', () => {
+  it('lists the clauses that cannot be drawn, and says which ones more contract data would fix', () => {
+    const gaps = glanceGaps(tenderComparison(draft(60), plan, [], []))
+    const byLabel = Object.fromEntries(gaps.map((g) => [`${g.label} / ${g.referenceLabel}`, g]))
+    expect(byLabel['Bid validity (days) / Entered contracts (median)']).toMatchObject({ canAdd: true, reason: 'Needs 10 contracts with this value. 0 so far.' })
+    expect(byLabel['Performance security (%) / No source']?.canAdd).toBe(false)
+    expect(gaps.some((g) => g.label === 'Evaluation method')).toBe(false) // a text clause: compared in the checks, not drawn
+  })
+  it('has no gap for a row that is drawn', () => {
+    expect(glanceGaps(tenderComparison(draft(60), plan, [], [])).some((g) => g.referenceLabel === 'Your plan')).toBe(false)
   })
 })
 

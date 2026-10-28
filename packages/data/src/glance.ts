@@ -2,7 +2,7 @@
 import { dayDiff } from './selectors'
 import type { ComparisonRow, Tone } from './selectors'
 import type { SpecCheck, SpecStatus } from './spec'
-import type { Plan, TenderDraft } from './schemas'
+import type { Citation, Plan, TenderDraft } from './schemas'
 
 export type GlanceTone = 'good' | 'attention' | 'bad' | 'neutral'
 
@@ -16,7 +16,20 @@ export interface GlanceRow {
   /** What the reference is, e.g. "Your plan" or "Entered contracts (median)". */
   referenceLabel: string
   tone: GlanceTone
-  note: string
+  /** What the result means, in words: shown on demand next to the bars. */
+  meaning: string
+  /** How the reference was worked out. */
+  basis: string
+  citations: Citation[]
+}
+
+/** A clause that cannot be drawn yet, with the reason; `canAdd` is true when entering contract data would fix it. */
+export interface GlanceGap {
+  id: string
+  label: string
+  referenceLabel: string
+  reason: string
+  canAdd: boolean
 }
 
 const COMPARISON_TONE: Record<Tone, GlanceTone> = { ok: 'good', attention: 'attention', info: 'neutral' }
@@ -31,13 +44,29 @@ export function glanceRows(comparisons: ComparisonRow[], checks: SpecCheck[]): G
   const rows: GlanceRow[] = []
   for (const r of comparisons) {
     for (const c of r.comparisons) {
-      if (c.numeric) rows.push({ id: `${r.id}:${c.against}`, label: r.label, ...c.numeric, referenceLabel: c.against, tone: c.verdict ? COMPARISON_TONE[c.verdict.tone] : 'neutral', note: c.verdict?.text ?? '' })
+      if (c.numeric) rows.push({ id: `${r.id}:${c.against}`, label: r.label, ...c.numeric, referenceLabel: c.against, tone: c.verdict ? COMPARISON_TONE[c.verdict.tone] : 'neutral', meaning: c.verdict?.text ?? '', basis: c.basis, citations: c.citations })
     }
   }
   for (const c of checks) {
-    if (c.numeric) rows.push({ id: `spec:${c.id}`, label: c.clause, ...c.numeric, referenceLabel: c.reference ?? 'Reference', tone: SPEC_TONE[c.status], note: c.detail })
+    if (c.numeric) rows.push({ id: `spec:${c.id}`, label: c.clause, ...c.numeric, referenceLabel: c.reference ?? 'Reference', tone: SPEC_TONE[c.status], meaning: c.detail, basis: c.rule, citations: c.citations })
   }
   return rows
+}
+
+/**
+ * Comparisons that cannot be drawn: too few contracts have the value (more data fixes it), or no source holds it (nothing does).
+ * Drawn as blank rows so the clause is still visible and says what is missing.
+ */
+export function glanceGaps(comparisons: ComparisonRow[]): GlanceGap[] {
+  const gaps: GlanceGap[] = []
+  for (const r of comparisons) {
+    for (const c of r.comparisons) {
+      if (c.numeric) continue
+      if (c.gated) gaps.push({ id: `${r.id}:${c.against}`, label: r.label, referenceLabel: c.against, reason: `Needs ${c.gated.required} contracts with this value. ${c.gated.n} so far.`, canAdd: true })
+      else if (c.missing) gaps.push({ id: `${r.id}:${c.against}`, label: r.label, referenceLabel: c.against, reason: c.missing, canAdd: false })
+    }
+  }
+  return gaps
 }
 
 const addDays = (iso: string, days: number) => {

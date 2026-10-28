@@ -15,7 +15,7 @@ export function ValidityCoverage({ plan, draft }: { plan: Plan; draft: Pick<Tend
   return (
     <div className={styles.wrap}>
       <div className={styles.stage} role="img" aria-label={`Bid validity ${c.validityDays} days from bid opening ${c.opening}; contract signing is planned ${c.needed} days after bid opening on ${c.signing}. ${covered ? (c.spare > 0 ? `${c.spare} days to spare.` : 'Covers it exactly.') : `Bids expire ${c.shortBy} days before signing.`}`}>
-        <span className={`${styles.bar} ${covered ? '' : styles.barShort}`} style={{ width: pct(c.validityDays) }}>Valid {c.validityDays} days, until {c.validityEnd}</span>
+        <span className={`${styles.bar} ${covered ? '' : styles.barShort}`} style={{ width: pct(c.validityDays) }}>{c.validityDays} days</span>
         {c.shortBy > 0 && <span className={styles.gap} style={{ left: pct(c.validityDays), width: `calc(${pct(c.needed)} - ${pct(c.validityDays)})` }} />}
         {c.spare > 0 && <span className={styles.spare} style={{ left: pct(c.needed), width: `calc(${pct(c.validityDays)} - ${pct(c.needed)})` }} />}
         <span className={styles.sign} style={{ left: pct(c.needed) }} />
@@ -24,17 +24,16 @@ export function ValidityCoverage({ plan, draft }: { plan: Plan; draft: Pick<Tend
         <span className={styles.below} style={{ left: pct(c.needed), transform: 'translateX(calc(-100% - 8px))', top: 66 }}>Day {c.needed} · {c.signing}</span>
       </div>
       <ul className={styles.legend} aria-label="Legend">
-        <li><span className={`${styles.sw} ${covered ? styles.swGood : styles.swWarn}`} aria-hidden="true" />Draft bid validity, counted from bid opening ({covered ? 'long enough to reach signing' : 'ends before signing'})</li>
-        <li><span className={styles.swLine} aria-hidden="true" />Planned contract signing</li>
-        <li><span className={styles.swGap} aria-hidden="true" />Days bids would expire before signing</li>
-        <li><span className={styles.swSpare} aria-hidden="true" />Days of validity left after signing</li>
+        <li><span className={`${styles.sw} ${covered ? styles.swGood : styles.swWarn}`} aria-hidden="true" />Bid validity</li>
+        <li><span className={styles.swLine} aria-hidden="true" />Planned signing</li>
+        <li><span className={styles.swGap} aria-hidden="true" />Uncovered days</li>
+        <li><span className={styles.swSpare} aria-hidden="true" />Days to spare</li>
       </ul>
       <p className={styles.verdict}>
         {covered
-          ? <><Badge tone="low">Covered</Badge> Bids stay valid until {c.validityEnd}, {c.spare > 0 ? `${c.spare} days after the planned signing.` : 'the planned signing day.'}</>
-          : <><Badge tone="high">Short by {c.shortBy} days</Badge> Bids expire on {c.validityEnd}, {c.shortBy} days before the planned signing on {c.signing}.</>}
+          ? <><Badge tone="low">Covered</Badge> {c.spare > 0 ? `${c.spare} days to spare` : 'exactly'}</>
+          : <><Badge tone="high">Short by {c.shortBy} days</Badge> Bids expire {c.validityEnd}</>}
       </p>
-      <p className={styles.sub}>Counted from bid opening in the plan {plan.name}. Change the bid validity above to see the bar move.</p>
     </div>
   )
 }
