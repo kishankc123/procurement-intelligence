@@ -196,6 +196,9 @@ Why: the assessment asks for ingestion of public data, linking structured record
 ## Block 39: record linking as a tree (step 4)
 - `groupLinksByRecord` in `@pi/data` (tested, 73 tests) groups the links by structured record. Work with AI layer 3 now shows each record once on the left (for example "Supervision report 1", with a count) and an arrow from it to every document text linked to it, with the reason on each row. The tree is CSS only (a trunk and arrowheads in a narrow column). The table pages and scrolls by record, and each document row has an Open document link that opens the full-screen document.
 
+## Block 40: retender matches one at a time (step 5)
+- Work with AI layer 4: the "earlier tenders that look like it" cell shows one match in a fixed-height box. With more than one, scroll inside the box (it snaps to the next match) and a line reads "Match 1 of N". The page and table do not move. A single match fits the box with no scrollbar. The same component serves the typed check and each plan row.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

@@ -32,3 +32,10 @@
 .arrow::after { content: ''; position: absolute; right: -7px; top: -4px; border-left: 8px solid var(--border); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
 .docLink { all: unset; cursor: pointer; margin-left: 8px; color: var(--link); text-decoration: underline; font-size: 12px; }
 .docLink:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+
+/* Retender matches: one at a time, scrolling inside its own box. */
+.matches { display: grid; gap: 4px; min-width: 0; }
+.matchBox { list-style: none; margin: 0; padding: 0; height: 190px; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
+.matchBox:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.matchItem { box-sizing: border-box; min-height: 100%; scroll-snap-align: start; padding: 10px; display: grid; align-content: start; gap: 6px; }
+.matchItem + .matchItem { border-top: 1px solid var(--border); }

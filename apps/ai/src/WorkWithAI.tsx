@@ -27,22 +27,35 @@ function LayerFeedback({ layer, projectId }: { layer: string; projectId: string 
   )
 }
 
+/**
+ * The earlier tenders that look like the one checked, one at a time: the box shows a single match and scrolls (or snaps) to the next.
+ * The box scrolls, not the page or the table, and a counter says which one is showing.
+ */
 function MatchList({ matches, onOpen }: { matches: RetenderMatch[]; onOpen: (c: Citation) => void }) {
+  const [shown, setShown] = useState(0)
+  const many = matches.length > 1
   return (
-    <ul className={styles.list}>
-      {matches.map((m) => (
-        <li key={m.candidate.id} className={styles.result}>
-          <div className={styles.row}>
-            <strong>{m.candidate.name}</strong> <span className="mono">{m.candidate.id}</span>
-            <Badge tone={TENDER_STATUS[m.candidate.status].tone}>{TENDER_STATUS[m.candidate.status].label}</Badge>
-            <span className={styles.sub}>{m.candidate.project_id}{m.candidate.date ? ` · ${m.candidate.date}` : ''}</span>
-          </div>
-          <p>{m.why} <ProvenanceChip kind="derived" /></p>
-          {m.candidate.reason && <p className={styles.sub}>Reason: {m.candidate.reason}</p>}
-          {m.candidate.citation && <div className={styles.row}><CitationChip citation={m.candidate.citation} onOpen={onOpen} /></div>}
-        </li>
-      ))}
-    </ul>
+    <div className={styles.matches}>
+      <ul
+        className={styles.matchBox}
+        role="region" tabIndex={0} aria-label={many ? `Earlier tenders that look like it, ${matches.length} found. Scroll for the next.` : 'Earlier tender that looks like it'}
+        onScroll={(e) => setShown(Math.round(e.currentTarget.scrollTop / Math.max(e.currentTarget.clientHeight, 1)))}
+      >
+        {matches.map((m) => (
+          <li key={m.candidate.id} className={styles.matchItem}>
+            <div className={styles.row}>
+              <strong>{m.candidate.name}</strong> <span className="mono">{m.candidate.id}</span>
+              <Badge tone={TENDER_STATUS[m.candidate.status].tone}>{TENDER_STATUS[m.candidate.status].label}</Badge>
+              <span className={styles.sub}>{m.candidate.project_id}{m.candidate.date ? ` · ${m.candidate.date}` : ''}</span>
+            </div>
+            <p>{m.why} <ProvenanceChip kind="derived" /></p>
+            {m.candidate.reason && <p className={styles.sub}>Reason: {m.candidate.reason}</p>}
+            {m.candidate.citation && <div className={styles.row}><CitationChip citation={m.candidate.citation} onOpen={onOpen} /></div>}
+          </li>
+        ))}
+      </ul>
+      {many && <span className={styles.sub} role="status">Match {Math.min(shown + 1, matches.length)} of {matches.length}. Scroll inside the box for the next one.</span>}
+    </div>
   )
 }
 
