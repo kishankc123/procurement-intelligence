@@ -141,3 +141,7 @@ Reset data: `pnpm reset-db`. Typecheck: `pnpm typecheck`. Demo build: `pnpm demo
 ## 13. Project overview
 
 `/project` (shell page) summarises the selected project from Planning, Tender design, Monitoring and Learning data, with a link to each section. Plans, draft clauses and contract data readiness come from `@pi/data` hooks and selectors; the schedule is `monitoring/ScheduleCard`, exposed by the Monitoring remote and loaded behind a `RemoteBoundary`, so the Gantt chart has one implementation. Clicking a project name (Home table or Projects menu) sets the shared project and opens this page.
+
+## 14. Planning addresses
+
+The shell routes `/planning/*` to the Planning remote, and the remote owns the sub-routes (`apps/planning/src/Planning.tsx`): `/planning` and `/planning/full-details/:planId`. The remote links with absolute paths under `BASE = '/planning'`, so the same code works in the shell and standalone (its `bootstrap.tsx` mounts it at `/planning/*`). Vercel's catch-all rewrite already serves these deep links.

@@ -94,7 +94,7 @@ export function App() {
           {pathname !== '/' && <StepNav />}
           <Routes>
             <Route index element={<Home />} />
-            <Route path="/planning" element={<RemoteBoundary name="Planning"><Planning /></RemoteBoundary>} />
+            <Route path="/planning/*" element={<RemoteBoundary name="Planning"><Planning /></RemoteBoundary>} />
             <Route path="/monitoring" element={<RemoteBoundary name="Monitoring"><Monitoring /></RemoteBoundary>} />
             <Route path="/learning" element={<RemoteBoundary name="Learning"><Learning /></RemoteBoundary>} />
             <Route path="/tender-design" element={<TenderDesign />} />

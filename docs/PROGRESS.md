@@ -133,6 +133,19 @@ Why: the assessment asks for ingestion of public data, linking structured record
 ## Block 24: icons in the top-bar menus (nothing committed)
 - Projects (folder) and Tools (wrench) triggers have an icon and a chevron; each Tools item has its own icon (Project data, Knowledge base, Suppliers, Evidence workbench) and no link underline. Icons come from lucide-react, re-exported from `@pi/ui` (`packages/ui/src/icons.ts`) so apps do not depend on it directly.
 
+## Block 25: back navigation (nothing committed)
+- New reusable `BackButton` (`apps/shell/src/BackButton.tsx`), placed at the start of the StepNav bar, so it appears at the top of every page except the dashboard. It goes back one page inside the site (`navigate(-1)`); if the page was opened directly, with nothing behind it in this tab, it reads "Dashboard" and goes to `/`. On phones it is icon-only. "Back to plans" in Planning now has an arrow icon too. Checked: Home to a project overview and back; the chain Monitoring (direct load), Planning, Tender design then three Back clicks ends on Monitoring, then the dashboard.
+- Not covered by browser back by design: in-page steps held in component state (the Work with AI project list and Planning's plan details); those keep their own Change project and Back to plans buttons.
+
+## Block 26: Plan timeline calendar and agenda (nothing committed)
+- Planning now opens with a "Plan timeline" card (`apps/planning/src/PlanAgenda.tsx`): a shadcn Calendar (new dependencies in `@pi/ui`: `react-day-picker`, `date-fns`; component `packages/ui/src/components/ui/calendar.tsx`, exported as `Calendar`) with the four tender stages marked in colour, the days between advertisement and signing shaded, and the data date outlined; next to it a proportional bar and an agenda list (stage, weekday and date, how far from the data date, and the days between stages, plus the advertisement-to-signing total). Click a stage in the list and the calendar jumps to its month and rings it; click a stage day on the calendar and the list highlights it. A select switches between the project's plans. Two months on wide screens, one on narrow. The days from advertisement to signing sit on one soft tinted band (square corners so neighbouring days join up) instead of separate blocks. Dates come from the saved plan; if they are out of order the card says so instead of drawing the bar.
+- `planStages` (`packages/data/src/stages.ts`) does the arithmetic, with 3 tests (51 total).
+- `ghost` and `link` Button variants now set a transparent background (without Tailwind's base reset a bare button showed the browser's grey).
+
+## Block 27: Planning has its own addresses, and Edit plan is a modal (nothing committed)
+- The shell mounts Planning at `/planning/*`; the remote now has its own routes: `/planning` (timeline card and plans table) and `/planning/full-details/<plan id>` (one plan: stage timeline, KPIs, gates, country context, recommendations, similar projects). Full details opens that address, so refresh, bookmark and the browser back button work; an unknown plan id shows "Plan not found" with a way back. The StepNav keeps Planning lit on sub-pages. The standalone remote wraps `Planning` in a router at `/planning/*`.
+- Edit plan is a modal (`EditPlanDialog`): category, method and the four dates, with Save plan, Cancel and Delete plan (asks to confirm). It opens from the row dropdown without leaving `/planning`, and from the full details page; deleting there returns to `/planning`. The old inline editor on the details page is gone; its stage table is read-only.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |
