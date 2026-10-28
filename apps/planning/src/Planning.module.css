@@ -11,6 +11,10 @@
 .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; }
 .table { width: 100%; border-collapse: collapse; }
 .table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; }
+.nowrap { white-space: nowrap; }
+/* Plans list: keep the columns readable and let the table scroll sideways on a phone, instead of squeezing the Plan name into a few characters per line. */
+.plans { min-width: 720px; }
+.plans th:first-child, .plans td:first-child { min-width: 200px; }
 .table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
 .rec { padding: 10px 0; border-bottom: 1px solid var(--border); display: grid; gap: 6px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
