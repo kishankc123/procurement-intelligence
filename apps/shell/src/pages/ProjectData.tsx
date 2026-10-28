@@ -5,7 +5,7 @@ import {
   useContracts, useCurrentUser, useEnrichments, useReviewAmendment, useReviewEnrichment, useUiStore,
   type EnrichmentField,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import styles from './ProjectData.module.css'
 
 const FIELD_LABEL: Record<EnrichmentField, string> = {
@@ -65,7 +65,7 @@ export function ProjectData() {
       <Card title="Contracts" aside={<input aria-label="Search contracts" placeholder="Search contracts" value={search} onChange={(e) => setSearch(e.target.value)} />}>
         {visible.length === 0 ? <EmptyState title="No contracts match" text="Check the project and fiscal-year filters." /> : (
           <div className={styles.scroll}>
-            <table className={styles.table}>
+            <TableScroll><table className={styles.table}>
               <thead><tr>
                 <th>Reference</th><th>Supplier</th><th>Category</th><th>Amount (USD)</th><th>Signed</th>
                 {ENRICHMENT_FIELDS.map((f) => <th key={f}>{FIELD_LABEL[f]}</th>)}
@@ -85,7 +85,7 @@ export function ProjectData() {
                   )
                 })}
               </tbody>
-            </table>
+            </table></TableScroll>
           </div>
         )}
       </Card>
@@ -122,7 +122,7 @@ export function ProjectData() {
 
       <Card title="Awaiting review" aside={<span className={styles.sub}>Reviewer approves or rejects</span>}>
         {pendingEnr.length + pendingAmd.length === 0 ? <EmptyState title="Nothing pending" text="Entries from planners and contract managers appear here." /> : (
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Entry</th><th>Contract</th><th>By</th><th>Decision</th></tr></thead>
             <tbody>
               {pendingEnr.map((e) => (
@@ -138,18 +138,18 @@ export function ProjectData() {
                     <Button onClick={() => reviewAmendment.mutate({ id: a.id, status: 'rejected' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Reject</Button></td></tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
       </Card>
 
       <Card title="Audit trail">
         {audit.length === 0 ? <EmptyState title="No changes yet" /> : (
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>When</th><th>Role</th><th>Action</th><th>Target</th></tr></thead>
             <tbody>{[...audit].reverse().slice(0, 8).map((a) => (
               <tr key={a.id}><td className="mono">{a.at.slice(0, 19).replace('T', ' ')}</td><td>{a.role.replace('_', ' ')}</td><td>{a.action}</td><td className="mono">{a.target}</td></tr>
             ))}</tbody>
-          </table>
+          </table></TableScroll>
         )}
       </Card>
     </div>

@@ -5,7 +5,7 @@ import {
   plannedDurations, tenderComparison, useContracts, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
   type Citation, type Comparison, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './ProjectData.module.css'
 
@@ -22,7 +22,7 @@ function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | un
     <details className={styles.planRef}>
       <summary><span>Compared with plan: <strong>{plan.name}</strong> <span className="mono">{plan.id}</span></span></summary>
       <div className={styles.scroll}>
-        <table className={styles.table}>
+        <TableScroll><table className={styles.table}>
           <thead><tr><th>Category</th><th>Method</th><th>Advertisement</th><th>Bid opening</th><th>Evaluation complete</th><th>Signing</th><th>Bid opening to signing</th></tr></thead>
           <tbody><tr>
             <td>{plan.category}</td><td>{plan.method}</td>
@@ -30,7 +30,7 @@ function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | un
             <td className="mono">{plan.planned_evaluation_complete}</td><td className="mono">{plan.planned_signing}</td>
             <td className="mono">{d.bidOpeningToSigning} days <ProvenanceChip kind="derived" /></td>
           </tr></tbody>
-        </table>
+        </table></TableScroll>
       </div>
       {plans.length > 1 && (
         <label className={styles.planPick}>Compare with another plan
@@ -115,7 +115,7 @@ export function TenderDesign() {
 
       <Card title="Draft vs. plan and benchmarks" aside={<ProvenanceChip kind="derived" />}>
         <div className={styles.scroll}>
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Clause</th><th>Your draft</th><th>Compared with</th><th>Reference</th><th>Difference</th><th>What it means</th></tr></thead>
             <tbody>
               {rows.map((r) => (
@@ -140,7 +140,7 @@ export function TenderDesign() {
                 </Fragment>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         </div>
         <p className={styles.sub}>Difference is your draft minus the reference. Benchmarks use contracts in FY{fiscalYear} and appear only once enough contracts have the value. Nothing is estimated where a source is missing.</p>
       </Card>
