@@ -70,6 +70,12 @@ export const useSaveTenderDraft = () =>
     return { action: 'Saved tender draft', target: d.project_id }
   })
 
+export const useDeleteTenderDraft = () =>
+  useWrite<S.TenderDraft>(async (d) => {
+    await send('DELETE', `/tender_drafts/${d.id}`)
+    return { action: 'Deleted tender draft', target: d.project_id }
+  })
+
 export const useAddEnrichment = () =>
   useWrite<Omit<S.Enrichment, 'id' | 'entered_by_role' | 'status' | 'entered_at'>>(
     async (e, role) => {
