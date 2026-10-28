@@ -130,6 +130,9 @@ Why: the assessment asks for ingestion of public data, linking structured record
 ## Block 23: filter rail restored (nothing committed)
 - The left `FilterRail` is back as its own component (`apps/shell/src/FilterRail.tsx`): a thin strip with an arrow and "Project · Year · Role" that opens to Project, Fiscal year and the demo Role switcher (Planner, Contract manager, Reviewer, Admin; stored in localStorage). It sits beside the top-bar menus; on phones it is a drawer with a scrim. Checked: FY2025 empties the Learning readiness card and the StepNav shows FY2025; Reviewer disables Planning's Edit plan with "Needs role: Planner or Admin". Empty-state text now says "filters on the left" instead of "top bar".
 
+## Block 24: icons in the top-bar menus (nothing committed)
+- Projects (folder) and Tools (wrench) triggers have an icon and a chevron; each Tools item has its own icon (Project data, Knowledge base, Suppliers, Evidence workbench) and no link underline. Icons come from lucide-react, re-exported from `@pi/ui` (`packages/ui/src/icons.ts`) so apps do not depend on it directly.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |
