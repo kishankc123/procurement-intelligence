@@ -1,0 +1,19 @@
+.wrap { display: grid; gap: 10px; min-width: 0; }
+.stage { position: relative; height: 98px; margin: 6px 4px 0; }
+.bar { position: absolute; top: 30px; height: 26px; border-radius: 6px 0 0 6px; background: var(--prov-derived-fg); opacity: .9; display: flex; align-items: center; padding-left: 8px; color: var(--surface); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.barShort { background: var(--prov-entered-fg); }
+.gap { position: absolute; top: 30px; height: 26px; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--sev-high-fg) 55%, transparent) 0 6px, transparent 6px 12px); border: 1px dashed var(--sev-high-fg); border-left: 0; border-radius: 0 6px 6px 0; }
+.spare { position: absolute; top: 30px; height: 26px; background: color-mix(in srgb, var(--prov-derived-fg) 25%, transparent); border-radius: 0 6px 6px 0; border: 1px dashed var(--prov-derived-fg); border-left: 0; }
+.sign { position: absolute; top: 14px; bottom: 6px; width: 3px; margin-left: -1.5px; background: var(--text); border-radius: 2px; box-shadow: 0 0 0 2px var(--surface); }
+.signLabel { position: absolute; top: -4px; transform: translateX(-50%); font-size: 12px; white-space: nowrap; }
+.below { position: absolute; top: 64px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.sub { color: var(--muted); font-size: 12px; margin: 0; }
+.verdict { margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; padding: 0; list-style: none; font-size: 12px; }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 10px; border-radius: 3px; display: inline-block; }
+.swGood { background: var(--prov-derived-fg); }
+.swWarn { background: var(--prov-entered-fg); }
+.swLine { width: 3px; height: 14px; background: var(--text); border-radius: 2px; display: inline-block; }
+.swGap { width: 18px; height: 10px; display: inline-block; border: 1px dashed var(--sev-high-fg); background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--sev-high-fg) 55%, transparent) 0 4px, transparent 4px 8px); }
+.swSpare { width: 18px; height: 10px; display: inline-block; border: 1px dashed var(--prov-derived-fg); background: color-mix(in srgb, var(--prov-derived-fg) 25%, transparent); }

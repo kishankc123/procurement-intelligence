@@ -152,6 +152,9 @@ Why: the assessment asks for ingestion of public data, linking structured record
 ## Block 29: grouped specification checks with a bar chart (nothing committed)
 - The Specification checks card now has a bar chart of results (`ColumnChart` in `@pi/ui`: y is the number of checks on whole-number ticks, x is the result: Pass, Fail, To check, Cannot check; each bar is a button) above a table with one row per result (`SpecGroups`, `apps/shell/src/pages/SpecGroups.tsx`). Click a bar or a row to open that group, like a plan row: its checks appear below with the rule, the draft value, what it was compared with, what was found and the evidence chips. One group is open at a time; empty groups show a zero and cannot open. Until someone picks, the most serious non-empty group (Fail, then To check) is open. The label for warnings is now "To check" (was "Check") everywhere.
 
+## Block 30: legends on the Tender design charts (nothing committed)
+- The "At a glance" charts now explain themselves. The bid validity diagram has a key (draft validity bar, planned signing line, uncovered days, days left after signing), day numbers and dates on its axis, and "Valid N days, until <date>" inside the bar. The marker chart was replaced by `PairedBars` in `@pi/ui` (`BulletChart` removed): for each clause two labelled bars on one zero-based scale, the draft on top (colour = how it fared) and its reference below (hatched grey), each with its value at the end, the difference written out, a key for the colours and a line saying each row has its own scale.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

@@ -5,7 +5,7 @@ import {
   countryReference, glanceRows, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
   type Citation, type Comparison, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Badge, BulletChart, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, PairedBars, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import { SpecGroups } from './SpecGroups'
 import { ValidityCoverage } from './ValidityCoverage'
@@ -131,7 +131,7 @@ export function TenderDesign() {
 
       <Card title="At a glance" aside={<ProvenanceChip kind="derived" />}>
         <div className={styles.stack}>
-          <p className={styles.sub}>The same comparisons as the table below, drawn. They follow the draft above, including unsaved changes.</p>
+          <p className={styles.sub}>The same comparisons as the table below, drawn. Each chart has its own key. They follow the draft above, including unsaved changes.</p>
           {plan ? (
             <>
               <h3>Do bids stay valid until signing?</h3>
@@ -139,7 +139,7 @@ export function TenderDesign() {
             </>
           ) : <EmptyState title="No plan to compare with" text="Add a plan in Planning to see the bid validity diagram." action={<Link to="/planning">Open Planning</Link>} />}
           <h3>Draft against its reference</h3>
-          {glance.length === 0 ? <EmptyState title="Nothing to draw yet" text="Charts need two numbers, a draft value and a reference." /> : <BulletChart ariaLabel="Draft against reference" rows={glance} />}
+          {glance.length === 0 ? <EmptyState title="Nothing to draw yet" text="Charts need two numbers, a draft value and a reference." /> : <PairedBars ariaLabel="Draft against reference" rows={glance} />}
           {waiting > 0 && (
             <p className={styles.sub}>{waiting} more comparison{waiting === 1 ? '' : 's'} with contract data {waiting === 1 ? 'is' : 'are'} not drawn: too few contracts have the value entered. <Link to="/project-data">Add tender data</Link></p>
           )}
