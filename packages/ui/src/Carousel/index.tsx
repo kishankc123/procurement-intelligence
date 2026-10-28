@@ -1,15 +1,19 @@
 import { Children, useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { ArrowLeft, ChevronRight } from '../icons'
-import { Button } from '../Button'
 import { activeSlide, scrollState } from './scroll'
 import styles from './Carousel.module.css'
 
 const cls = (name: string) => styles[name] ?? ''
 const GAP = 16
 
+/** A tall, thin arrowhead; drawn here (not an icon) so its width fits the page margin beside the row. */
+function Chevron({ dir }: { dir: 'left' | 'right' }) {
+  const points = dir === 'left' ? '13,2 2,28 13,54' : '2,2 13,28 2,54'
+  return <svg width="15" height="56" viewBox="0 0 15 56" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points={points} /></svg>
+}
+
 /**
  * A row of cards you slide through: scroll, swipe, the arrows, the dots or the left and right keys.
- * Built on CSS scroll snapping, so touch and trackpads work natively. When every card fits, the controls are hidden.
+ * Built on CSS scroll snapping, so touch and trackpads work natively. The arrows sit in the page margin beside the row, so the cards keep the full width of the content below and are always shown; they are disabled when every card fits.
  */
 export function Carousel({ children, ariaLabel }: { children: ReactNode; ariaLabel: string }) {
   const slides = Children.toArray(children)
@@ -46,20 +50,20 @@ export function Carousel({ children, ariaLabel }: { children: ReactNode; ariaLab
 
   return (
     <div className={cls('root')}>
+      <div className={cls('stage')}>
+      {overflow && <button type="button" className={`${cls('arrow')} ${cls('arrowPrev')}`} onClick={() => go(-1)} disabled={!state.canPrev} aria-label="Previous cards"><Chevron dir="left" /></button>}
       <div ref={track} className={cls('track')} role="region" aria-roledescription="carousel" aria-label={ariaLabel} tabIndex={0} onScroll={measure} onKeyDown={onKey}>
         {slides.map((s, i) => (
           <div key={i} className={cls('slide')} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${slides.length}`}>{s}</div>
         ))}
       </div>
+      {overflow && <button type="button" className={`${cls('arrow')} ${cls('arrowNext')}`} onClick={() => go(1)} disabled={!state.canNext} aria-label="Next cards"><Chevron dir="right" /></button>}
+      </div>
       {overflow && (
-        <div className={cls('controls')}>
-          <Button onClick={() => go(-1)} disabled={!state.canPrev} aria-label="Previous cards"><ArrowLeft size={16} aria-hidden="true" /></Button>
-          <div className={cls('dots')}>
-            {slides.map((_, i) => (
-              <button key={i} type="button" className={`${cls('dot')} ${i === state.active ? cls('dotOn') : ''}`} aria-label={`Go to card ${i + 1}`} aria-current={i === state.active ? 'true' : undefined} onClick={() => goTo(i)} />
-            ))}
-          </div>
-          <Button onClick={() => go(1)} disabled={!state.canNext} aria-label="Next cards"><ChevronRight size={16} aria-hidden="true" /></Button>
+        <div className={cls('dots')}>
+          {slides.map((_, i) => (
+            <button key={i} type="button" className={`${cls('dot')} ${i === state.active ? cls('dotOn') : ''}`} aria-label={`Go to card ${i + 1}`} aria-current={i === state.active ? 'true' : undefined} onClick={() => goTo(i)} />
+          ))}
         </div>
       )}
     </div>

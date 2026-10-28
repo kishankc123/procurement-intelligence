@@ -8,7 +8,7 @@ import {
 } from '@pi/data'
 import {
   ArrowLeft, Badge, Button, Card, DataGate, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState,
-  ProvenanceChip, Select, TableScroll, Paged, Carousel } from '@pi/ui'
+  ProvenanceChip, Select, TableScroll, Paged, Carousel, ConfirmDeleteDialog, DeleteButton } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import { PlanAgenda } from './PlanAgenda'
 import styles from './Planning.module.css'
@@ -123,26 +123,24 @@ function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; o
           <div className={styles.dialogActions}>
             <Button type="submit" variant="success" disabled={invalid || save.isPending}>Save plan</Button>
             <Button type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-            {confirming ? (
-              <>
-                <span role="alert">Delete this plan for good?</span>
-                <Button type="button" variant="danger" disabled={remove.isPending} onClick={() => remove.mutate(plan, { onSuccess: () => { onOpenChange(false); onDeleted() } })}>Confirm delete</Button>
-                <Button type="button" onClick={() => setConfirming(false)}>Keep plan</Button>
-              </>
-            ) : <Button type="button" variant="danger" onClick={() => setConfirming(true)}>Delete plan</Button>}
+            <DeleteButton onClick={() => setConfirming(true)} label="Delete plan" />
           </div>
         </form>
+        <ConfirmDeleteDialog open={confirming} onOpenChange={setConfirming} what="plan" detail={`${plan.name} (${plan.id})`} pending={remove.isPending}
+          onConfirm={() => remove.mutate(plan, { onSuccess: () => { setConfirming(false); onOpenChange(false); onDeleted() } })} />
       </DialogContent>
     </Dialog>
   )
 }
 
-function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull: (id: string) => void; onEdit: (id: string) => void }) {
+function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string) => void }) {
+  const { role } = useCurrentUser()
+  const allowed = can(role, 'edit_plan')
   return (
     <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
         <Paged items={plans} label="plans">{(pageRows) =><table className={`${styles.table} ${styles.plans}`}>
-          <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th></tr></thead>
+          <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th><th aria-label="Actions" /></tr></thead>
           <tbody>
             {pageRows.map((p) => (
               <Fragment key={p.id}>
@@ -159,10 +157,13 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
                 <td className={`mono ${styles.nowrap}`}>{p.planned_advertisement}</td>
                 <td className={`mono ${styles.nowrap}`}>{p.planned_signing}</td>
                 <td className={`mono ${styles.nowrap}`}>{plannedDurations(p).advertisementToSigning}</td>
+                <td onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                  <DeleteButton onClick={() => onDelete(p.id)} disabledReason={allowed ? undefined : whyDisabled('edit_plan')} />
+                </td>
               </tr>
               {p.id === selectedId && (
                 <tr>
-                  <td colSpan={6} className={styles.expandedCell}>
+                  <td colSpan={7} className={styles.expandedCell}>
                     <PlanTimeline plan={p} onEdit={() => onEdit(p.id)} onFull={() => onFull(p.id)} onClose={() => onSelect(null)} />
                   </td>
                 </tr>
@@ -334,9 +335,12 @@ function PlanListPage() {
   const asOf = useMeta().data?.as_of_date
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const remove = useDeletePlan()
 
   if (!project || !plans) return <Card state="loading">{null}</Card>
   const editing = plans.find((p) => p.id === editingId)
+  const deleting = plans.find((p) => p.id === deletingId)
 
   return (
     <div className={styles.page}>
@@ -345,7 +349,11 @@ function PlanListPage() {
         <p>{project.project_name} · {project.borrower_country}. The tenders you are preparing, compared with what public data and your own entered contracts show.</p>
       </div>
       {asOf && <PlanAgenda plans={plans} asOf={asOf} />}
-      <PlanList plans={plans} selectedId={selectedId} onSelect={setSelectedId} onFull={(id) => navigate(detailPath(id))} onEdit={setEditingId} />
+      <PlanList plans={plans} selectedId={selectedId} onSelect={setSelectedId} onFull={(id) => navigate(detailPath(id))} onEdit={setEditingId} onDelete={setDeletingId} />
+      {deleting && (
+        <ConfirmDeleteDialog open onOpenChange={(o) => { if (!o) setDeletingId(null) }} what="plan" detail={`${deleting.name} (${deleting.id})`} pending={remove.isPending}
+          onConfirm={() => remove.mutate(deleting, { onSuccess: () => { setDeletingId(null); setSelectedId(null) } })} />
+      )}
       {plans.some((p) => fiscalYearOf(p.planned_signing) !== fiscalYear) && (
         <p role="status" className={styles.sub}>Some plans sign outside the selected FY{fiscalYear}.</p>
       )}

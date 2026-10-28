@@ -48,7 +48,7 @@ export function ScheduleCard({ project, badge, footer }: { project: Project; bad
                 progress: r.progress, milestone: r.milestone, tone: TONE[r.status],
                 ariaLabel: `${r.name}, ${r.group}, ${r.start} to ${r.end}, ${STATUS_LABEL[r.status]}${r.progress !== null ? `, ${r.progress}% recorded` : ''}`,
               }))}
-              rangeStart={range.start} rangeEnd={range.end} asOf={asOf}
+              rangeStart={range.start} rangeEnd={range.end} asOf={asOf} visibleRows={8}
               selectedId={selected?.id ?? null} onSelect={setSelectedId}
               legend={[{ tone: 'good', label: 'Complete or on track' }, { tone: 'attention', label: 'Behind' }, { tone: 'bad', label: 'Overdue' }, { tone: 'neutral', label: 'Not started or no progress recorded' }]}
             />

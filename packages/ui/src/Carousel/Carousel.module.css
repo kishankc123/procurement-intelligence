@@ -1,13 +1,20 @@
 .root { display: grid; gap: 10px; min-width: 0; }
+.stage { position: relative; min-width: 0; }
 .track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 2px; margin: -2px; overscroll-behavior-x: contain; }
 .track::-webkit-scrollbar { display: none; }
 .track:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: var(--radius-card); }
 .slide { flex: 0 0 clamp(220px, 30%, 320px); scroll-snap-align: start; min-width: 0; display: grid; }
 .slide > * { height: 100%; }
-.controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
-.dots { display: flex; gap: 6px; align-items: center; }
+.arrow { position: absolute; top: 0; bottom: 0; z-index: 1; display: grid; place-items: center; width: 24px; padding: 0; border: 0; background: none; color: var(--text); cursor: pointer; transition: opacity .15s ease, transform .15s ease; }
+.arrow:hover:not(:disabled) { transform: scale(1.12); }
+.arrow:disabled { opacity: .25; cursor: default; }
+.arrow:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 8px; }
+.arrowPrev { left: -24px; }
+.arrowNext { right: -24px; }
+.dots { display: flex; gap: 6px; align-items: center; justify-content: center; }
 .dot { width: 8px; height: 8px; padding: 0; border-radius: 999px; border: 0; background: var(--border); cursor: pointer; transition: width .2s ease, background-color .2s ease; }
 .dot:hover { background: var(--muted); }
 .dotOn { width: 22px; background: var(--primary); }
 .dot:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .dot { transition: none; } }
+@media (max-width: 720px) { .arrow { width: 16px; } .arrowPrev { left: -16px; } .arrowNext { right: -16px; } }

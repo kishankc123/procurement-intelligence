@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
 import {
-  countryReference, glanceGaps, glanceRows, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
+  countryReference, glanceGaps, glanceRows, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useDeleteTenderDraft, useTenderDraft, useUiStore,
   type Citation, type GlanceRow, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Button, Card, EmptyState, PairedBars, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Button, Card, ConfirmDeleteDialog, DeleteButton, EmptyState, PairedBars, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import { SpecGroups } from './SpecGroups'
 import { ValidityCoverage } from './ValidityCoverage'
@@ -65,6 +65,8 @@ export function TenderDesign() {
   const contracts = useContracts(projectId, fiscalYear).data ?? []
   const enrichments = useEnrichments().data ?? []
   const save = useSaveTenderDraft()
+  const remove = useDeleteTenderDraft()
+  const [confirming, setConfirming] = useState(false)
   const project = useProject(projectId).data?.[0]
   const history = useTenderHistory().data ?? []
   const allPlans = useAllPlans().data ?? []
@@ -107,7 +109,7 @@ export function TenderDesign() {
     <div className={styles.page}>
       <div><h1>Tender design</h1><p className={styles.sub}>Draft the clauses, then see each one against your plan and your contract data.</p></div>
 
-      <Card title="Draft clauses" aside={<ProvenanceChip kind="entered" />}>
+      <Card title="Draft clauses" aside={<span style={{ display: 'flex', gap: 8, alignItems: 'center' }}><ProvenanceChip kind="entered" /><DeleteButton onClick={() => setConfirming(true)} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')} /></span>}>
         <PlanReference plans={plans} plan={plan} onPick={setPlanId} />
         <form className={styles.clauses} onSubmit={(e) => { e.preventDefault(); save.mutate(draft) }}>
           {num('duration_months', 'Contract duration (months)')}
@@ -158,6 +160,8 @@ export function TenderDesign() {
       </Card>
 
       <Card title="Qualification and assistant"><EmptyState title="Planned" text="The qualification card and the retrieval assistant are specified but not built yet." /></Card>
+      <ConfirmDeleteDialog open={confirming} onOpenChange={setConfirming} what="tender draft" detail={`Draft for ${project?.project_name ?? stored.project_id} (${stored.project_id})`} pending={remove.isPending}
+        onConfirm={() => remove.mutate(stored, { onSuccess: () => setConfirming(false) })} />
       <SourceDrawer citation={open} onClose={() => setOpen(null)} />
     </div>
   )

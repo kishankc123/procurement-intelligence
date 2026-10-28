@@ -14,3 +14,6 @@
 .actions input { font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
 .table td { vertical-align: top; }
 .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
+.editForm { display: grid; gap: 12px; }
+.editForm label { display: grid; gap: 6px; }
+.editForm textarea { font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); color: var(--text); resize: vertical; }

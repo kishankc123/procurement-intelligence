@@ -24,3 +24,6 @@
 .dot:focus-visible, .latestDot:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .cross line { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
 .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-ctl); padding: 8px 10px; box-shadow: 0 4px 16px rgba(14, 34, 56, 0.15); font-size: 12px; display: grid; gap: 2px; width: 210px; z-index: 2; }
+.alertBar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.alertScroll { max-height: 420px; overflow-y: auto; padding-right: 8px; }
+.alertScroll:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
