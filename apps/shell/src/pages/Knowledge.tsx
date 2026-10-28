@@ -24,9 +24,9 @@ export function Knowledge() {
       <div><h1>Knowledge base</h1><p className={styles.sub}>Source registry, ingested documents and their chunks. Fetching is simulated: nothing is downloaded.</p></div>
 
       <Card title="Source registry" aside={<Badge>Simulated fetch</Badge>}>
-        <TableScroll><table className={styles.table}>
+        <Paged items={sources.data ?? []} label="sources" maxHeight="360px">{(pageRows) => <table className={styles.table}>
           <thead><tr><th>Source</th><th>Publisher</th><th>Kind</th><th>Status</th><th>Last fetched</th><th /></tr></thead>
-          <tbody>{(sources.data ?? []).map((s) => (
+          <tbody>{pageRows.map((s) => (
             <tr key={s.id}>
               <td>{s.name}<br /><span className="mono">{s.id}</span></td><td>{s.publisher}</td><td>{s.kind}</td>
               <td>{s.status === 'fetched' ? <Badge tone="low">Fetched (simulated)</Badge> : <Badge>Registered</Badge>}</td>
@@ -34,7 +34,7 @@ export function Knowledge() {
               <td><Button onClick={() => fetchSource.mutate({ id: s.id })} disabled={fetchSource.isPending}>Fetch</Button></td>
             </tr>
           ))}</tbody>
-        </table></TableScroll>
+        </table>}</Paged>
       </Card>
 
       <Card title="Documents" aside={<ProvenanceChip kind="public" detail="mock titles" />}>

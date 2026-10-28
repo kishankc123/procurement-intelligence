@@ -84,6 +84,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
   const addLink = useAddSourceLink()
   const recordRun = useRecordIngestionRun()
 
+  const [docOpen, setDocOpen] = useState<string | null>(null)
   const [raw, setRaw] = useState('')
   const [check, setCheck] = useState<UrlCheck | null>(null)
   const [reach, setReach] = useState<'idle' | 'checking' | 'reachable' | 'unreachable'>('idle')
@@ -97,12 +98,12 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
   const canRun = can(role, 'run_ingestion')
   const linkId = pickedLink || links[0]?.id || ''
   const link = links.find((l) => l.id === linkId)
-  const [docOpen, setDocOpen] = useState<string | null>(null)
   const lastRun = [...runs].filter((r) => r.link_id === linkId).sort((a, b) => a.ran_at.localeCompare(b.ran_at)).at(-1)
   const candidates = tenderCandidates(history, allPlans)
   const projectPlans = allPlans.filter((p) => p.project_id === projectId)
   const typed = tenderQuery.trim() ? checkRetender(tenderQuery, candidates) : null
   const linked = linkRecords({ project, contracts, reports, docs, chunks })
+  const groups = groupLinksByRecord(linked)
 
   const onCheck = async () => {
     const result = checkSourceUrl(raw)
@@ -116,7 +117,6 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
     if (!check?.ok || !check.url || !check.host || (reach !== 'reachable' && reach !== 'unreachable')) return
     const known = classifySource(check.host)
     addLink.mutate(
-  const groups = groupLinksByRecord(linked)
       { project_id: projectId, url: check.url, host: check.host, reachability: reach, publisher: known?.publisher ?? null, kind: known?.kind ?? null },
       { onSuccess: () => { setRaw(''); setCheck(null); setReach('idle') } },
     )
@@ -175,7 +175,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {links.length === 0 ? (
           <EmptyState title="No source links on this project yet" text="Paste a link above, check it, then save it to the project." />
         ) : (
-          <Paged items={links} label="source links">{(pageRows) =>
+          <Paged items={links} label="source links" maxHeight="420px">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Link</th><th>Publisher</th><th>Server</th><th>Checked</th><th>Added by</th></tr></thead>
               <tbody>
@@ -263,6 +263,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
             </table>}
           </Paged>
         )}
+        <DocumentDialog docId={docOpen} onClose={() => setDocOpen(null)} />
         <LayerFeedback layer="records" projectId={projectId} />
       </Layer>
 
@@ -276,7 +277,6 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         </label>
         {typed ? (
           <div role="status" className={styles.layer}>
-        <DocumentDialog docId={docOpen} onClose={() => setDocOpen(null)} />
             <div className={styles.result}>
               <div className={styles.row}><Badge tone={VERDICT_TONE[typed.verdict.tone]}>{typed.verdict.tone === 'ok' ? 'No match' : typed.verdict.tone === 'attention' ? 'Check before issuing' : 'Note'}</Badge> <span className={styles.sub}>{typed.compared} tenders compared</span></div>
               <p>{typed.verdict.text}</p>
@@ -286,11 +286,11 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         ) : <p className={styles.sub}>Type above to check one tender. Your plans for this project are checked below.</p>}
         <h3>Your plans for this project</h3>
         {projectPlans.length === 0 ? <EmptyState title="No plans on this project" text="Add a plan in Planning to check it here." /> : (
-          <TableScroll>
+          <Paged items={projectPlans} label="plans" maxHeight="560px">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Plan</th><th>Result</th><th>Earlier tenders that look like it</th></tr></thead>
               <tbody>
-                {projectPlans.map((p) => {
+                {pageRows.map((p) => {
                   const r = checkRetender(p.name, candidates, { excludeIds: [p.id] })
                   return (
                     <tr key={p.id}>
@@ -301,8 +301,8 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
                   )
                 })}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
         <LayerFeedback layer="retender" projectId={projectId} />
       </Layer>
@@ -315,11 +315,11 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {!draft ? <EmptyState title="No tender draft for this project" text="Save a draft in Tender design first." action={<Link to="/tender-design">Open Tender design</Link>} /> : projectPlans.length === 0 ? (
           <EmptyState title="No plans on this project" text="Add a plan in Planning to check the draft against it." />
         ) : (
-          <TableScroll>
+          <Paged items={projectPlans} label="plans" maxHeight="560px">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Plan</th><th>Pass</th><th>To check</th><th>Fail</th><th>Cannot check</th><th>First issue</th></tr></thead>
               <tbody>
-                {projectPlans.map((p) => {
+                {pageRows.map((p) => {
                   const checks = specificationChecks({ draft, plan: p, project, contracts, candidates, docs, chunks, evaluationReference: countryReference(years, project.borrower_country_code, 'C5.2') })
                   const n = (st: string) => checks.filter((c) => c.status === st).length
                   const first = checks.find((c) => c.status === 'fail') ?? checks.find((c) => c.status === 'warn')
@@ -332,8 +332,8 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
                   )
                 })}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
         <div className={styles.row}><Link to="/tender-design">Open Tender design</Link></div>
         <LayerFeedback layer="spec" projectId={projectId} />
@@ -360,11 +360,11 @@ function ProjectPicker({ onPicked }: { onPicked: () => void }) {
         {(projects.data ?? []).length === 0 ? (
           <EmptyState title="No projects found" text="Add a project to mock/db.json and run pnpm reset-db." />
         ) : (
-          <TableScroll>
+          <Paged items={projects.data ?? []} label="projects">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Project</th><th>Country</th><th>Sector</th><th /></tr></thead>
               <tbody>
-                {(projects.data ?? []).map((p) => (
+                {pageRows.map((p) => (
                   <tr key={p.project_id}>
                     <td>{p.project_name}<br /><span className="mono">{p.project_id}</span>{p.project_id === projectId && <> <Badge>Current</Badge></>}</td>
                     <td>{p.borrower_country}</td>
@@ -373,8 +373,8 @@ function ProjectPicker({ onPicked }: { onPicked: () => void }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
       </Card>
     </div>

@@ -127,7 +127,7 @@ export function ProjectData() {
 
       <Card title="Awaiting review" aside={<span className={styles.sub}>Reviewer approves or rejects</span>}>
         {pendingEnr.length + pendingAmd.length === 0 ? <EmptyState title="Nothing pending" text="Entries from planners and contract managers appear here." /> : (
-          <Paged items={pending} label="pending entries">{(pageRows) => <table className={styles.table}>
+          <Paged items={pending} label="pending entries" maxHeight="420px">{(pageRows) => <table className={styles.table}>
             <thead><tr><th>Entry</th><th>Contract</th><th>By</th><th>Decision</th></tr></thead>
             <tbody>
               {pageRows.map((item) => item.kind === 'enrichment' ? (

@@ -89,11 +89,10 @@ export function Suppliers() {
               <EmptyState title="Not enough contracts to judge" text={`Needs ${selected.gate.required} contracts. ${selected.gate.n} so far, so the history below is shown without any flag.`} />
             )}
 
-            <TableScroll>
-              <table className={styles.table}>
+            <Paged items={selected.contracts} label="contracts" maxHeight="420px">{(pageRows) => <table className={styles.table}>
                 <thead><tr><th>Contract</th><th>Project</th><th>Signed</th><th>Amount (USD)</th><th>Approved change</th><th>Time added</th><th>Milestones vs plan</th></tr></thead>
                 <tbody>
-                  {selected.contracts.map((r) => (
+                  {pageRows.map((r) => (
                     <tr key={r.contract.borrower_contract_reference_number}>
                       <td><span className="mono">{r.contract.borrower_contract_reference_number}</span><br /><span className={styles.sub}>{r.contract.procurement_category}</span></td>
                       <td className="mono">{r.contract.project_id}{r.contract.project_id === projectId && <> <Badge>Selected</Badge></>}</td>
@@ -105,8 +104,7 @@ export function Suppliers() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
-            </TableScroll>
+              </table>}</Paged>
             <p className={styles.sub}>
               Price change = approved value changes ÷ contract amounts, including contracts still running. Delay = actual minus planned date of completed milestones. Pending and rejected amendments are not counted.
               Thresholds ({THRESHOLDS.supplierPriceGrowthPct}% price, {THRESHOLDS.supplierDelayDays} days delay, {Math.round(THRESHOLDS.supplierTimeExtensionShare * 100)}% of contracts extended) are in <span className="mono">THRESHOLDS</span>. See <Link to="/project-data">Project data</Link> for amendments on the selected project.

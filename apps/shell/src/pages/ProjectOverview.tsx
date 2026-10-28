@@ -4,7 +4,7 @@ import {
   dataReadiness, plannedDurations, projectPhase, scheduleRows, useContracts, useEnrichments, useMeta, usePlan,
   useProject, useScheduleItems, useTenderDraft, useUiStore,
 } from '@pi/data'
-import { Badge, Card, EmptyState, ProvenanceChip, StackedBars, TableScroll } from '@pi/ui'
+import { Badge, Card, EmptyState, Paged, ProvenanceChip, StackedBars } from '@pi/ui'
 import { RemoteBoundary } from '../RemoteBoundary'
 import styles from './ProjectOverview.module.css'
 
@@ -56,19 +56,17 @@ export function ProjectOverview() {
 
       <Section from="Planning" title="Plans" to="/planning" aside={<ProvenanceChip kind="entered" />}>
         {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans for this project are entered in Planning." /> : (
-          <TableScroll>
-            <table className={styles.table}>
+          <Paged items={plans} label="plans" maxHeight="420px">{(pageRows) => <table className={styles.table}>
               <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th></tr></thead>
               <tbody>
-                {plans.map((p) => (
+                {pageRows.map((p) => (
                   <tr key={p.id}>
                     <td>{p.name}<br /><span className="mono">{p.id}</span></td><td>{p.category}</td><td>{p.method}</td>
                     <td className="mono">{p.planned_advertisement}</td><td className="mono">{p.planned_signing}</td><td className="mono">{plannedDurations(p).advertisementToSigning}</td>
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}</Paged>
         )}
       </Section>
 

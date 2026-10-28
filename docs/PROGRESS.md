@@ -199,6 +199,10 @@ Why: the assessment asks for ingestion of public data, linking structured record
 ## Block 40: retender matches one at a time (step 5)
 - Work with AI layer 4: the "earlier tenders that look like it" cell shows one match in a fixed-height box. With more than one, scroll inside the box (it snaps to the next match) and a line reads "Match 1 of N". The page and table do not move. A single match fits the box with no scrollbar. The same component serves the typed check and each plan row.
 
+## Block 41: scroll and paging sweep (step 6)
+- Now paged with a bounded, scrolling table: Project overview plans, Suppliers contract history, Planning similar completed projects, Knowledge source registry, Work with AI projects, "Your plans" retender table and the specification-check table (14 plans each, pages of 10). Source links and pending entries got a maximum height. Pagers appear only above 10 rows, as before.
+- Left as they are because they cannot grow: key dates, governance, country context, plan stage table, coverage by fiscal year, platform tools, spec-check groups, grounding table, plan reference.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |
