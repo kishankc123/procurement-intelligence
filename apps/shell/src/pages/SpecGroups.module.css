@@ -1,0 +1,18 @@
+/* Chart on top, table below at full width so an opened group has room for its columns. */
+.chartRow { display: grid; gap: 16px; min-width: 0; }
+.chartRow > svg { max-width: 560px; }
+.sub { color: var(--muted); }
+.note { display: grid; gap: 6px; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+.table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.group { cursor: pointer; }
+.group:hover { background: var(--bg); }
+.group:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.groupOn { background: var(--selected, color-mix(in srgb, var(--primary) 9%, transparent)); }
+.empty { cursor: default; opacity: .75; }
+.caret { display: inline-block; width: 1em; transition: transform .15s ease; color: var(--muted); }
+.caretOn { transform: rotate(90deg); }
+.expandedCell { padding: 0 !important; background: var(--bg); }
+.expanded { margin: 0 0 0 16px; padding: 10px 12px 12px; border-left: 3px solid var(--primary); display: grid; gap: 8px; font-size: 13px; min-width: 0; }
+.rule { margin: 2px 0 0; color: var(--muted); font-size: 12px; }

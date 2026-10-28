@@ -2,15 +2,16 @@ import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
 import {
-  SPEC_STATUS_LABEL, countryReference, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
+  countryReference, glanceRows, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
   type Citation, type Comparison, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
+import { Badge, BulletChart, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
+import { SpecGroups } from './SpecGroups'
+import { ValidityCoverage } from './ValidityCoverage'
 import styles from './ProjectData.module.css'
 
 const METHODS = ['Lowest evaluated price', 'Quality and cost based', 'Fixed budget']
-const SPEC_TONE = { pass: 'low', warn: 'medium', fail: 'high', not_checkable: 'neutral' } as const
 const TONE = { ok: { tone: 'low', label: 'OK' }, attention: { tone: 'high', label: 'Check' }, info: { tone: 'neutral', label: 'Info' } } as const
 
 type NumKey = 'duration_months' | 'bid_validity_days' | 'performance_security_pct' | 'min_similar_contracts' | 'min_similar_value_usd'
@@ -101,7 +102,8 @@ export function TenderDesign() {
       evaluationReference: countryReference(years, project.borrower_country_code, 'C5.2'),
     })
     : []
-  const count = (st: string) => checks.filter((c) => c.status === st).length
+  const glance = glanceRows(rows, checks)
+  const waiting = rows.flatMap((r) => r.comparisons).filter((c) => c.gated).length
 
   return (
     <div className={styles.page}>
@@ -125,6 +127,23 @@ export function TenderDesign() {
             <span role="status" className={styles.sub}>{unsaved > 0 ? `${unsaved} unsaved ${unsaved === 1 ? 'change' : 'changes'}` : save.isSuccess ? 'Saved.' : 'No unsaved changes'}</span>
           </div>
         </form>
+      </Card>
+
+      <Card title="At a glance" aside={<ProvenanceChip kind="derived" />}>
+        <div className={styles.stack}>
+          <p className={styles.sub}>The same comparisons as the table below, drawn. They follow the draft above, including unsaved changes.</p>
+          {plan ? (
+            <>
+              <h3>Do bids stay valid until signing?</h3>
+              <ValidityCoverage plan={plan} draft={draft} />
+            </>
+          ) : <EmptyState title="No plan to compare with" text="Add a plan in Planning to see the bid validity diagram." action={<Link to="/planning">Open Planning</Link>} />}
+          <h3>Draft against its reference</h3>
+          {glance.length === 0 ? <EmptyState title="Nothing to draw yet" text="Charts need two numbers, a draft value and a reference." /> : <BulletChart ariaLabel="Draft against reference" rows={glance} />}
+          {waiting > 0 && (
+            <p className={styles.sub}>{waiting} more comparison{waiting === 1 ? '' : 's'} with contract data {waiting === 1 ? 'is' : 'are'} not drawn: too few contracts have the value entered. <Link to="/project-data">Add tender data</Link></p>
+          )}
+        </div>
       </Card>
 
       <Card title="Draft vs. plan and benchmarks" aside={<ProvenanceChip kind="derived" />}>
@@ -161,27 +180,9 @@ export function TenderDesign() {
 
       <Card title="Specification checks" aside={<ProvenanceChip kind="derived" detail={`${checks.length} rules`} />}>
         <p className={styles.sub}>
-          The draft above, including unsaved changes, checked against {plan ? <>the plan <strong>{plan.name}</strong></> : 'a plan (none chosen)'}, the project, contract data and the guidance note. Each rule is shown, with what it found and its evidence.
+          The draft above, including unsaved changes, checked against {plan ? <>the plan <strong>{plan.name}</strong></> : 'a plan (none chosen)'}, the project, contract data and the guidance note. The bars count the results; click a bar or a row below to open its checks, with the rule, the numbers compared and the evidence.
         </p>
-        <p role="status">
-          <Badge tone="low">{count('pass')} pass</Badge> <Badge tone="medium">{count('warn')} to check</Badge> <Badge tone="high">{count('fail')} fail</Badge> <Badge>{count('not_checkable')} cannot check</Badge>
-        </p>
-        <TableScroll>
-          <table className={styles.table}>
-            <thead><tr><th>Clause and rule</th><th>Result</th><th>Your draft</th><th>Compared with</th><th>What it found</th></tr></thead>
-            <tbody>
-              {checks.map((c) => (
-                <tr key={c.id}>
-                  <td><strong>{c.clause}</strong><p className={styles.sub}>{c.rule}</p></td>
-                  <td><Badge tone={SPEC_TONE[c.status]}>{SPEC_STATUS_LABEL[c.status]}</Badge></td>
-                  <td className="mono">{c.draftValue}</td>
-                  <td>{c.reference ?? <ProvenanceChip kind="missing" />}</td>
-                  <td>{c.detail}{c.citations.length > 0 && <div>{c.citations.map((cit) => <span key={cit.ref_id}><CitationChip citation={cit} onOpen={setOpen} />{' '}</span>)}</div>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </TableScroll>
+        <SpecGroups checks={checks} onCite={setOpen} />
         <p className={styles.sub}>Performance security uses the range in the mock guidance note (change it in <span className="mono">SPEC_RULES</span>). "Cannot check" means no source here holds the number; nothing is estimated.</p>
         <div><span className={styles.sub}>Was this check useful? </span><FeedbackWidget targetId={`AI-LAYER-spec-${projectId}`} /></div>
       </Card>

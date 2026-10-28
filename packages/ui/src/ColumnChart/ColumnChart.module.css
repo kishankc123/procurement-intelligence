@@ -1,0 +1,18 @@
+.svg { display: block; width: 100%; max-height: 320px; }
+.grid { stroke: var(--border); stroke-width: 1; }
+.axis { stroke: var(--muted); stroke-width: 1.5; }
+.tick { font-size: 12px; fill: var(--muted); }
+.title { font-size: 12px; fill: var(--text); font-weight: 500; }
+.col { cursor: pointer; outline: none; }
+.hit { fill: transparent; }
+.col:hover .hit { fill: color-mix(in srgb, var(--primary) 8%, transparent); }
+.col:focus-visible .hit { stroke: var(--primary); stroke-width: 2; }
+.bar { opacity: .9; }
+.on .bar { stroke: var(--primary); stroke-width: 3; opacity: 1; }
+.good { fill: var(--prov-derived-fg); }
+.attention { fill: var(--prov-entered-fg); }
+.bad { fill: var(--sev-high-fg); }
+.neutral { fill: var(--prov-public-fg); }
+.value { font-size: 14px; font-weight: 700; fill: var(--text); }
+.label { font-size: 12px; fill: var(--text); }
+.on .label { font-weight: 700; }
