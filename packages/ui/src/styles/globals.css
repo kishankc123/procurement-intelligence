@@ -1,0 +1,46 @@
+/* Tailwind for shadcn components only. Preflight is left out so the existing CSS Modules screens keep their look. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+/* Dark mode follows <html data-theme="dark"> like tokens.css, not the OS setting. */
+@custom-variant dark (&:is([data-theme='dark'] *));
+
+/* The remotes are built separately, so tell Tailwind where their class names live. */
+@source '../../../../apps';
+@source '../../../domain/src';
+@source '../';
+
+/* shadcn colour names point at the tokens in tokens.css, so there is one palette. */
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--on-solid);
+  --color-secondary: var(--bg);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--bg);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--bg);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-success: var(--success);
+  --color-sev-high-bg: var(--sev-high-bg); --color-sev-high-fg: var(--sev-high-fg);
+  --color-sev-med-bg: var(--sev-med-bg); --color-sev-med-fg: var(--sev-med-fg);
+  --color-sev-low-bg: var(--sev-low-bg); --color-sev-low-fg: var(--sev-low-fg);
+  --color-prov-public-bg: var(--prov-public-bg); --color-prov-public-fg: var(--prov-public-fg);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
+  --radius-lg: var(--radius-card);
+  --radius-md: var(--radius-ctl);
+  --radius-sm: 6px;
+  --font-sans: var(--font);
+  --font-mono: var(--mono);
+}

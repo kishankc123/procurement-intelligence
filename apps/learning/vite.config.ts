@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { federation } from '@module-federation/vite'
 
 const singleton = (name: string) => [name, { singleton: true, requiredVersion: false as const }] as const
@@ -14,6 +15,7 @@ export default defineConfig({
   base,
   plugins: [
     react(),
+    tailwindcss(),
     federation({
       name: 'learning',
       filename: 'remoteEntry.js',

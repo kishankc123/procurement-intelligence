@@ -10,7 +10,13 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@pi/config": "workspace:*", "@pi/data": "workspace:*", "@pi/domain": "workspace:*",
-    "@pi/events": "workspace:*", "@pi/ui": "workspace:*"
+    "@pi/config": "workspace:*",
+    "@pi/data": "workspace:*",
+    "@pi/domain": "workspace:*",
+    "@pi/events": "workspace:*",
+    "@pi/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3"
   }
 }

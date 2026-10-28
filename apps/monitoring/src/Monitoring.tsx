@@ -4,7 +4,7 @@ import {
   deriveAlerts, timeElapsedPct, useAlertStates, useAmendments, useAssignAlert, useContracts, useCurrentUser,
   useEnrichments, useGovernance, useMeta, useProject, useReports, useUiStore, type Citation,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './Monitoring.module.css'
 
@@ -15,9 +15,7 @@ function AssignControl({ alertId, current }: { alertId: string; current: string 
   const allowed = can(role, 'assign_alerts')
   return (
     <span className={styles.assign}>
-      <select aria-label="Assign to" value={who} onChange={(e) => setWho(e.target.value)} disabled={!allowed}>
-        {ROLES.map((r) => <option key={r.id}>{r.label}</option>)}
-      </select>{' '}
+      <Select aria-label="Assign to" className="w-44" value={who} onValueChange={setWho} disabled={!allowed} options={ROLES.map((r) => ({ value: r.label, label: r.label }))} />{' '}
       <Button onClick={() => assign.mutate({ id: alertId, assignee: who })} disabledReason={allowed ? undefined : whyDisabled('assign_alerts')}>{current ? 'Reassign' : 'Assign'}</Button>
     </span>
   )

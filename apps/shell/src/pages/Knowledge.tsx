@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useChunks, useDocs, useFetchSource, useMeta, useSources } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select } from '@pi/ui'
 import styles from './ProjectData.module.css'
 
 export function Knowledge() {
@@ -43,9 +43,7 @@ export function Knowledge() {
         <Card title="Documents" aside={<ProvenanceChip kind="public" detail="mock titles" />}>
           <div className={styles.form}>
             <input aria-label="Search documents" placeholder="Search documents" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="">All types</option>{types.map((t) => <option key={t}>{t}</option>)}
-            </select>
+            <Select aria-label="Filter by type" value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v)} options={[{ value: 'all', label: 'All types' }, ...types.map((t) => ({ value: t, label: t }))]} />
           </div>
           {visible.length === 0 ? <EmptyState title="No documents match" /> : (
             <table className={styles.table}>

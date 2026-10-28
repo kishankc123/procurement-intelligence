@@ -5,7 +5,7 @@ import {
   useCurrentUser, useDeletePlan, usePlan, useProject, useRecommendations, useSavePlan, useUiStore,
   type Citation, type Plan,
 } from '@pi/data'
-import { Badge, Button, Card, DataGate, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, DataGate, EmptyState, ProvenanceChip, Select } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './Planning.module.css'
 
@@ -94,14 +94,10 @@ function PlanEditor({ plan, startEditing, onDeleted }: { plan: Plan; startEditin
       <form onSubmit={(e) => { e.preventDefault(); save.mutate(draft, { onSuccess: () => setEditing(false) }) }}>
         <div className={styles.form}>
           <label>Category
-            <select value={draft.category} onChange={(e) => set('category', e.target.value)} disabled={!editing}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
+            <Select value={draft.category} onValueChange={(v) => set('category', v)} disabled={!editing} options={CATEGORIES.map((c) => ({ value: c, label: c }))} />
           </label>
           <label>Method
-            <select value={draft.method} onChange={(e) => set('method', e.target.value)} disabled={!editing}>
-              {METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+            <Select value={draft.method} onValueChange={(v) => set('method', v)} disabled={!editing} options={METHODS.map((m) => ({ value: m, label: m }))} />
           </label>
         </div>
         <table className={styles.table}>

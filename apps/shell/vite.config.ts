@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { federation } from '@module-federation/vite'
 
 const singleton = (name: string) => [name, { singleton: true, requiredVersion: false as const }] as const
@@ -15,6 +16,7 @@ const remoteEntry = (name: string, port: number) =>
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     federation({
       name: 'shell',
       remotes: {

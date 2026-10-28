@@ -68,6 +68,17 @@ Other commands: `pnpm reset-db`, `pnpm typecheck`, `pnpm test` (7 selector tests
 - Learning has a "Contract data readiness" card above the coverage table: horizontal stacked bars (usable, pending review, not usable, missing) per entered field that Tender design or Monitoring reads (bid validity, contract end date), on one zero-based count axis with the common denominator (contracts in the selected project and fiscal year, the same population as the coverage table). Counts are always visible as text; a screen-reader table and per-bar labels are included. Non-interactive (no reliable field/status filter exists in Project data).
 - `dataReadiness` in `packages/data/src/selectors.ts` does the counting; `bidValidityDays` and `contractDurationMonths` are the shared validity rules, now also used by `tenderComparison`, so benchmark and chart cannot disagree. `StackedBars` in `@pi/ui` is presentational only. No new dependencies, no data-model or seed changes. 12 tests pass.
 
+## Block 12: shadcn/ui for Button, Badge and Card, on branch `shadcn-ui` (nothing committed)
+- Tailwind v4 stays without preflight (screens keep their look); `packages/ui/src/styles/globals.css` maps shadcn colour names onto the tokens in `tokens.css` (one palette) and defines the dark variant on `data-theme="dark"`.
+- `@pi/ui` `Button`, `Badge` and `Card` are now thin wrappers over the shadcn components in `packages/ui/src/components/ui/` (customised: our radius, `success` and `danger` button variants, severity badge tones, card title is an `h2`). Their props are unchanged, so no screen changed. The old CSS Modules for those three are deleted.
+- Tailwind CSS is emitted once, by the shell (it scans `apps/`, `packages/domain` and `packages/ui`). The remotes also have the plugin and import the stylesheet in their standalone `bootstrap.tsx` only, so the federated path does not load it twice. `radix-ui` is only used inside `@pi/ui`, so it is not a separate shared singleton.
+- Gates run: typecheck, 12 tests, `pnpm build`, `pnpm build:vercel`, all screens load through federation, no overflow at 1440x900. Cards are `div` now, not `section`.
+
+## Block 13: shadcn Dialog and Select, on branch `shadcn-ui` (nothing committed)
+- `@pi/ui` has a new `Select` (options list, `value` and `onValueChange`; values must not be empty strings) on the shadcn/Radix Select. All 12 native `<select>` elements (top-bar filters, Project data, Planning, Tender design, Knowledge, Monitoring assign) now use it.
+- `SourceDrawer` is a shadcn Dialog styled as a right-hand panel (kept the red Close button). It is now modal: focus is trapped, Escape or a click outside closes it, the page behind is blurred and not clickable.
+- Checked: typecheck, 12 tests, `pnpm build:vercel`, Select opens and picks (fiscal year, field), dialog opens and closes, no overflow at 1440x900 on all 7 screens. Radix renders a hidden native select per Select for forms, so `document.querySelectorAll('select')` is not empty.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

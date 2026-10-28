@@ -5,7 +5,7 @@ import {
   plannedDurations, tenderComparison, useContracts, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
   type Citation, type Comparison, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './ProjectData.module.css'
 
@@ -34,9 +34,7 @@ function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | un
       </div>
       {plans.length > 1 && (
         <label className={styles.planPick}>Compare with another plan
-          <select value={plan.id} onChange={(e) => onPick(e.target.value)}>
-            {plans.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
-          </select>
+          <Select value={plan.id} onValueChange={onPick} options={plans.map((p) => ({ value: p.id, label: `${p.name} (${p.id})` }))} />
         </label>
       )}
     </details>
@@ -96,9 +94,7 @@ export function TenderDesign() {
           {num('min_similar_contracts', 'Minimum similar contracts')}
           {num('min_similar_value_usd', 'Minimum similar contract value (USD)')}
           <label>Evaluation method
-            <select value={draft.evaluation_method} disabled={!allowed} onChange={(e) => setDraft({ ...draft, evaluation_method: e.target.value })}>
-              {METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+            <Select value={draft.evaluation_method} disabled={!allowed} onValueChange={(v) => setDraft({ ...draft, evaluation_method: v })} options={METHODS.map((m) => ({ value: m, label: m }))} />
             {changed('evaluation_method') && <span className={styles.changed}>Saved: {stored.evaluation_method} → now {draft.evaluation_method}</span>}
           </label>
           <div className={styles.actions}>

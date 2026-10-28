@@ -8,7 +8,6 @@
 .main { min-width: 0; }
 .top { display: flex; gap: 18px; align-items: end; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
 .top label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
-.top select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; color: var(--text); min-width: 190px; }
 .label { font-size: 12px; color: var(--muted); }
 .legend { margin-left: auto; display: flex; gap: 6px; }
 .banner { background: #FFF6DB; border-bottom: 1px solid #F0DFA8; padding: 8px 24px; font-size: 13px; }

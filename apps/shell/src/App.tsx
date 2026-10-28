@@ -1,7 +1,7 @@
 import { lazy } from 'react'
 import { NavLink, Navigate, Route, Routes } from 'react-router'
 import { FISCAL_YEARS, ROLES, fiscalYearLabel, type Role } from '@pi/config'
-import { ProvenanceChip } from '@pi/ui'
+import { ProvenanceChip, Select } from '@pi/ui'
 import { tenderCoverage, useContracts, useEnrichments, useMeta, useProjects, useUiStore } from '@pi/data'
 import { RemoteBoundary } from './RemoteBoundary'
 import { Planned } from './pages/Planned'
@@ -59,19 +59,13 @@ export function App() {
       <div className={styles.main}>
         <header className={styles.top}>
           <label>Fiscal year
-            <select value={fiscalYear} onChange={(e) => setFiscalYear(Number(e.target.value))}>
-              {FISCAL_YEARS.map((fy) => <option key={fy} value={fy}>{fiscalYearLabel(fy)}</option>)}
-            </select>
+            <Select value={String(fiscalYear)} onValueChange={(v) => setFiscalYear(Number(v))} options={FISCAL_YEARS.map((fy) => ({ value: String(fy), label: fiscalYearLabel(fy) }))} />
           </label>
           <label>Project
-            <select value={projectId} onChange={(e) => setProject(e.target.value)}>
-              {projects.map((p) => <option key={p.project_id} value={p.project_id}>{p.project_id} · {p.project_name}</option>)}
-            </select>
+            <Select value={projectId} onValueChange={setProject} options={projects.map((p) => ({ value: p.project_id, label: `${p.project_id} · ${p.project_name}` }))} />
           </label>
           <label>Role (demo switcher, no sign-in)
-            <select value={role} onChange={(e) => setRole(e.target.value as Role)}>
-              {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
-            </select>
+            <Select value={role} onValueChange={(v) => setRole(v as Role)} options={ROLES.map((r) => ({ value: r.id, label: r.label }))} />
           </label>
           <Coverage />
           <div className={styles.legend}>
