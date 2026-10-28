@@ -3,3 +3,4 @@ dist
 .DS_Store
 gppd_data.json
 dist-vercel
+apps/shell/@mf-types
