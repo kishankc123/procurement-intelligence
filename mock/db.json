@@ -254,6 +254,531 @@
       "contract_signing_date": "2026-02-12",
       "fiscal_year": 2026,
       "contract_description": "Mock consulting services package for P-MOCK-002"
+    },
+    {
+      "borrower_contract_reference_number": "REF-007",
+      "wb_contract_number": "MOCK-WB-015",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Earthworks Group",
+      "supplier_id": "MOCK-SUP-7",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 150000,
+      "contract_signing_date": "2025-02-11",
+      "fiscal_year": 2025,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-008",
+      "wb_contract_number": "MOCK-WB-016",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Concrete Supply",
+      "supplier_id": "MOCK-SUP-8",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3855000,
+      "contract_signing_date": "2025-03-24",
+      "fiscal_year": 2025,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-009",
+      "wb_contract_number": "MOCK-WB-017",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Signage Systems",
+      "supplier_id": "MOCK-SUP-9",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Quality-based",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3760000,
+      "contract_signing_date": "2025-05-06",
+      "fiscal_year": 2025,
+      "contract_description": "Mock consulting services package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-010",
+      "wb_contract_number": "MOCK-WB-018",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Geotech Services",
+      "supplier_id": "MOCK-SUP-10",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 3665000,
+      "contract_signing_date": "2025-06-17",
+      "fiscal_year": 2025,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-011",
+      "wb_contract_number": "MOCK-WB-019",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Steel Fabricators",
+      "supplier_id": "MOCK-SUP-11",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3570000,
+      "contract_signing_date": "2025-07-08",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-012",
+      "wb_contract_number": "MOCK-WB-020",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Traffic Engineering",
+      "supplier_id": "MOCK-SUP-12",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3475000,
+      "contract_signing_date": "2025-07-22",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-013",
+      "wb_contract_number": "MOCK-WB-021",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Landscaping Co",
+      "supplier_id": "MOCK-SUP-13",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 3380000,
+      "contract_signing_date": "2025-08-05",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-014",
+      "wb_contract_number": "MOCK-WB-022",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Lighting Works",
+      "supplier_id": "MOCK-SUP-14",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Consultant qualification",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3285000,
+      "contract_signing_date": "2025-08-19",
+      "fiscal_year": 2026,
+      "contract_description": "Mock consulting services package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-015",
+      "wb_contract_number": "MOCK-WB-023",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Equipment Rental",
+      "supplier_id": "MOCK-SUP-15",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3190000,
+      "contract_signing_date": "2025-09-02",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-016",
+      "wb_contract_number": "MOCK-WB-024",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Environmental Consultants",
+      "supplier_id": "MOCK-SUP-16",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Open competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 3095000,
+      "contract_signing_date": "2025-09-16",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-017",
+      "wb_contract_number": "MOCK-WB-025",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Quarry Materials",
+      "supplier_id": "MOCK-SUP-17",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3000000,
+      "contract_signing_date": "2025-09-30",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-018",
+      "wb_contract_number": "MOCK-WB-026",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Paving Partners",
+      "supplier_id": "MOCK-SUP-18",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 2905000,
+      "contract_signing_date": "2025-10-14",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-019",
+      "wb_contract_number": "MOCK-WB-027",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Culvert Builders",
+      "supplier_id": "MOCK-SUP-19",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Quality-based",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 2810000,
+      "contract_signing_date": "2025-10-28",
+      "fiscal_year": 2026,
+      "contract_description": "Mock consulting services package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-020",
+      "wb_contract_number": "MOCK-WB-028",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Design Studio",
+      "supplier_id": "MOCK-SUP-20",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 2715000,
+      "contract_signing_date": "2025-11-11",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-021",
+      "wb_contract_number": "MOCK-WB-029",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Earthworks Group",
+      "supplier_id": "MOCK-SUP-7",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 2620000,
+      "contract_signing_date": "2025-11-25",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-022",
+      "wb_contract_number": "MOCK-WB-030",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Concrete Supply",
+      "supplier_id": "MOCK-SUP-8",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 2525000,
+      "contract_signing_date": "2025-12-09",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-023",
+      "wb_contract_number": "MOCK-WB-031",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Signage Systems",
+      "supplier_id": "MOCK-SUP-9",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 2430000,
+      "contract_signing_date": "2025-12-23",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-024",
+      "wb_contract_number": "MOCK-WB-032",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Geotech Services",
+      "supplier_id": "MOCK-SUP-10",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Consultant qualification",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 2335000,
+      "contract_signing_date": "2026-01-06",
+      "fiscal_year": 2026,
+      "contract_description": "Mock consulting services package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-025",
+      "wb_contract_number": "MOCK-WB-033",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Steel Fabricators",
+      "supplier_id": "MOCK-SUP-11",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 2240000,
+      "contract_signing_date": "2026-01-20",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-026",
+      "wb_contract_number": "MOCK-WB-034",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Traffic Engineering",
+      "supplier_id": "MOCK-SUP-12",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 2145000,
+      "contract_signing_date": "2026-02-03",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-027",
+      "wb_contract_number": "MOCK-WB-035",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Landscaping Co",
+      "supplier_id": "MOCK-SUP-13",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 2050000,
+      "contract_signing_date": "2026-02-17",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-028",
+      "wb_contract_number": "MOCK-WB-036",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Lighting Works",
+      "supplier_id": "MOCK-SUP-14",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Open competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 1955000,
+      "contract_signing_date": "2026-03-03",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-029",
+      "wb_contract_number": "MOCK-WB-037",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Equipment Rental",
+      "supplier_id": "MOCK-SUP-15",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Quality-based",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 1860000,
+      "contract_signing_date": "2026-03-17",
+      "fiscal_year": 2026,
+      "contract_description": "Mock consulting services package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-030",
+      "wb_contract_number": "MOCK-WB-038",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Environmental Consultants",
+      "supplier_id": "MOCK-SUP-16",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 1765000,
+      "contract_signing_date": "2026-03-31",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-031",
+      "wb_contract_number": "MOCK-WB-039",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Quarry Materials",
+      "supplier_id": "MOCK-SUP-17",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 1670000,
+      "contract_signing_date": "2026-04-14",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-032",
+      "wb_contract_number": "MOCK-WB-040",
+      "project_id": "P-MOCK-001",
+      "supplier": "Mock Paving Partners",
+      "supplier_id": "MOCK-SUP-18",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 1575000,
+      "contract_signing_date": "2026-04-28",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-001"
+    },
+    {
+      "borrower_contract_reference_number": "REF-201",
+      "wb_contract_number": "MOCK-WB-041",
+      "project_id": "P-MOCK-002",
+      "supplier": "Mock Signage Systems",
+      "supplier_id": "MOCK-SUP-9",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 150000,
+      "contract_signing_date": "2025-10-02",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-002"
+    },
+    {
+      "borrower_contract_reference_number": "REF-203",
+      "wb_contract_number": "MOCK-WB-042",
+      "project_id": "P-MOCK-002",
+      "supplier": "Mock Geotech Services",
+      "supplier_id": "MOCK-SUP-10",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3855000,
+      "contract_signing_date": "2025-12-11",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-002"
+    },
+    {
+      "borrower_contract_reference_number": "REF-204",
+      "wb_contract_number": "MOCK-WB-043",
+      "project_id": "P-MOCK-002",
+      "supplier": "Mock Steel Fabricators",
+      "supplier_id": "MOCK-SUP-11",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Quality-based",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3760000,
+      "contract_signing_date": "2026-02-05",
+      "fiscal_year": 2026,
+      "contract_description": "Mock consulting services package for P-MOCK-002"
+    },
+    {
+      "borrower_contract_reference_number": "REF-205",
+      "wb_contract_number": "MOCK-WB-044",
+      "project_id": "P-MOCK-002",
+      "supplier": "Mock Traffic Engineering",
+      "supplier_id": "MOCK-SUP-12",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 3665000,
+      "contract_signing_date": "2026-03-19",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-002"
+    },
+    {
+      "borrower_contract_reference_number": "REF-206",
+      "wb_contract_number": "MOCK-WB-045",
+      "project_id": "P-MOCK-002",
+      "supplier": "Mock Landscaping Co",
+      "supplier_id": "MOCK-SUP-13",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3570000,
+      "contract_signing_date": "2026-04-23",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-002"
+    },
+    {
+      "borrower_contract_reference_number": "REF-301",
+      "wb_contract_number": "MOCK-WB-046",
+      "project_id": "P-MOCK-003",
+      "supplier": "Mock Equipment Rental",
+      "supplier_id": "MOCK-SUP-15",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3855000,
+      "contract_signing_date": "2026-01-22",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-003"
+    },
+    {
+      "borrower_contract_reference_number": "REF-302",
+      "wb_contract_number": "MOCK-WB-047",
+      "project_id": "P-MOCK-003",
+      "supplier": "Mock Environmental Consultants",
+      "supplier_id": "MOCK-SUP-16",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Quality-based",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3760000,
+      "contract_signing_date": "2026-03-05",
+      "fiscal_year": 2026,
+      "contract_description": "Mock consulting services package for P-MOCK-003"
+    },
+    {
+      "borrower_contract_reference_number": "REF-303",
+      "wb_contract_number": "MOCK-WB-048",
+      "project_id": "P-MOCK-003",
+      "supplier": "Mock Quarry Materials",
+      "supplier_id": "MOCK-SUP-17",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 3665000,
+      "contract_signing_date": "2026-04-16",
+      "fiscal_year": 2026,
+      "contract_description": "Mock works package for P-MOCK-003"
+    },
+    {
+      "borrower_contract_reference_number": "REF-304",
+      "wb_contract_number": "MOCK-WB-049",
+      "project_id": "P-MOCK-003",
+      "supplier": "Mock Paving Partners",
+      "supplier_id": "MOCK-SUP-18",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3570000,
+      "contract_signing_date": "2026-05-12",
+      "fiscal_year": 2026,
+      "contract_description": "Mock goods package for P-MOCK-003"
     }
   ],
   "enrichments": [
@@ -311,6 +836,611 @@
       "status": "approved",
       "source_note": "Mock tender notice, transcribed by hand",
       "entered_at": "2026-03-01T10:00:00Z"
+    },
+    {
+      "id": "ENR-X1",
+      "contract_ref": "REF-011",
+      "field": "bid_validity_days",
+      "value": "60",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-04-06T09:30:00Z"
+    },
+    {
+      "id": "ENR-X2",
+      "contract_ref": "REF-012",
+      "field": "bid_validity_days",
+      "value": "90",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-05-07T09:30:00Z"
+    },
+    {
+      "id": "ENR-X3",
+      "contract_ref": "REF-013",
+      "field": "bid_validity_days",
+      "value": "120",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-03-08T09:30:00Z"
+    },
+    {
+      "id": "ENR-X4",
+      "contract_ref": "REF-014",
+      "field": "bid_validity_days",
+      "value": "75",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-04-09T09:30:00Z"
+    },
+    {
+      "id": "ENR-X5",
+      "contract_ref": "REF-015",
+      "field": "bid_validity_days",
+      "value": "90",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-05-10T09:30:00Z"
+    },
+    {
+      "id": "ENR-X6",
+      "contract_ref": "REF-016",
+      "field": "bid_validity_days",
+      "value": "60",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-03-11T09:30:00Z"
+    },
+    {
+      "id": "ENR-X7",
+      "contract_ref": "REF-017",
+      "field": "bid_validity_days",
+      "value": "120",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-04-12T09:30:00Z"
+    },
+    {
+      "id": "ENR-X8",
+      "contract_ref": "REF-018",
+      "field": "bid_validity_days",
+      "value": "90",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-05-13T09:30:00Z"
+    },
+    {
+      "id": "ENR-X9",
+      "contract_ref": "REF-019",
+      "field": "bid_validity_days",
+      "value": "100",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-03-14T09:30:00Z"
+    },
+    {
+      "id": "ENR-X10",
+      "contract_ref": "REF-020",
+      "field": "bid_validity_days",
+      "value": "60",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-04-15T09:30:00Z"
+    },
+    {
+      "id": "ENR-X11",
+      "contract_ref": "REF-021",
+      "field": "bid_validity_days",
+      "value": "90",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-05-16T09:30:00Z"
+    },
+    {
+      "id": "ENR-X12",
+      "contract_ref": "REF-022",
+      "field": "bid_validity_days",
+      "value": "120",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-03-17T09:30:00Z"
+    },
+    {
+      "id": "ENR-X13",
+      "contract_ref": "REF-023",
+      "field": "bid_validity_days",
+      "value": "90",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "pending",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-04-18T09:30:00Z"
+    },
+    {
+      "id": "ENR-X14",
+      "contract_ref": "REF-024",
+      "field": "bid_validity_days",
+      "value": "120",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "pending",
+      "source_note": "Mock bidding documents",
+      "entered_at": "2026-05-19T09:30:00Z"
+    },
+    {
+      "id": "ENR-X15",
+      "contract_ref": "REF-026",
+      "field": "bid_validity_days",
+      "value": "0",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock typo: zero days is not usable",
+      "entered_at": "2026-03-20T09:30:00Z"
+    },
+    {
+      "id": "ENR-X16",
+      "contract_ref": "REF-025",
+      "field": "bid_validity_days",
+      "value": "-30",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "rejected",
+      "source_note": "Mock typo, rejected by reviewer",
+      "entered_at": "2026-04-21T09:30:00Z"
+    },
+    {
+      "id": "ENR-X17",
+      "contract_ref": "REF-011",
+      "field": "advertised_date",
+      "value": "2025-03-30",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-05-22T09:30:00Z"
+    },
+    {
+      "id": "ENR-X18",
+      "contract_ref": "REF-011",
+      "field": "bids_opened_date",
+      "value": "2025-05-09",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-03-23T09:30:00Z"
+    },
+    {
+      "id": "ENR-X19",
+      "contract_ref": "REF-012",
+      "field": "advertised_date",
+      "value": "2025-04-13",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-04-24T09:30:00Z"
+    },
+    {
+      "id": "ENR-X20",
+      "contract_ref": "REF-012",
+      "field": "bids_opened_date",
+      "value": "2025-05-23",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-05-05T09:30:00Z"
+    },
+    {
+      "id": "ENR-X21",
+      "contract_ref": "REF-013",
+      "field": "advertised_date",
+      "value": "2025-04-27",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-03-06T09:30:00Z"
+    },
+    {
+      "id": "ENR-X22",
+      "contract_ref": "REF-013",
+      "field": "bids_opened_date",
+      "value": "2025-06-06",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-04-07T09:30:00Z"
+    },
+    {
+      "id": "ENR-X23",
+      "contract_ref": "REF-014",
+      "field": "advertised_date",
+      "value": "2025-05-11",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-05-08T09:30:00Z"
+    },
+    {
+      "id": "ENR-X24",
+      "contract_ref": "REF-014",
+      "field": "bids_opened_date",
+      "value": "2025-06-20",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-03-09T09:30:00Z"
+    },
+    {
+      "id": "ENR-X25",
+      "contract_ref": "REF-015",
+      "field": "advertised_date",
+      "value": "2025-05-25",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-04-10T09:30:00Z"
+    },
+    {
+      "id": "ENR-X26",
+      "contract_ref": "REF-015",
+      "field": "bids_opened_date",
+      "value": "2025-07-04",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-05-11T09:30:00Z"
+    },
+    {
+      "id": "ENR-X27",
+      "contract_ref": "REF-016",
+      "field": "advertised_date",
+      "value": "2025-06-08",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-03-12T09:30:00Z"
+    },
+    {
+      "id": "ENR-X28",
+      "contract_ref": "REF-016",
+      "field": "bids_opened_date",
+      "value": "2025-07-18",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-04-13T09:30:00Z"
+    },
+    {
+      "id": "ENR-X29",
+      "contract_ref": "REF-017",
+      "field": "advertised_date",
+      "value": "2025-06-22",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-05-14T09:30:00Z"
+    },
+    {
+      "id": "ENR-X30",
+      "contract_ref": "REF-017",
+      "field": "bids_opened_date",
+      "value": "2025-08-01",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-03-15T09:30:00Z"
+    },
+    {
+      "id": "ENR-X31",
+      "contract_ref": "REF-018",
+      "field": "advertised_date",
+      "value": "2025-07-06",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-04-16T09:30:00Z"
+    },
+    {
+      "id": "ENR-X32",
+      "contract_ref": "REF-018",
+      "field": "bids_opened_date",
+      "value": "2025-08-15",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-05-17T09:30:00Z"
+    },
+    {
+      "id": "ENR-X33",
+      "contract_ref": "REF-019",
+      "field": "advertised_date",
+      "value": "2025-07-20",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-03-18T09:30:00Z"
+    },
+    {
+      "id": "ENR-X34",
+      "contract_ref": "REF-019",
+      "field": "bids_opened_date",
+      "value": "2025-08-29",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-04-19T09:30:00Z"
+    },
+    {
+      "id": "ENR-X35",
+      "contract_ref": "REF-020",
+      "field": "advertised_date",
+      "value": "2025-08-08",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "pending",
+      "source_note": "Mock tender notice",
+      "entered_at": "2026-05-20T09:30:00Z"
+    },
+    {
+      "id": "ENR-X36",
+      "contract_ref": "REF-011",
+      "field": "bidders_received",
+      "value": "3",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-03-21T09:30:00Z"
+    },
+    {
+      "id": "ENR-X37",
+      "contract_ref": "REF-012",
+      "field": "bidders_received",
+      "value": "5",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-04-22T09:30:00Z"
+    },
+    {
+      "id": "ENR-X38",
+      "contract_ref": "REF-013",
+      "field": "bidders_received",
+      "value": "4",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-05-23T09:30:00Z"
+    },
+    {
+      "id": "ENR-X39",
+      "contract_ref": "REF-014",
+      "field": "bidders_received",
+      "value": "2",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-03-24T09:30:00Z"
+    },
+    {
+      "id": "ENR-X40",
+      "contract_ref": "REF-015",
+      "field": "bidders_received",
+      "value": "6",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-04-05T09:30:00Z"
+    },
+    {
+      "id": "ENR-X41",
+      "contract_ref": "REF-016",
+      "field": "bidders_received",
+      "value": "4",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "pending",
+      "source_note": "Mock bid opening minutes",
+      "entered_at": "2026-05-06T09:30:00Z"
+    },
+    {
+      "id": "ENR-X42",
+      "contract_ref": "REF-011",
+      "field": "bidders_qualified",
+      "value": "2",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock evaluation report",
+      "entered_at": "2026-03-07T09:30:00Z"
+    },
+    {
+      "id": "ENR-X43",
+      "contract_ref": "REF-012",
+      "field": "bidders_qualified",
+      "value": "3",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock evaluation report",
+      "entered_at": "2026-04-08T09:30:00Z"
+    },
+    {
+      "id": "ENR-X44",
+      "contract_ref": "REF-013",
+      "field": "bidders_qualified",
+      "value": "2",
+      "entered_by_role": "planner",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock evaluation report",
+      "entered_at": "2026-05-09T09:30:00Z"
+    },
+    {
+      "id": "ENR-X45",
+      "contract_ref": "REF-011",
+      "field": "contract_end_date",
+      "value": "2026-03-31",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-03-10T09:30:00Z"
+    },
+    {
+      "id": "ENR-X46",
+      "contract_ref": "REF-012",
+      "field": "contract_end_date",
+      "value": "2026-05-15",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-04-11T09:30:00Z"
+    },
+    {
+      "id": "ENR-X47",
+      "contract_ref": "REF-013",
+      "field": "contract_end_date",
+      "value": "2026-09-30",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-05-12T09:30:00Z"
+    },
+    {
+      "id": "ENR-X48",
+      "contract_ref": "REF-014",
+      "field": "contract_end_date",
+      "value": "2026-10-31",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-03-13T09:30:00Z"
+    },
+    {
+      "id": "ENR-X49",
+      "contract_ref": "REF-015",
+      "field": "contract_end_date",
+      "value": "2026-12-15",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-04-14T09:30:00Z"
+    },
+    {
+      "id": "ENR-X50",
+      "contract_ref": "REF-016",
+      "field": "contract_end_date",
+      "value": "2027-01-31",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-05-15T09:30:00Z"
+    },
+    {
+      "id": "ENR-X51",
+      "contract_ref": "REF-017",
+      "field": "contract_end_date",
+      "value": "2027-03-15",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-03-16T09:30:00Z"
+    },
+    {
+      "id": "ENR-X52",
+      "contract_ref": "REF-018",
+      "field": "contract_end_date",
+      "value": "2027-05-31",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-04-17T09:30:00Z"
+    },
+    {
+      "id": "ENR-X53",
+      "contract_ref": "REF-019",
+      "field": "contract_end_date",
+      "value": "2027-06-30",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "approved",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-05-18T09:30:00Z"
+    },
+    {
+      "id": "ENR-X54",
+      "contract_ref": "REF-020",
+      "field": "contract_end_date",
+      "value": "2027-08-31",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "pending",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-03-19T09:30:00Z"
+    },
+    {
+      "id": "ENR-X55",
+      "contract_ref": "REF-021",
+      "field": "contract_end_date",
+      "value": "2027-09-30",
+      "entered_by_role": "contract_manager",
+      "fiscal_year": 2026,
+      "status": "pending",
+      "source_note": "Mock contract data sheet",
+      "entered_at": "2026-04-20T09:30:00Z"
     }
   ],
   "amendments": [
@@ -356,6 +1486,149 @@
       "value_change_usd": 18000,
       "reason": "Quantity adjustment (mock).",
       "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-5",
+      "contract_ref": "REF-001",
+      "type": "Time extension",
+      "date": "2026-03-12",
+      "days_added": 45,
+      "value_change_usd": 0,
+      "reason": "Utility relocation delayed the start (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-6",
+      "contract_ref": "REF-002",
+      "type": "Time extension and value change",
+      "date": "2026-04-02",
+      "days_added": 60,
+      "value_change_usd": 310000,
+      "reason": "Extra pier protection after river survey (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-7",
+      "contract_ref": "REF-004",
+      "type": "Value change",
+      "date": "2026-04-14",
+      "days_added": 0,
+      "value_change_usd": 42000,
+      "reason": "Additional signage quantities (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-8",
+      "contract_ref": "REF-011",
+      "type": "Time extension",
+      "date": "2026-02-10",
+      "days_added": 30,
+      "value_change_usd": 0,
+      "reason": "Weather delay (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-9",
+      "contract_ref": "REF-012",
+      "type": "Time extension and value change",
+      "date": "2026-03-03",
+      "days_added": 75,
+      "value_change_usd": 120000,
+      "reason": "Design change on drainage (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-10",
+      "contract_ref": "REF-013",
+      "type": "Value change",
+      "date": "2026-03-20",
+      "days_added": 0,
+      "value_change_usd": 65000,
+      "reason": "Price adjustment on asphalt (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-11",
+      "contract_ref": "REF-014",
+      "type": "Time extension",
+      "date": "2026-04-08",
+      "days_added": 21,
+      "value_change_usd": 0,
+      "reason": "Late access to site (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-12",
+      "contract_ref": "REF-015",
+      "type": "Time extension and value change",
+      "date": "2026-05-06",
+      "days_added": 90,
+      "value_change_usd": 210000,
+      "reason": "Ground conditions differed from survey (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-13",
+      "contract_ref": "REF-016",
+      "type": "Time extension",
+      "date": "2026-05-12",
+      "days_added": 30,
+      "value_change_usd": 0,
+      "reason": "Supplier delivery delay (mock).",
+      "status": "pending",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-14",
+      "contract_ref": "REF-017",
+      "type": "Value change",
+      "date": "2026-05-14",
+      "days_added": 0,
+      "value_change_usd": 88000,
+      "reason": "Quantity adjustment (mock).",
+      "status": "pending",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-15",
+      "contract_ref": "REF-018",
+      "type": "Time extension and value change",
+      "date": "2026-05-18",
+      "days_added": 40,
+      "value_change_usd": 54000,
+      "reason": "Added kerb works (mock).",
+      "status": "pending",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-16",
+      "contract_ref": "REF-019",
+      "type": "Time extension",
+      "date": "2026-05-20",
+      "days_added": 14,
+      "value_change_usd": 0,
+      "reason": "Permit delay (mock).",
+      "status": "pending",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-17",
+      "contract_ref": "REF-020",
+      "type": "Value change",
+      "date": "2026-05-21",
+      "days_added": 0,
+      "value_change_usd": 900000,
+      "reason": "Value change above the contract limit, queried by reviewer (mock).",
+      "status": "rejected",
       "entered_by_role": "contract_manager"
     }
   ],
@@ -436,6 +1709,118 @@
       "name": "Final report",
       "planned_date": "2026-04-30",
       "actual_date": "2026-04-27"
+    },
+    {
+      "id": "MS-MOCK-12",
+      "contract_ref": "REF-002",
+      "name": "Mobilisation",
+      "planned_date": "2025-12-15",
+      "actual_date": "2026-01-12"
+    },
+    {
+      "id": "MS-MOCK-13",
+      "contract_ref": "REF-002",
+      "name": "Substantial completion",
+      "planned_date": "2026-11-30",
+      "actual_date": null
+    },
+    {
+      "id": "MS-MOCK-14",
+      "contract_ref": "REF-003",
+      "name": "Delivery complete",
+      "planned_date": "2026-03-15",
+      "actual_date": "2026-03-20"
+    },
+    {
+      "id": "MS-MOCK-15",
+      "contract_ref": "REF-004",
+      "name": "Mobilisation",
+      "planned_date": "2026-03-01",
+      "actual_date": "2026-03-24"
+    },
+    {
+      "id": "MS-MOCK-16",
+      "contract_ref": "REF-005",
+      "name": "Inception report",
+      "planned_date": "2026-04-15",
+      "actual_date": "2026-04-10"
+    },
+    {
+      "id": "MS-MOCK-17",
+      "contract_ref": "REF-006",
+      "name": "Mobilisation",
+      "planned_date": "2026-05-20",
+      "actual_date": null
+    },
+    {
+      "id": "MS-MOCK-18",
+      "contract_ref": "REF-011",
+      "name": "Mobilisation",
+      "planned_date": "2025-08-15",
+      "actual_date": "2025-08-29"
+    },
+    {
+      "id": "MS-MOCK-19",
+      "contract_ref": "REF-011",
+      "name": "Substantial completion",
+      "planned_date": "2026-03-15",
+      "actual_date": "2026-04-20"
+    },
+    {
+      "id": "MS-MOCK-20",
+      "contract_ref": "REF-012",
+      "name": "Mobilisation",
+      "planned_date": "2025-09-01",
+      "actual_date": "2025-09-15"
+    },
+    {
+      "id": "MS-MOCK-21",
+      "contract_ref": "REF-012",
+      "name": "Substantial completion",
+      "planned_date": "2026-04-30",
+      "actual_date": null
+    },
+    {
+      "id": "MS-MOCK-22",
+      "contract_ref": "REF-013",
+      "name": "Delivery complete",
+      "planned_date": "2025-10-15",
+      "actual_date": "2025-10-14"
+    },
+    {
+      "id": "MS-MOCK-23",
+      "contract_ref": "REF-014",
+      "name": "Mobilisation",
+      "planned_date": "2025-10-20",
+      "actual_date": "2025-11-04"
+    },
+    {
+      "id": "MS-MOCK-24",
+      "contract_ref": "REF-015",
+      "name": "Mobilisation",
+      "planned_date": "2025-11-01",
+      "actual_date": "2025-11-20"
+    },
+    {
+      "id": "MS-MOCK-25",
+      "contract_ref": "REF-016",
+      "name": "Final report",
+      "planned_date": "2026-02-28",
+      "actual_date": "2026-03-05"
+    },
+    {
+      "id": "MS-MOCK-26",
+      "contract_ref": "REF-017",
+      "name": "Delivery complete",
+      "planned_date": "2026-03-31",
+      "actual_date": "2026-03-29"
+    },
+    {
+      "id": "MS-MOCK-27",
+      "contract_ref": "REF-018",
+      "name": "Mobilisation",
+      "planned_date": "2026-02-15",
+      "actual_date": null
     }
   ],
   "plans": [
@@ -471,6 +1856,215 @@
       "planned_signing": "2026-11-10",
       "category": "Consulting services",
       "method": "Quality-based"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-4",
+      "project_id": "P-MOCK-001",
+      "name": "Pedestrian bridge steel supply",
+      "planned_advertisement": "2026-07-06",
+      "planned_bid_opening": "2026-08-10",
+      "planned_evaluation_complete": "2026-08-31",
+      "planned_signing": "2026-10-05",
+      "category": "Goods",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-5",
+      "project_id": "P-MOCK-001",
+      "name": "Highway lighting retrofit",
+      "planned_advertisement": "2026-07-16",
+      "planned_bid_opening": "2026-08-20",
+      "planned_evaluation_complete": "2026-09-17",
+      "planned_signing": "2026-10-27",
+      "category": "Works",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-6",
+      "project_id": "P-MOCK-001",
+      "name": "Culvert replacement, Lot 4",
+      "planned_advertisement": "2026-07-26",
+      "planned_bid_opening": "2026-08-30",
+      "planned_evaluation_complete": "2026-10-04",
+      "planned_signing": "2026-11-18",
+      "category": "Works",
+      "method": "Limited competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-7",
+      "project_id": "P-MOCK-001",
+      "name": "Environmental monitoring services",
+      "planned_advertisement": "2026-08-05",
+      "planned_bid_opening": "2026-09-09",
+      "planned_evaluation_complete": "2026-09-30",
+      "planned_signing": "2026-11-19",
+      "category": "Consulting services",
+      "method": "Quality-based"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-8",
+      "project_id": "P-MOCK-001",
+      "name": "Road marking paint supply",
+      "planned_advertisement": "2026-08-15",
+      "planned_bid_opening": "2026-09-19",
+      "planned_evaluation_complete": "2026-10-17",
+      "planned_signing": "2026-11-21",
+      "category": "Goods",
+      "method": "Shopping"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-9",
+      "project_id": "P-MOCK-001",
+      "name": "Geotechnical survey, southern section",
+      "planned_advertisement": "2026-08-25",
+      "planned_bid_opening": "2026-09-29",
+      "planned_evaluation_complete": "2026-11-03",
+      "planned_signing": "2026-12-13",
+      "category": "Consulting services",
+      "method": "Consultant qualification"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-10",
+      "project_id": "P-MOCK-001",
+      "name": "Traffic counting equipment",
+      "planned_advertisement": "2026-09-04",
+      "planned_bid_opening": "2026-10-09",
+      "planned_evaluation_complete": "2026-10-30",
+      "planned_signing": "2026-12-14",
+      "category": "Goods",
+      "method": "Shopping"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-11",
+      "project_id": "P-MOCK-001",
+      "name": "Drainage rehabilitation, Lot 5",
+      "planned_advertisement": "2026-09-14",
+      "planned_bid_opening": "2026-10-19",
+      "planned_evaluation_complete": "2026-11-16",
+      "planned_signing": "2027-01-05",
+      "category": "Works",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-12",
+      "project_id": "P-MOCK-001",
+      "name": "Technical audit consultancy",
+      "planned_advertisement": "2026-09-24",
+      "planned_bid_opening": "2026-10-29",
+      "planned_evaluation_complete": "2026-12-03",
+      "planned_signing": "2027-01-07",
+      "category": "Consulting services",
+      "method": "Quality-based"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-13",
+      "project_id": "P-MOCK-001",
+      "name": "Asphalt plant equipment",
+      "planned_advertisement": "2026-10-04",
+      "planned_bid_opening": "2026-11-08",
+      "planned_evaluation_complete": "2026-11-29",
+      "planned_signing": "2027-01-08",
+      "category": "Goods",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-001-14",
+      "project_id": "P-MOCK-001",
+      "name": "Resettlement action plan support",
+      "planned_advertisement": "2026-10-14",
+      "planned_bid_opening": "2026-11-18",
+      "planned_evaluation_complete": "2026-12-16",
+      "planned_signing": "2027-01-30",
+      "category": "Consulting services",
+      "method": "Quality-based"
+    },
+    {
+      "id": "PLAN-P-MOCK-002-1",
+      "project_id": "P-MOCK-002",
+      "name": "Pipe supply, Phase 2",
+      "planned_advertisement": "2026-08-03",
+      "planned_bid_opening": "2026-09-07",
+      "planned_evaluation_complete": "2026-09-28",
+      "planned_signing": "2026-11-02",
+      "category": "Goods",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-002-2",
+      "project_id": "P-MOCK-002",
+      "name": "Pump station civil works",
+      "planned_advertisement": "2026-08-13",
+      "planned_bid_opening": "2026-09-17",
+      "planned_evaluation_complete": "2026-10-15",
+      "planned_signing": "2026-11-24",
+      "category": "Works",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-002-3",
+      "project_id": "P-MOCK-002",
+      "name": "Supervision consultancy",
+      "planned_advertisement": "2026-08-23",
+      "planned_bid_opening": "2026-09-27",
+      "planned_evaluation_complete": "2026-11-01",
+      "planned_signing": "2026-12-16",
+      "category": "Consulting services",
+      "method": "Quality-based"
+    },
+    {
+      "id": "PLAN-P-MOCK-002-4",
+      "project_id": "P-MOCK-002",
+      "name": "Telemetry equipment",
+      "planned_advertisement": "2026-09-02",
+      "planned_bid_opening": "2026-10-07",
+      "planned_evaluation_complete": "2026-10-28",
+      "planned_signing": "2026-12-17",
+      "category": "Goods",
+      "method": "Shopping"
+    },
+    {
+      "id": "PLAN-P-MOCK-003-1",
+      "project_id": "P-MOCK-003",
+      "name": "Clinic refurbishment, Lot 1",
+      "planned_advertisement": "2026-09-07",
+      "planned_bid_opening": "2026-10-12",
+      "planned_evaluation_complete": "2026-11-02",
+      "planned_signing": "2026-12-07",
+      "category": "Works",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-003-2",
+      "project_id": "P-MOCK-003",
+      "name": "Medical equipment supply",
+      "planned_advertisement": "2026-09-17",
+      "planned_bid_opening": "2026-10-22",
+      "planned_evaluation_complete": "2026-11-19",
+      "planned_signing": "2026-12-29",
+      "category": "Goods",
+      "method": "Open competitive"
+    },
+    {
+      "id": "PLAN-P-MOCK-003-3",
+      "project_id": "P-MOCK-003",
+      "name": "Design review services",
+      "planned_advertisement": "2026-09-27",
+      "planned_bid_opening": "2026-11-01",
+      "planned_evaluation_complete": "2026-12-06",
+      "planned_signing": "2027-01-20",
+      "category": "Consulting services",
+      "method": "Quality-based"
+    },
+    {
+      "id": "PLAN-P-MOCK-003-4",
+      "project_id": "P-MOCK-003",
+      "name": "Clinic furniture supply",
+      "planned_advertisement": "2026-10-07",
+      "planned_bid_opening": "2026-11-11",
+      "planned_evaluation_complete": "2026-12-02",
+      "planned_signing": "2027-01-21",
+      "category": "Goods",
+      "method": "Shopping"
     }
   ],
   "tender_drafts": [
@@ -483,6 +2077,26 @@
       "min_similar_contracts": 2,
       "min_similar_value_usd": 2000000,
       "evaluation_method": "Lowest evaluated price"
+    },
+    {
+      "id": "TD-P-MOCK-002",
+      "project_id": "P-MOCK-002",
+      "duration_months": 14,
+      "bid_validity_days": 90,
+      "performance_security_pct": 8,
+      "min_similar_contracts": 2,
+      "min_similar_value_usd": 1000000,
+      "evaluation_method": "Lowest evaluated price"
+    },
+    {
+      "id": "TD-P-MOCK-003",
+      "project_id": "P-MOCK-003",
+      "duration_months": 20,
+      "bid_validity_days": 75,
+      "performance_security_pct": 10,
+      "min_similar_contracts": 3,
+      "min_similar_value_usd": 1500000,
+      "evaluation_method": "Quality and cost based"
     }
   ],
   "supervision_reports": [
@@ -532,6 +2146,48 @@
           "note": "Mock level-2 restructuring: extend closing date"
         }
       ]
+    },
+    {
+      "id": "ISR-MOCK-002-1",
+      "project_id": "P-MOCK-002",
+      "sequence": 1,
+      "date": "2025-12-01",
+      "progress_rating_prev": null,
+      "progress_rating": "S",
+      "implementation_rating": "S",
+      "overall_risk_prev": null,
+      "overall_risk": "Moderate",
+      "fiduciary_risk": "Moderate",
+      "disbursed_pct": 4,
+      "restructurings": []
+    },
+    {
+      "id": "ISR-MOCK-002-2",
+      "project_id": "P-MOCK-002",
+      "sequence": 2,
+      "date": "2026-04-15",
+      "progress_rating_prev": "S",
+      "progress_rating": "S",
+      "implementation_rating": "S",
+      "overall_risk_prev": "Moderate",
+      "overall_risk": "Moderate",
+      "fiduciary_risk": "Moderate",
+      "disbursed_pct": 9,
+      "restructurings": []
+    },
+    {
+      "id": "ISR-MOCK-003-1",
+      "project_id": "P-MOCK-003",
+      "sequence": 1,
+      "date": "2026-04-20",
+      "progress_rating_prev": null,
+      "progress_rating": "S",
+      "implementation_rating": "S",
+      "overall_risk_prev": null,
+      "overall_risk": "Moderate",
+      "fiduciary_risk": "Moderate",
+      "disbursed_pct": 1,
+      "restructurings": []
     }
   ],
   "completion_reports": [
@@ -577,6 +2233,51 @@
           "section": "Section 6",
           "text": "Late land acquisition delayed site handover.",
           "chunk_id": "CH-MOCK-009"
+        }
+      ]
+    },
+    {
+      "id": "ICR-MOCK-104",
+      "project_id": "P-MOCK-104",
+      "project_name": "Mock Coastal Road D",
+      "outcome_rating": "Satisfactory",
+      "restructurings": 1,
+      "closing_extension_months": 3,
+      "lessons": [
+        {
+          "section": "Section 6",
+          "text": "Prequalifying bidders for the complex bridge package shortened evaluation.",
+          "chunk_id": "CH-MOCK-017"
+        }
+      ]
+    },
+    {
+      "id": "ICR-MOCK-105",
+      "project_id": "P-MOCK-105",
+      "project_name": "Mock Municipal Roads E",
+      "outcome_rating": "Moderately unsatisfactory",
+      "restructurings": 2,
+      "closing_extension_months": 11,
+      "lessons": [
+        {
+          "section": "Section 6",
+          "text": "Late approval of time amendments left contractors without cover.",
+          "chunk_id": "CH-MOCK-018"
+        }
+      ]
+    },
+    {
+      "id": "ICR-MOCK-106",
+      "project_id": "P-MOCK-106",
+      "project_name": "Mock Rail Crossings F",
+      "outcome_rating": "Moderately satisfactory",
+      "restructurings": 1,
+      "closing_extension_months": 6,
+      "lessons": [
+        {
+          "section": "Section 6",
+          "text": "A single consultant framework weakened independent review of design changes.",
+          "chunk_id": "CH-MOCK-019"
         }
       ]
     }
@@ -644,6 +2345,141 @@
       "date": "2024-01-10",
       "pages": 14,
       "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-ISR-201",
+      "project_id": "P-MOCK-002",
+      "type": "Supervision report",
+      "title": "Mock Implementation Status Report 1 (Rural Water)",
+      "date": "2025-12-01",
+      "pages": 10,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-ISR-202",
+      "project_id": "P-MOCK-002",
+      "type": "Supervision report",
+      "title": "Mock Implementation Status Report 2 (Rural Water)",
+      "date": "2026-04-15",
+      "pages": 11,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-ISR-301",
+      "project_id": "P-MOCK-003",
+      "type": "Supervision report",
+      "title": "Mock Implementation Status Report 1 (Urban Health)",
+      "date": "2026-04-20",
+      "pages": 9,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-ICR-104",
+      "project_id": "P-MOCK-104",
+      "type": "Completion report",
+      "title": "Mock Completion Report: Coastal Road D",
+      "date": "2024-06-28",
+      "pages": 60,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-ICR-105",
+      "project_id": "P-MOCK-105",
+      "type": "Completion report",
+      "title": "Mock Completion Report: Municipal Roads E",
+      "date": "2023-03-31",
+      "pages": 55,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-ICR-106",
+      "project_id": "P-MOCK-106",
+      "type": "Completion report",
+      "title": "Mock Completion Report: Rail Crossings F",
+      "date": "2025-02-14",
+      "pages": 70,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-GUIDE-2",
+      "project_id": "GENERAL",
+      "type": "Guidance",
+      "title": "Mock Guidance Note: Evaluation and Award",
+      "date": "2024-03-05",
+      "pages": 12,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-GUIDE-3",
+      "project_id": "GENERAL",
+      "type": "Guidance",
+      "title": "Mock Guidance Note: Contract Management and Amendments",
+      "date": "2024-05-20",
+      "pages": 16,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-GUIDE-4",
+      "project_id": "GENERAL",
+      "type": "Guidance",
+      "title": "Mock Guidance Note: Selecting Consultants",
+      "date": "2024-08-12",
+      "pages": 18,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-PAD-1",
+      "project_id": "P-MOCK-001",
+      "type": "Appraisal",
+      "title": "Mock Project Appraisal Document (Road Rehabilitation)",
+      "date": "2024-08-30",
+      "pages": 120,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-PLAN-1",
+      "project_id": "P-MOCK-001",
+      "type": "Procurement plan",
+      "title": "Mock Procurement Plan (Road Rehabilitation)",
+      "date": "2025-01-20",
+      "pages": 8,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-EVAL-1",
+      "project_id": "P-MOCK-001",
+      "type": "Evaluation report",
+      "title": "Mock Bid Evaluation Report, REF-001",
+      "date": "2025-10-06",
+      "pages": 18,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-ESMP-1",
+      "project_id": "P-MOCK-001",
+      "type": "Safeguards document",
+      "title": "Mock Environmental and Social Management Plan",
+      "date": "2024-09-02",
+      "pages": 44,
+      "parse_status": "parsed"
+    },
+    {
+      "doc_id": "DOC-MOCK-CMP-1",
+      "project_id": "P-MOCK-001",
+      "type": "Contract management plan",
+      "title": "Mock Contract Management Plan",
+      "date": "2025-06-10",
+      "pages": 15,
+      "parse_status": "pending"
+    },
+    {
+      "doc_id": "DOC-MOCK-AUD-1",
+      "project_id": "P-MOCK-001",
+      "type": "Audit report",
+      "title": "Mock Annual Audit Report FY2025",
+      "date": "2025-11-30",
+      "pages": 30,
+      "parse_status": "failed"
     }
   ],
   "chunks": [
@@ -765,6 +2601,186 @@
       "strategy": "section-aware",
       "token_count": 30,
       "text": "Mock procurement guidance. Evaluation of bids is normally completed within a few weeks of bid opening for works contracts without a prequalification stage.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-013",
+      "doc_id": "DOC-MOCK-ISR-201",
+      "page": 3,
+      "section_path": "Ratings",
+      "strategy": "section-aware",
+      "token_count": 23,
+      "text": "Mock supervision report for P-MOCK-002. Progress toward the development objective is rated Satisfactory and overall risk is Moderate.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-014",
+      "doc_id": "DOC-MOCK-ISR-201",
+      "page": 6,
+      "section_path": "Procurement",
+      "strategy": "section-aware",
+      "token_count": 26,
+      "text": "Mock supervision report for P-MOCK-002. The pipe supply tender was cancelled when no compliant bids were received and was re-issued.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-015",
+      "doc_id": "DOC-MOCK-ISR-202",
+      "page": 3,
+      "section_path": "Ratings",
+      "strategy": "section-aware",
+      "token_count": 21,
+      "text": "Mock supervision report 2 for P-MOCK-002. Ratings are unchanged. Disbursement is 9 percent of the loan.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-016",
+      "doc_id": "DOC-MOCK-ISR-301",
+      "page": 3,
+      "section_path": "Ratings",
+      "strategy": "section-aware",
+      "token_count": 23,
+      "text": "Mock supervision report for P-MOCK-003. The project is not yet effective; progress toward the objective is rated Satisfactory.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-017",
+      "doc_id": "DOC-MOCK-ICR-104",
+      "page": 40,
+      "section_path": "Section 6 Lessons Learned",
+      "strategy": "section-aware",
+      "token_count": 30,
+      "text": "Mock completion report. Prequalifying bidders for the complex bridge package reduced the number of unresponsive bids and shortened evaluation by about three weeks.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-018",
+      "doc_id": "DOC-MOCK-ICR-105",
+      "page": 36,
+      "section_path": "Section 6 Lessons Learned",
+      "strategy": "section-aware",
+      "token_count": 33,
+      "text": "Mock completion report. Contract amendments for time were approved late, so liquidated damages could not be applied and two contractors stayed on site without cover.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-019",
+      "doc_id": "DOC-MOCK-ICR-106",
+      "page": 47,
+      "section_path": "Section 6 Lessons Learned",
+      "strategy": "section-aware",
+      "token_count": 27,
+      "text": "Mock completion report. A single consultant framework for design and supervision reduced procurement time but weakened independent review of design changes.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-020",
+      "doc_id": "DOC-MOCK-GUIDE-2",
+      "page": 4,
+      "section_path": "Evaluation",
+      "strategy": "section-aware",
+      "token_count": 33,
+      "text": "Mock procurement guidance. The evaluation report should record each bidder against the stated criteria, and the award should be made within the bid validity period.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-021",
+      "doc_id": "DOC-MOCK-GUIDE-2",
+      "page": 8,
+      "section_path": "Standstill",
+      "strategy": "section-aware",
+      "token_count": 23,
+      "text": "Mock procurement guidance. A standstill period lets unsuccessful bidders ask for a debrief before the contract is signed.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-022",
+      "doc_id": "DOC-MOCK-GUIDE-3",
+      "page": 3,
+      "section_path": "Amendments",
+      "strategy": "section-aware",
+      "token_count": 35,
+      "text": "Mock procurement guidance. Amendments that change time or value should be recorded with a reason, approved before they take effect and reported with the next supervision report.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-023",
+      "doc_id": "DOC-MOCK-GUIDE-3",
+      "page": 7,
+      "section_path": "Milestones",
+      "strategy": "section-aware",
+      "token_count": 31,
+      "text": "Mock procurement guidance. Planned and actual dates for mobilisation and completion should be recorded for every works contract so delays can be seen early.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-024",
+      "doc_id": "DOC-MOCK-GUIDE-4",
+      "page": 5,
+      "section_path": "Selection methods",
+      "strategy": "section-aware",
+      "token_count": 34,
+      "text": "Mock procurement guidance. Quality-based selection suits assignments where the quality of the advice matters more than cost; the shortlist normally has between three and six firms.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-025",
+      "doc_id": "DOC-MOCK-PAD-1",
+      "page": 22,
+      "section_path": "Procurement arrangements",
+      "strategy": "section-aware",
+      "token_count": 31,
+      "text": "Mock appraisal document for P-MOCK-001. Works above the national threshold are procured by open competitive tender; REF-001 and REF-002 are the first two packages.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-026",
+      "doc_id": "DOC-MOCK-PAD-1",
+      "page": 31,
+      "section_path": "Implementation risks",
+      "strategy": "section-aware",
+      "token_count": 25,
+      "text": "Mock appraisal document for P-MOCK-001. Land acquisition and late payment to contractors are identified as the main implementation risks.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-027",
+      "doc_id": "DOC-MOCK-PLAN-1",
+      "page": 2,
+      "section_path": "Works packages",
+      "strategy": "section-aware",
+      "token_count": 31,
+      "text": "Mock procurement plan for P-MOCK-001. Contracts REF-003 and REF-004 are shopping and limited competitive packages with expected signing in the first half of 2026.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-028",
+      "doc_id": "DOC-MOCK-PLAN-1",
+      "page": 5,
+      "section_path": "Consultancies",
+      "strategy": "section-aware",
+      "token_count": 23,
+      "text": "Mock procurement plan for P-MOCK-001. Contract REF-005 covers survey services selected on quality, and REF-006 covers drainage works.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-029",
+      "doc_id": "DOC-MOCK-EVAL-1",
+      "page": 6,
+      "section_path": "Summary",
+      "strategy": "section-aware",
+      "token_count": 27,
+      "text": "Mock bid evaluation report for contract REF-001. Three bids were received and opened; the lowest evaluated bid was recommended for award.",
+      "embedding_status": "simulated"
+    },
+    {
+      "chunk_id": "CH-MOCK-030",
+      "doc_id": "DOC-MOCK-ESMP-1",
+      "page": 12,
+      "section_path": "Mitigation",
+      "strategy": "section-aware",
+      "token_count": 25,
+      "text": "Mock safeguards plan for P-MOCK-001. Contractors prepare a site-specific management plan before mobilisation; contract REF-002 requires river protection measures.",
       "embedding_status": "simulated"
     }
   ],
@@ -2484,6 +4500,50 @@
         "control_of_corruption": 90
       },
       "cpia_16": null
+    },
+    {
+      "id": "RO-2021",
+      "country": "RO",
+      "year": 2021,
+      "wgi": {
+        "regulatory_quality": 66,
+        "government_effectiveness": 49,
+        "control_of_corruption": 52
+      },
+      "cpia_16": null
+    },
+    {
+      "id": "RO-2022",
+      "country": "RO",
+      "year": 2022,
+      "wgi": {
+        "regulatory_quality": 67,
+        "government_effectiveness": 51,
+        "control_of_corruption": 54
+      },
+      "cpia_16": null
+    },
+    {
+      "id": "EE-2021",
+      "country": "EE",
+      "year": 2021,
+      "wgi": {
+        "regulatory_quality": 89,
+        "government_effectiveness": 87,
+        "control_of_corruption": 89
+      },
+      "cpia_16": null
+    },
+    {
+      "id": "EE-2022",
+      "country": "EE",
+      "year": 2022,
+      "wgi": {
+        "regulatory_quality": 90,
+        "government_effectiveness": 88,
+        "control_of_corruption": 90
+      },
+      "cpia_16": null
     }
   ],
   "recommendations": [
@@ -2530,9 +4590,1398 @@
     }
   ],
   "alerts": [],
-  "feedback": [],
-  "audit_log": [],
+  "feedback": [
+    {
+      "id": "FB-SEED-1",
+      "target_id": "REC-MOCK-1",
+      "rating": "helpful",
+      "reason": "",
+      "role": "planner",
+      "status": "accepted",
+      "created_at": "2026-05-01T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-2",
+      "target_id": "REC-MOCK-1",
+      "rating": "helpful",
+      "reason": "Matches what we saw on Lot 2.",
+      "role": "contract_manager",
+      "status": "accepted",
+      "created_at": "2026-05-02T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-3",
+      "target_id": "REC-MOCK-2",
+      "rating": "not_helpful",
+      "reason": "The rating drop is already known to the team.",
+      "role": "planner",
+      "status": "new",
+      "created_at": "2026-05-03T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-4",
+      "target_id": "REC-MOCK-2",
+      "rating": "helpful",
+      "reason": "",
+      "role": "reviewer",
+      "status": "accepted",
+      "created_at": "2026-05-04T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-5",
+      "target_id": "REC-MOCK-3",
+      "rating": "not_helpful",
+      "reason": "Needs bidder counts; please add data first.",
+      "role": "planner",
+      "status": "edited",
+      "created_at": "2026-05-05T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-6",
+      "target_id": "REC-MOCK-3",
+      "rating": "helpful",
+      "reason": "",
+      "role": "contract_manager",
+      "status": "new",
+      "created_at": "2026-05-06T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-7",
+      "target_id": "AI-LAYER-spec-P-MOCK-001",
+      "rating": "helpful",
+      "reason": "",
+      "role": "planner",
+      "status": "new",
+      "created_at": "2026-05-07T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-8",
+      "target_id": "AI-LAYER-spec-P-MOCK-001",
+      "rating": "not_helpful",
+      "reason": "Performance security range is too wide.",
+      "role": "reviewer",
+      "status": "rejected",
+      "created_at": "2026-05-08T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-9",
+      "target_id": "AI-LAYER-link-P-MOCK-001",
+      "rating": "helpful",
+      "reason": "",
+      "role": "admin",
+      "status": "accepted",
+      "created_at": "2026-05-09T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-10",
+      "target_id": "AI-LAYER-link-P-MOCK-001",
+      "rating": "not_helpful",
+      "reason": "Unknown host was not explained.",
+      "role": "planner",
+      "status": "new",
+      "created_at": "2026-05-10T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-11",
+      "target_id": "AI-LAYER-ingestion-P-MOCK-001",
+      "rating": "helpful",
+      "reason": "",
+      "role": "planner",
+      "status": "new",
+      "created_at": "2026-05-11T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-12",
+      "target_id": "AI-LAYER-records-P-MOCK-001",
+      "rating": "not_helpful",
+      "reason": "One link joined the wrong report.",
+      "role": "contract_manager",
+      "status": "edited",
+      "created_at": "2026-05-12T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-13",
+      "target_id": "AI-LAYER-retender-P-MOCK-001",
+      "rating": "helpful",
+      "reason": "",
+      "role": "reviewer",
+      "status": "accepted",
+      "created_at": "2026-05-13T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-14",
+      "target_id": "AI-LAYER-retender-P-MOCK-001",
+      "rating": "not_helpful",
+      "reason": "Reason text was cut off.",
+      "role": "planner",
+      "status": "new",
+      "created_at": "2026-05-14T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-15",
+      "target_id": "AI-LAYER-supplier-P-MOCK-001",
+      "rating": "helpful",
+      "reason": "",
+      "role": "planner",
+      "status": "rejected",
+      "created_at": "2026-05-15T14:00:00Z"
+    },
+    {
+      "id": "FB-SEED-16",
+      "target_id": "AI-LAYER-schedule-P-MOCK-001",
+      "rating": "helpful",
+      "reason": "",
+      "role": "contract_manager",
+      "status": "new",
+      "created_at": "2026-05-16T14:00:00Z"
+    }
+  ],
+  "audit_log": [
+    {
+      "id": "AUD-SEED-001",
+      "at": "2026-02-10T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-011"
+    },
+    {
+      "id": "AUD-SEED-002",
+      "at": "2026-02-10T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-8"
+    },
+    {
+      "id": "AUD-SEED-003",
+      "at": "2026-03-03T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-012"
+    },
+    {
+      "id": "AUD-SEED-004",
+      "at": "2026-03-03T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-9"
+    },
+    {
+      "id": "AUD-SEED-005",
+      "at": "2026-03-06T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-013"
+    },
+    {
+      "id": "AUD-SEED-006",
+      "at": "2026-03-06T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X21"
+    },
+    {
+      "id": "AUD-SEED-007",
+      "at": "2026-03-07T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_qualified",
+      "target": "REF-011"
+    },
+    {
+      "id": "AUD-SEED-008",
+      "at": "2026-03-07T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X42"
+    },
+    {
+      "id": "AUD-SEED-009",
+      "at": "2026-03-08T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-013"
+    },
+    {
+      "id": "AUD-SEED-010",
+      "at": "2026-03-08T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X3"
+    },
+    {
+      "id": "AUD-SEED-011",
+      "at": "2026-03-09T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-014"
+    },
+    {
+      "id": "AUD-SEED-012",
+      "at": "2026-03-09T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X24"
+    },
+    {
+      "id": "AUD-SEED-013",
+      "at": "2026-03-10T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-011"
+    },
+    {
+      "id": "AUD-SEED-014",
+      "at": "2026-03-10T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X45"
+    },
+    {
+      "id": "AUD-SEED-015",
+      "at": "2026-03-11T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-016"
+    },
+    {
+      "id": "AUD-SEED-016",
+      "at": "2026-03-11T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X6"
+    },
+    {
+      "id": "AUD-SEED-017",
+      "at": "2026-03-12T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-001"
+    },
+    {
+      "id": "AUD-SEED-018",
+      "at": "2026-03-12T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-016"
+    },
+    {
+      "id": "AUD-SEED-019",
+      "at": "2026-03-12T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-5"
+    },
+    {
+      "id": "AUD-SEED-020",
+      "at": "2026-03-12T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X27"
+    },
+    {
+      "id": "AUD-SEED-021",
+      "at": "2026-03-13T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-014"
+    },
+    {
+      "id": "AUD-SEED-022",
+      "at": "2026-03-13T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X48"
+    },
+    {
+      "id": "AUD-SEED-023",
+      "at": "2026-03-14T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-019"
+    },
+    {
+      "id": "AUD-SEED-024",
+      "at": "2026-03-14T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X9"
+    },
+    {
+      "id": "AUD-SEED-025",
+      "at": "2026-03-15T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-017"
+    },
+    {
+      "id": "AUD-SEED-026",
+      "at": "2026-03-15T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X30"
+    },
+    {
+      "id": "AUD-SEED-027",
+      "at": "2026-03-16T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-017"
+    },
+    {
+      "id": "AUD-SEED-028",
+      "at": "2026-03-16T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X51"
+    },
+    {
+      "id": "AUD-SEED-029",
+      "at": "2026-03-17T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-022"
+    },
+    {
+      "id": "AUD-SEED-030",
+      "at": "2026-03-17T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X12"
+    },
+    {
+      "id": "AUD-SEED-031",
+      "at": "2026-03-18T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-019"
+    },
+    {
+      "id": "AUD-SEED-032",
+      "at": "2026-03-18T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X33"
+    },
+    {
+      "id": "AUD-SEED-033",
+      "at": "2026-03-19T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-020"
+    },
+    {
+      "id": "AUD-SEED-034",
+      "at": "2026-03-20T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-013"
+    },
+    {
+      "id": "AUD-SEED-035",
+      "at": "2026-03-20T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-026"
+    },
+    {
+      "id": "AUD-SEED-036",
+      "at": "2026-03-20T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-10"
+    },
+    {
+      "id": "AUD-SEED-037",
+      "at": "2026-03-20T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X15"
+    },
+    {
+      "id": "AUD-SEED-038",
+      "at": "2026-03-21T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_received",
+      "target": "REF-011"
+    },
+    {
+      "id": "AUD-SEED-039",
+      "at": "2026-03-21T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X36"
+    },
+    {
+      "id": "AUD-SEED-040",
+      "at": "2026-03-23T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-011"
+    },
+    {
+      "id": "AUD-SEED-041",
+      "at": "2026-03-23T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X18"
+    },
+    {
+      "id": "AUD-SEED-042",
+      "at": "2026-03-24T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_received",
+      "target": "REF-014"
+    },
+    {
+      "id": "AUD-SEED-043",
+      "at": "2026-03-24T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X39"
+    },
+    {
+      "id": "AUD-SEED-044",
+      "at": "2026-04-02T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-002"
+    },
+    {
+      "id": "AUD-SEED-045",
+      "at": "2026-04-02T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-6"
+    },
+    {
+      "id": "AUD-SEED-046",
+      "at": "2026-04-05T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_received",
+      "target": "REF-015"
+    },
+    {
+      "id": "AUD-SEED-047",
+      "at": "2026-04-05T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X40"
+    },
+    {
+      "id": "AUD-SEED-048",
+      "at": "2026-04-06T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-011"
+    },
+    {
+      "id": "AUD-SEED-049",
+      "at": "2026-04-06T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X1"
+    },
+    {
+      "id": "AUD-SEED-050",
+      "at": "2026-04-07T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-013"
+    },
+    {
+      "id": "AUD-SEED-051",
+      "at": "2026-04-07T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X22"
+    },
+    {
+      "id": "AUD-SEED-052",
+      "at": "2026-04-08T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-014"
+    },
+    {
+      "id": "AUD-SEED-053",
+      "at": "2026-04-08T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_qualified",
+      "target": "REF-012"
+    },
+    {
+      "id": "AUD-SEED-054",
+      "at": "2026-04-08T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-11"
+    },
+    {
+      "id": "AUD-SEED-055",
+      "at": "2026-04-08T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X43"
+    },
+    {
+      "id": "AUD-SEED-056",
+      "at": "2026-04-09T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-014"
+    },
+    {
+      "id": "AUD-SEED-057",
+      "at": "2026-04-09T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X4"
+    },
+    {
+      "id": "AUD-SEED-058",
+      "at": "2026-04-10T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-015"
+    },
+    {
+      "id": "AUD-SEED-059",
+      "at": "2026-04-10T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X25"
+    },
+    {
+      "id": "AUD-SEED-060",
+      "at": "2026-04-11T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-012"
+    },
+    {
+      "id": "AUD-SEED-061",
+      "at": "2026-04-11T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X46"
+    },
+    {
+      "id": "AUD-SEED-062",
+      "at": "2026-04-12T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-017"
+    },
+    {
+      "id": "AUD-SEED-063",
+      "at": "2026-04-12T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X7"
+    },
+    {
+      "id": "AUD-SEED-064",
+      "at": "2026-04-13T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-016"
+    },
+    {
+      "id": "AUD-SEED-065",
+      "at": "2026-04-13T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X28"
+    },
+    {
+      "id": "AUD-SEED-066",
+      "at": "2026-04-14T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-004"
+    },
+    {
+      "id": "AUD-SEED-067",
+      "at": "2026-04-14T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-015"
+    },
+    {
+      "id": "AUD-SEED-068",
+      "at": "2026-04-14T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-7"
+    },
+    {
+      "id": "AUD-SEED-069",
+      "at": "2026-04-14T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X49"
+    },
+    {
+      "id": "AUD-SEED-070",
+      "at": "2026-04-15T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-020"
+    },
+    {
+      "id": "AUD-SEED-071",
+      "at": "2026-04-15T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X10"
+    },
+    {
+      "id": "AUD-SEED-072",
+      "at": "2026-04-16T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-018"
+    },
+    {
+      "id": "AUD-SEED-073",
+      "at": "2026-04-16T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X31"
+    },
+    {
+      "id": "AUD-SEED-074",
+      "at": "2026-04-17T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-018"
+    },
+    {
+      "id": "AUD-SEED-075",
+      "at": "2026-04-17T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X52"
+    },
+    {
+      "id": "AUD-SEED-076",
+      "at": "2026-04-18T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-023"
+    },
+    {
+      "id": "AUD-SEED-077",
+      "at": "2026-04-19T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-019"
+    },
+    {
+      "id": "AUD-SEED-078",
+      "at": "2026-04-19T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X34"
+    },
+    {
+      "id": "AUD-SEED-079",
+      "at": "2026-04-20T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-021"
+    },
+    {
+      "id": "AUD-SEED-080",
+      "at": "2026-04-21T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-025"
+    },
+    {
+      "id": "AUD-SEED-081",
+      "at": "2026-04-21T16:00:00Z",
+      "role": "reviewer",
+      "action": "Rejected entry",
+      "target": "ENR-X16"
+    },
+    {
+      "id": "AUD-SEED-082",
+      "at": "2026-04-22T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_received",
+      "target": "REF-012"
+    },
+    {
+      "id": "AUD-SEED-083",
+      "at": "2026-04-22T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X37"
+    },
+    {
+      "id": "AUD-SEED-084",
+      "at": "2026-04-24T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-012"
+    },
+    {
+      "id": "AUD-SEED-085",
+      "at": "2026-04-24T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X19"
+    },
+    {
+      "id": "AUD-SEED-086",
+      "at": "2026-05-01T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: helpful",
+      "target": "REC-MOCK-1"
+    },
+    {
+      "id": "AUD-SEED-087",
+      "at": "2026-05-02T14:00:00Z",
+      "role": "contract_manager",
+      "action": "Feedback: helpful",
+      "target": "REC-MOCK-1"
+    },
+    {
+      "id": "AUD-SEED-088",
+      "at": "2026-05-03T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: not helpful",
+      "target": "REC-MOCK-2"
+    },
+    {
+      "id": "AUD-SEED-089",
+      "at": "2026-05-04T14:00:00Z",
+      "role": "reviewer",
+      "action": "Feedback: helpful",
+      "target": "REC-MOCK-2"
+    },
+    {
+      "id": "AUD-SEED-090",
+      "at": "2026-05-05T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-012"
+    },
+    {
+      "id": "AUD-SEED-091",
+      "at": "2026-05-05T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: not helpful",
+      "target": "REC-MOCK-3"
+    },
+    {
+      "id": "AUD-SEED-092",
+      "at": "2026-05-05T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X20"
+    },
+    {
+      "id": "AUD-SEED-093",
+      "at": "2026-05-06T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-015"
+    },
+    {
+      "id": "AUD-SEED-094",
+      "at": "2026-05-06T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_received",
+      "target": "REF-016"
+    },
+    {
+      "id": "AUD-SEED-095",
+      "at": "2026-05-06T14:00:00Z",
+      "role": "contract_manager",
+      "action": "Feedback: helpful",
+      "target": "REC-MOCK-3"
+    },
+    {
+      "id": "AUD-SEED-096",
+      "at": "2026-05-06T15:00:00Z",
+      "role": "reviewer",
+      "action": "Approved amendment",
+      "target": "AMD-MOCK-12"
+    },
+    {
+      "id": "AUD-SEED-097",
+      "at": "2026-05-07T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-012"
+    },
+    {
+      "id": "AUD-SEED-098",
+      "at": "2026-05-07T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: helpful",
+      "target": "AI-LAYER-spec-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-099",
+      "at": "2026-05-07T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X2"
+    },
+    {
+      "id": "AUD-SEED-100",
+      "at": "2026-05-08T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-014"
+    },
+    {
+      "id": "AUD-SEED-101",
+      "at": "2026-05-08T14:00:00Z",
+      "role": "reviewer",
+      "action": "Feedback: not helpful",
+      "target": "AI-LAYER-spec-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-102",
+      "at": "2026-05-08T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X23"
+    },
+    {
+      "id": "AUD-SEED-103",
+      "at": "2026-05-09T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_qualified",
+      "target": "REF-013"
+    },
+    {
+      "id": "AUD-SEED-104",
+      "at": "2026-05-09T14:00:00Z",
+      "role": "admin",
+      "action": "Feedback: helpful",
+      "target": "AI-LAYER-link-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-105",
+      "at": "2026-05-09T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X44"
+    },
+    {
+      "id": "AUD-SEED-106",
+      "at": "2026-05-10T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-015"
+    },
+    {
+      "id": "AUD-SEED-107",
+      "at": "2026-05-10T10:00:00Z",
+      "role": "admin",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · documents.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-108",
+      "at": "2026-05-10T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: not helpful",
+      "target": "AI-LAYER-link-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-109",
+      "at": "2026-05-10T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X5"
+    },
+    {
+      "id": "AUD-SEED-110",
+      "at": "2026-05-11T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-015"
+    },
+    {
+      "id": "AUD-SEED-111",
+      "at": "2026-05-11T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · finances.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-112",
+      "at": "2026-05-11T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: helpful",
+      "target": "AI-LAYER-ingestion-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-113",
+      "at": "2026-05-11T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X26"
+    },
+    {
+      "id": "AUD-SEED-114",
+      "at": "2026-05-12T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-016"
+    },
+    {
+      "id": "AUD-SEED-115",
+      "at": "2026-05-12T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-013"
+    },
+    {
+      "id": "AUD-SEED-116",
+      "at": "2026-05-12T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · projects.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-117",
+      "at": "2026-05-12T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-1"
+    },
+    {
+      "id": "AUD-SEED-118",
+      "at": "2026-05-12T14:00:00Z",
+      "role": "contract_manager",
+      "action": "Feedback: not helpful",
+      "target": "AI-LAYER-records-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-119",
+      "at": "2026-05-12T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X47"
+    },
+    {
+      "id": "AUD-SEED-120",
+      "at": "2026-05-13T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-018"
+    },
+    {
+      "id": "AUD-SEED-121",
+      "at": "2026-05-13T10:00:00Z",
+      "role": "admin",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · data.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-122",
+      "at": "2026-05-13T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-2"
+    },
+    {
+      "id": "AUD-SEED-123",
+      "at": "2026-05-13T14:00:00Z",
+      "role": "reviewer",
+      "action": "Feedback: helpful",
+      "target": "AI-LAYER-retender-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-124",
+      "at": "2026-05-13T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X8"
+    },
+    {
+      "id": "AUD-SEED-125",
+      "at": "2026-05-14T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-017"
+    },
+    {
+      "id": "AUD-SEED-126",
+      "at": "2026-05-14T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-017"
+    },
+    {
+      "id": "AUD-SEED-127",
+      "at": "2026-05-14T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · example.org"
+    },
+    {
+      "id": "AUD-SEED-128",
+      "at": "2026-05-14T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-4"
+    },
+    {
+      "id": "AUD-SEED-129",
+      "at": "2026-05-14T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: not helpful",
+      "target": "AI-LAYER-retender-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-130",
+      "at": "2026-05-14T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X29"
+    },
+    {
+      "id": "AUD-SEED-131",
+      "at": "2026-05-15T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-016"
+    },
+    {
+      "id": "AUD-SEED-132",
+      "at": "2026-05-15T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · documents.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-133",
+      "at": "2026-05-15T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-5"
+    },
+    {
+      "id": "AUD-SEED-134",
+      "at": "2026-05-15T14:00:00Z",
+      "role": "planner",
+      "action": "Feedback: helpful",
+      "target": "AI-LAYER-supplier-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-135",
+      "at": "2026-05-15T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X50"
+    },
+    {
+      "id": "AUD-SEED-136",
+      "at": "2026-05-16T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-021"
+    },
+    {
+      "id": "AUD-SEED-137",
+      "at": "2026-05-16T10:00:00Z",
+      "role": "admin",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · datacatalog.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-138",
+      "at": "2026-05-16T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-7"
+    },
+    {
+      "id": "AUD-SEED-139",
+      "at": "2026-05-16T14:00:00Z",
+      "role": "contract_manager",
+      "action": "Feedback: helpful",
+      "target": "AI-LAYER-schedule-P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-140",
+      "at": "2026-05-16T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X11"
+    },
+    {
+      "id": "AUD-SEED-141",
+      "at": "2026-05-17T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bids_opened_date",
+      "target": "REF-018"
+    },
+    {
+      "id": "AUD-SEED-142",
+      "at": "2026-05-17T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-001 · intranet.example.net"
+    },
+    {
+      "id": "AUD-SEED-143",
+      "at": "2026-05-17T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-8"
+    },
+    {
+      "id": "AUD-SEED-144",
+      "at": "2026-05-17T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X32"
+    },
+    {
+      "id": "AUD-SEED-145",
+      "at": "2026-05-18T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-018"
+    },
+    {
+      "id": "AUD-SEED-146",
+      "at": "2026-05-18T09:30:00Z",
+      "role": "contract_manager",
+      "action": "Entered contract_end_date",
+      "target": "REF-019"
+    },
+    {
+      "id": "AUD-SEED-147",
+      "at": "2026-05-18T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-002 · documents.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-148",
+      "at": "2026-05-18T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-10"
+    },
+    {
+      "id": "AUD-SEED-149",
+      "at": "2026-05-18T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X53"
+    },
+    {
+      "id": "AUD-SEED-150",
+      "at": "2026-05-19T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bid_validity_days",
+      "target": "REF-024"
+    },
+    {
+      "id": "AUD-SEED-151",
+      "at": "2026-05-19T10:00:00Z",
+      "role": "admin",
+      "action": "Added source link",
+      "target": "P-MOCK-002 · projects.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-152",
+      "at": "2026-05-19T11:00:00Z",
+      "role": "planner",
+      "action": "Ran ingestion (simulated)",
+      "target": "LNK-SEED-11"
+    },
+    {
+      "id": "AUD-SEED-153",
+      "at": "2026-05-20T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-019"
+    },
+    {
+      "id": "AUD-SEED-154",
+      "at": "2026-05-20T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-020"
+    },
+    {
+      "id": "AUD-SEED-155",
+      "at": "2026-05-20T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-003 · documents.worldbank.org"
+    },
+    {
+      "id": "AUD-SEED-156",
+      "at": "2026-05-20T10:00:00Z",
+      "role": "planner",
+      "action": "Saved plan",
+      "target": "P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-157",
+      "at": "2026-05-20T10:00:00Z",
+      "role": "planner",
+      "action": "Saved plan",
+      "target": "P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-158",
+      "at": "2026-05-20T10:00:00Z",
+      "role": "planner",
+      "action": "Saved plan",
+      "target": "P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-159",
+      "at": "2026-05-20T10:00:00Z",
+      "role": "planner",
+      "action": "Saved plan",
+      "target": "P-MOCK-001"
+    },
+    {
+      "id": "AUD-SEED-160",
+      "at": "2026-05-21T09:00:00Z",
+      "role": "contract_manager",
+      "action": "Entered amendment",
+      "target": "REF-020"
+    },
+    {
+      "id": "AUD-SEED-161",
+      "at": "2026-05-21T10:00:00Z",
+      "role": "planner",
+      "action": "Added source link",
+      "target": "P-MOCK-003 · example.org"
+    },
+    {
+      "id": "AUD-SEED-162",
+      "at": "2026-05-21T15:00:00Z",
+      "role": "reviewer",
+      "action": "Rejected amendment",
+      "target": "AMD-MOCK-17"
+    },
+    {
+      "id": "AUD-SEED-163",
+      "at": "2026-05-22T09:30:00Z",
+      "role": "planner",
+      "action": "Entered advertised_date",
+      "target": "REF-011"
+    },
+    {
+      "id": "AUD-SEED-164",
+      "at": "2026-05-22T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X17"
+    },
+    {
+      "id": "AUD-SEED-165",
+      "at": "2026-05-23T09:30:00Z",
+      "role": "planner",
+      "action": "Entered bidders_received",
+      "target": "REF-013"
+    },
+    {
+      "id": "AUD-SEED-166",
+      "at": "2026-05-23T16:00:00Z",
+      "role": "reviewer",
+      "action": "Approved entry",
+      "target": "ENR-X38"
+    }
+  ],
   "schedule_items": [
+    {
+      "id": "SCH-P-MOCK-001-6",
+      "project_id": "P-MOCK-001",
+      "name": "Culvert crew mobilisation",
+      "group": "Manpower",
+      "start": "2026-08-01",
+      "end": "2026-10-31",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-001-7",
+      "project_id": "P-MOCK-001",
+      "name": "Asphalt stock build-up",
+      "group": "Supplies",
+      "start": "2026-07-15",
+      "end": "2026-12-15",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-001-8",
+      "project_id": "P-MOCK-001",
+      "name": "Lot 2 drainage works",
+      "group": "Works",
+      "start": "2026-02-02",
+      "end": "2026-10-30",
+      "progress_pct": 45
+    },
+    {
+      "id": "SCH-P-MOCK-001-9",
+      "project_id": "P-MOCK-001",
+      "name": "Lighting retrofit works",
+      "group": "Works",
+      "start": "2026-10-01",
+      "end": "2027-04-30",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-001-10",
+      "project_id": "P-MOCK-001",
+      "name": "Signage installation",
+      "group": "Works",
+      "start": "2026-10-15",
+      "end": "2027-01-31",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-001-11",
+      "project_id": "P-MOCK-001",
+      "name": "Environmental monitoring crew",
+      "group": "Manpower",
+      "start": "2026-09-01",
+      "end": "2027-08-31",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-001-12",
+      "project_id": "P-MOCK-001",
+      "name": "Equipment rental call-off",
+      "group": "Supplies",
+      "start": "2026-06-01",
+      "end": "2026-12-31",
+      "progress_pct": 20
+    },
+    {
+      "id": "SCH-P-MOCK-001-13",
+      "project_id": "P-MOCK-001",
+      "name": "Mid-term review preparation",
+      "group": "Procurement",
+      "start": "2026-07-01",
+      "end": "2026-08-31",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-001-14",
+      "project_id": "P-MOCK-001",
+      "name": "Closing date review",
+      "group": "Milestone",
+      "start": "2027-06-30",
+      "end": "2027-06-30",
+      "progress_pct": null
+    },
     {
       "id": "SCH-P-MOCK-001-1",
       "project_id": "P-MOCK-001",
@@ -2680,6 +6129,118 @@
   ],
   "tender_history": [
     {
+      "id": "TND-MOCK-009",
+      "project_id": "P-MOCK-001",
+      "name": "Culvert replacement, Lot 1",
+      "status": "awarded",
+      "date": "2025-08-19",
+      "reason": null,
+      "contract_ref": "REF-011",
+      "replaces": null,
+      "citation": {
+        "ref_type": "record",
+        "ref_id": "REF-011",
+        "label": "Contract REF-011"
+      }
+    },
+    {
+      "id": "TND-MOCK-010",
+      "project_id": "P-MOCK-001",
+      "name": "Culvert replacement, Lot 2",
+      "status": "awarded",
+      "date": "2025-09-02",
+      "reason": null,
+      "contract_ref": "REF-012",
+      "replaces": null,
+      "citation": {
+        "ref_type": "record",
+        "ref_id": "REF-012",
+        "label": "Contract REF-012"
+      }
+    },
+    {
+      "id": "TND-MOCK-011",
+      "project_id": "P-MOCK-001",
+      "name": "Kerb and drainage works",
+      "status": "cancelled",
+      "date": "2025-12-04",
+      "reason": "Bids exceeded the budget by more than 30 percent (mock record).",
+      "contract_ref": null,
+      "replaces": null,
+      "citation": null
+    },
+    {
+      "id": "TND-MOCK-012",
+      "project_id": "P-MOCK-001",
+      "name": "Kerb and drainage works (re-issued)",
+      "status": "re_tendered",
+      "date": "2026-01-19",
+      "reason": "Re-issued with the scope split into two lots.",
+      "contract_ref": "REF-018",
+      "replaces": "TND-MOCK-011",
+      "citation": {
+        "ref_type": "record",
+        "ref_id": "REF-018",
+        "label": "Contract REF-018"
+      }
+    },
+    {
+      "id": "TND-MOCK-013",
+      "project_id": "P-MOCK-102",
+      "name": "Rural road grading",
+      "status": "cancelled",
+      "date": "2021-04-12",
+      "reason": "Bid validity expired before approvals were complete.",
+      "contract_ref": null,
+      "replaces": null,
+      "citation": {
+        "ref_type": "chunk",
+        "ref_id": "CH-MOCK-007",
+        "label": "ICR 101 · Section 6"
+      }
+    },
+    {
+      "id": "TND-MOCK-014",
+      "project_id": "P-MOCK-102",
+      "name": "Rural road grading (re-issued)",
+      "status": "re_tendered",
+      "date": "2021-06-30",
+      "reason": "Re-issued with a longer bid validity.",
+      "contract_ref": null,
+      "replaces": "TND-MOCK-013",
+      "citation": {
+        "ref_type": "chunk",
+        "ref_id": "CH-MOCK-007",
+        "label": "ICR 101 · Section 6"
+      }
+    },
+    {
+      "id": "TND-MOCK-015",
+      "project_id": "P-MOCK-003",
+      "name": "Clinic refurbishment, Lot 1",
+      "status": "cancelled",
+      "date": "2026-04-02",
+      "reason": "Only one bid was received (mock record).",
+      "contract_ref": null,
+      "replaces": null,
+      "citation": null
+    },
+    {
+      "id": "TND-MOCK-016",
+      "project_id": "P-MOCK-104",
+      "name": "Bridge package",
+      "status": "awarded",
+      "date": "2023-04-18",
+      "reason": null,
+      "contract_ref": null,
+      "replaces": null,
+      "citation": {
+        "ref_type": "chunk",
+        "ref_id": "CH-MOCK-017",
+        "label": "ICR 104 · Section 6"
+      }
+    },
+    {
       "id": "TND-MOCK-001",
       "project_id": "P-MOCK-001",
       "name": "Lot 1 earthworks and drainage",
@@ -2777,8 +6338,454 @@
       "citation": null
     }
   ],
-  "source_links": [],
-  "ingestion_runs": [],
+  "source_links": [
+    {
+      "id": "LNK-SEED-1",
+      "project_id": "P-MOCK-001",
+      "url": "https://documents.worldbank.org/mock/P-MOCK-001/isr-3",
+      "host": "documents.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-10T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Project documents (supervision and completion reports)",
+      "added_by_role": "admin"
+    },
+    {
+      "id": "LNK-SEED-2",
+      "project_id": "P-MOCK-001",
+      "url": "https://finances.worldbank.org/mock/contract-awards",
+      "host": "finances.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-11T10:00:00Z",
+      "publisher": "World Bank Finances One",
+      "kind": "Contract awards and financing datasets",
+      "added_by_role": "planner"
+    },
+    {
+      "id": "LNK-SEED-3",
+      "project_id": "P-MOCK-001",
+      "url": "https://projects.worldbank.org/mock/P-MOCK-001",
+      "host": "projects.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-12T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Project records",
+      "added_by_role": "planner"
+    },
+    {
+      "id": "LNK-SEED-4",
+      "project_id": "P-MOCK-001",
+      "url": "https://data.worldbank.org/mock/country/RO",
+      "host": "data.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-13T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Country indicators",
+      "added_by_role": "admin"
+    },
+    {
+      "id": "LNK-SEED-5",
+      "project_id": "P-MOCK-001",
+      "url": "https://example.org/mock/road-bulletin",
+      "host": "example.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-14T10:00:00Z",
+      "publisher": null,
+      "kind": null,
+      "added_by_role": "planner"
+    },
+    {
+      "id": "LNK-SEED-6",
+      "project_id": "P-MOCK-001",
+      "url": "https://documents.worldbank.org/mock/P-MOCK-001/missing",
+      "host": "documents.worldbank.org",
+      "reachability": "unreachable",
+      "checked_at": "2026-05-15T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Project documents (supervision and completion reports)",
+      "added_by_role": "planner"
+    },
+    {
+      "id": "LNK-SEED-7",
+      "project_id": "P-MOCK-001",
+      "url": "https://datacatalog.worldbank.org/mock/gppd",
+      "host": "datacatalog.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-16T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Data catalog",
+      "added_by_role": "admin"
+    },
+    {
+      "id": "LNK-SEED-8",
+      "project_id": "P-MOCK-001",
+      "url": "https://intranet.example.net/mock/plan",
+      "host": "intranet.example.net",
+      "reachability": "unreachable",
+      "checked_at": "2026-05-17T10:00:00Z",
+      "publisher": null,
+      "kind": null,
+      "added_by_role": "planner"
+    },
+    {
+      "id": "LNK-SEED-9",
+      "project_id": "P-MOCK-002",
+      "url": "https://documents.worldbank.org/mock/P-MOCK-002/isr-2",
+      "host": "documents.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-18T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Project documents (supervision and completion reports)",
+      "added_by_role": "planner"
+    },
+    {
+      "id": "LNK-SEED-10",
+      "project_id": "P-MOCK-002",
+      "url": "https://projects.worldbank.org/mock/P-MOCK-002",
+      "host": "projects.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-19T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Project records",
+      "added_by_role": "admin"
+    },
+    {
+      "id": "LNK-SEED-11",
+      "project_id": "P-MOCK-003",
+      "url": "https://documents.worldbank.org/mock/P-MOCK-003/isr-1",
+      "host": "documents.worldbank.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-20T10:00:00Z",
+      "publisher": "World Bank",
+      "kind": "Project documents (supervision and completion reports)",
+      "added_by_role": "planner"
+    },
+    {
+      "id": "LNK-SEED-12",
+      "project_id": "P-MOCK-003",
+      "url": "https://example.org/mock/clinics",
+      "host": "example.org",
+      "reachability": "reachable",
+      "checked_at": "2026-05-21T10:00:00Z",
+      "publisher": null,
+      "kind": null,
+      "added_by_role": "planner"
+    }
+  ],
+  "ingestion_runs": [
+    {
+      "id": "RUN-SEED-1",
+      "project_id": "P-MOCK-001",
+      "link_id": "LNK-SEED-1",
+      "ran_at": "2026-05-12T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "documents.worldbank.org is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "done",
+          "detail": "The server answered. The browser cannot read its status or content."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "done",
+          "detail": "World Bank: Project documents (supervision and completion reports)."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    },
+    {
+      "id": "RUN-SEED-2",
+      "project_id": "P-MOCK-001",
+      "link_id": "LNK-SEED-2",
+      "ran_at": "2026-05-13T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "finances.worldbank.org is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "done",
+          "detail": "The server answered. The browser cannot read its status or content."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "done",
+          "detail": "World Bank Finances One: Contract awards and financing datasets."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    },
+    {
+      "id": "RUN-SEED-3",
+      "project_id": "P-MOCK-001",
+      "link_id": "LNK-SEED-4",
+      "ran_at": "2026-05-14T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "data.worldbank.org is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "done",
+          "detail": "The server answered. The browser cannot read its status or content."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "done",
+          "detail": "World Bank: Country indicators."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    },
+    {
+      "id": "RUN-SEED-4",
+      "project_id": "P-MOCK-001",
+      "link_id": "LNK-SEED-5",
+      "ran_at": "2026-05-15T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "example.org is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "done",
+          "detail": "The server answered. The browser cannot read its status or content."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "skipped",
+          "detail": "Not a publisher this demo knows, so the source stays unclassified."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    },
+    {
+      "id": "RUN-SEED-5",
+      "project_id": "P-MOCK-001",
+      "link_id": "LNK-SEED-7",
+      "ran_at": "2026-05-16T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "datacatalog.worldbank.org is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "done",
+          "detail": "The server answered. The browser cannot read its status or content."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "done",
+          "detail": "World Bank: Data catalog."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    },
+    {
+      "id": "RUN-SEED-6",
+      "project_id": "P-MOCK-001",
+      "link_id": "LNK-SEED-8",
+      "ran_at": "2026-05-17T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "intranet.example.net is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "failed",
+          "detail": "No answer from the server. Check the address and try again."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "skipped",
+          "detail": "Not a publisher this demo knows, so the source stays unclassified."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    },
+    {
+      "id": "RUN-SEED-7",
+      "project_id": "P-MOCK-002",
+      "link_id": "LNK-SEED-10",
+      "ran_at": "2026-05-18T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "projects.worldbank.org is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "done",
+          "detail": "The server answered. The browser cannot read its status or content."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "done",
+          "detail": "World Bank: Project records."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    },
+    {
+      "id": "RUN-SEED-8",
+      "project_id": "P-MOCK-003",
+      "link_id": "LNK-SEED-11",
+      "ran_at": "2026-05-19T11:00:00Z",
+      "simulated": true,
+      "steps": [
+        {
+          "id": "validate",
+          "label": "Validate link",
+          "status": "done",
+          "detail": "documents.worldbank.org is a well-formed https address."
+        },
+        {
+          "id": "reach",
+          "label": "Check the server answers",
+          "status": "done",
+          "detail": "The server answered. The browser cannot read its status or content."
+        },
+        {
+          "id": "classify",
+          "label": "Recognise the publisher",
+          "status": "done",
+          "detail": "World Bank: Project documents (supervision and completion reports)."
+        },
+        {
+          "id": "extract",
+          "label": "Extract text and tables",
+          "status": "planned",
+          "detail": "Not built in this demo. A real run would parse the page or PDF here; nothing was read."
+        },
+        {
+          "id": "link",
+          "label": "Link to project records",
+          "status": "done",
+          "detail": "Uses the records and documents already loaded for this project (see the next layer)."
+        }
+      ]
+    }
+  ],
   "sources": [
     {
       "id": "SRC-MOCK-1",
@@ -2812,6 +6819,42 @@
       "name": "GPPD country profiles (local file)",
       "publisher": "gppd_data.json supplied by K",
       "kind": "Country indicators",
+      "status": "registered",
+      "last_fetched": null,
+      "simulated": false
+    },
+    {
+      "id": "SRC-MOCK-5",
+      "name": "Mock procurement plans extract",
+      "publisher": "Mock registry",
+      "kind": "Procurement plans",
+      "status": "registered",
+      "last_fetched": null,
+      "simulated": false
+    },
+    {
+      "id": "SRC-MOCK-6",
+      "name": "Mock guidance notes",
+      "publisher": "Mock registry",
+      "kind": "Guidance",
+      "status": "registered",
+      "last_fetched": null,
+      "simulated": false
+    },
+    {
+      "id": "SRC-MOCK-7",
+      "name": "Mock evaluation reports",
+      "publisher": "Mock registry",
+      "kind": "Evaluation reports",
+      "status": "registered",
+      "last_fetched": null,
+      "simulated": false
+    },
+    {
+      "id": "SRC-MOCK-8",
+      "name": "Mock audit reports",
+      "publisher": "Mock registry",
+      "kind": "Audit reports",
       "status": "registered",
       "last_fetched": null,
       "simulated": false
