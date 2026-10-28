@@ -4,7 +4,7 @@ import { can, whyDisabled } from '@pi/config'
 import {
   SPEC_STATUS_LABEL, checkReachable, checkRetender, countryReference, specificationChecks, useCountryYears, useTenderDraft, checkSourceUrl, classifySource, ingestionSteps, linkRecords, tenderCandidates,
   useAddSourceLink, useAllPlans, useTenderHistory, useChunks, useContracts, useCurrentUser, useDocs, useIngestionRuns, useProject, useRecordIngestionRun,
-  useReports, useSourceLinks, useUiStore, type Citation, type RetenderMatch, type TenderStatus, type UrlCheck,
+  useProjects, useReports, useSourceLinks, useUiStore, type Citation, type RetenderMatch, type TenderStatus, type UrlCheck,
 } from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
@@ -54,7 +54,7 @@ function Layer({ n, title, aside, children }: { n: number; title: string; aside?
   )
 }
 
-export default function WorkWithAI() {
+function Features({ onChangeProject }: { onChangeProject: () => void }) {
   const projectId = useUiStore((s) => s.projectId)
   const { role } = useCurrentUser()
   const project = useProject(projectId).data?.[0]
@@ -110,7 +110,10 @@ export default function WorkWithAI() {
   return (
     <div className={styles.page}>
       <div>
-        <h1>Work with AI</h1>
+        <div className={styles.row}>
+          <h1>Work with AI</h1>
+          <Button onClick={onChangeProject}>Change project</Button>
+        </div>
         <p className={styles.sub}>
           <span className="mono">{project.project_id}</span> · {project.project_name}. Connect a public source, run ingestion and see how structured records and document text line up.
           Runs are <Badge>Simulated</Badge>: nothing is downloaded or read, and every step says what it did.
@@ -314,4 +317,47 @@ export default function WorkWithAI() {
       <SourceDrawer citation={open} onClose={() => setOpen(null)} />
     </div>
   )
+}
+
+/** First screen: pick the project to work on. Picking it sets the shared project, so every layer below uses that context. */
+function ProjectPicker({ onPicked }: { onPicked: () => void }) {
+  const { projectId, setProject } = useUiStore()
+  const projects = useProjects()
+  const pick = (id: string) => { setProject(id); onPicked() }
+
+  return (
+    <div className={styles.page}>
+      <div>
+        <h1>Work with AI</h1>
+        <p className={styles.sub}>Choose the project to work on. Connecting a source, running ingestion, linking records and the checks all use the project you pick.</p>
+      </div>
+      <Card title="Projects" aside={<ProvenanceChip kind="public" />} state={projects.isLoading ? 'loading' : projects.isError ? 'error' : 'ready'}>
+        {(projects.data ?? []).length === 0 ? (
+          <EmptyState title="No projects found" text="Add a project to mock/db.json and run pnpm reset-db." />
+        ) : (
+          <TableScroll>
+            <table className={styles.table}>
+              <thead><tr><th>Project</th><th>Country</th><th>Sector</th><th /></tr></thead>
+              <tbody>
+                {(projects.data ?? []).map((p) => (
+                  <tr key={p.project_id}>
+                    <td>{p.project_name}<br /><span className="mono">{p.project_id}</span>{p.project_id === projectId && <> <Badge>Current</Badge></>}</td>
+                    <td>{p.borrower_country}</td>
+                    <td>{p.project_global_practice}</td>
+                    <td><Button variant="primary" onClick={() => pick(p.project_id)} aria-label={`Work with AI on ${p.project_name}`}>Select</Button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableScroll>
+        )}
+      </Card>
+    </div>
+  )
+}
+
+/** The page starts at the project list every time it opens, then shows the AI layers for the chosen project. */
+export default function WorkWithAI() {
+  const [picked, setPicked] = useState(false)
+  return picked ? <Features onChangeProject={() => setPicked(false)} /> : <ProjectPicker onPicked={() => setPicked(true)} />
 }
