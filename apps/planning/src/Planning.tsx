@@ -139,7 +139,7 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
   return (
     <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
-        <TableScroll><table className={styles.table}>
+        <TableScroll><table className={`${styles.table} ${styles.plans}`}>
           <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th></tr></thead>
           <tbody>
             {plans.map((p) => (
@@ -151,12 +151,12 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
                 onClick={() => onSelect(p.id === selectedId ? null : p.id)}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(p.id === selectedId ? null : p.id) } }}
               >
-                <td>{p.name}<br /><span className="mono">{p.id}</span></td>
+                <td>{p.name}<br /><span className={`mono ${styles.nowrap}`}>{p.id}</span></td>
                 <td>{p.category}</td>
                 <td>{p.method}</td>
-                <td className="mono">{p.planned_advertisement}</td>
-                <td className="mono">{p.planned_signing}</td>
-                <td className="mono">{plannedDurations(p).advertisementToSigning}</td>
+                <td className={`mono ${styles.nowrap}`}>{p.planned_advertisement}</td>
+                <td className={`mono ${styles.nowrap}`}>{p.planned_signing}</td>
+                <td className={`mono ${styles.nowrap}`}>{plannedDurations(p).advertisementToSigning}</td>
               </tr>
               {p.id === selectedId && (
                 <tr>

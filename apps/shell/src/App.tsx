@@ -1,10 +1,15 @@
 import { lazy, useState } from 'react'
+<<<<<<< HEAD
 import { Link, Navigate, Route, Routes } from 'react-router'
+=======
+import { Link, Route, Routes, useLocation } from 'react-router'
+>>>>>>> origin/main
 import { FISCAL_YEARS, ROLES, fiscalYearLabel, type Role } from '@pi/config'
 import { Select } from '@pi/ui'
 import { useMeta, useProjects, useUiStore } from '@pi/data'
 import { RemoteBoundary } from './RemoteBoundary'
 import { Home } from './pages/Home'
+import { StepNav } from './StepNav'
 import { Planned } from './pages/Planned'
 import { ProjectData } from './pages/ProjectData'
 import { TenderDesign } from './pages/TenderDesign'
@@ -74,6 +79,7 @@ function AiLink() {
 
 export function App() {
   const [railOpen, setRailOpen] = useState(false)
+  const { pathname } = useLocation()
   const meta = useMeta().data
 
   return (
@@ -87,6 +93,7 @@ export function App() {
         </header>
         {/* <div className={styles.banner} role="note"><strong>Mock data.</strong> {meta?.dataset_label ?? '…'}. Every figure is bound to data and shows its source.</div> */}
         <main className={styles.content}>
+          {pathname !== '/' && <StepNav />}
           <Routes>
             <Route index element={<Home />} />
             <Route path="/planning" element={<RemoteBoundary name="Planning"><Planning /></RemoteBoundary>} />

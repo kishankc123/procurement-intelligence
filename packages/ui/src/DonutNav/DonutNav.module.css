@@ -17,3 +17,8 @@
 .centre { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; padding: 0 31%;
   --wheel-row: max(30px, 10cqw); --wheel-font: max(11px, 3.3cqw); }
 @media (prefers-reduced-motion: reduce) { .seg { pointer-events: none; transition: none; } .hit { transition: none; } .orbit { animation: none; } }
+
+/* Compact: page-header version. Slices show their number only; the hole holds a button, not the project wheel. */
+.numLabel { fill: #fff; font: 700 18px var(--font); filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .55)); pointer-events: none; }
+.compact .orbit, .compact .innerRing { display: none; }
+.compact .centre { padding: 0; }

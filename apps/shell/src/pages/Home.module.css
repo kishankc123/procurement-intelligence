@@ -1,14 +1,19 @@
-/* Full-bleed, centred hero: breaks out of the page padding so the donut is not boxed in. */
-.hero { margin: -24px -24px 0; padding: 36px 24px 40px; display: grid; justify-items: center; text-align: center; gap: 14px;
+/* Full-bleed, centred hero: breaks out of the page padding so the donut is not boxed in.
+   --chrome is the height of everything except the donut: top bar, heading, text, info box and spacing.
+   The donut takes the rest of the screen height (so the whole hero fits one laptop screen) and the info box takes the donut's width. */
+.hero { --chrome: 368px; --donut: max(280px, min(640px, calc(100vh - var(--chrome)), 92vw));
+  margin: -24px -24px 0; padding: 20px 24px 16px; display: grid; justify-items: center; text-align: center; gap: 8px;
   background: radial-gradient(ellipse 60% 70% at 50% 55%, #17305A 0%, rgba(10, 19, 34, 0) 70%); }
+@supports (height: 100dvh) { .hero { --donut: max(280px, min(640px, calc(100dvh - var(--chrome)), 92vw)); } }
 .eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .title { font-size: clamp(28px, 6.2vw, 44px); line-height: 1.1; font-weight: 600; letter-spacing: -.015em; max-width: 30ch; }
-.sub { font-size: 16px; color: var(--muted); max-width: 52ch; margin-bottom: 10px; }
-.info { margin-top: 18px; min-height: 128px; width: min(560px, 100%); padding: 14px 18px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: var(--radius-card); background: var(--surface); display: grid; align-content: start; justify-items: center; gap: 6px; }
+.sub { font-size: 15px; color: var(--muted); max-width: 60ch; margin-bottom: 4px; }
+.info { margin-top: 8px; width: min(max(var(--donut), 480px), 100%); min-height: 132px; padding: 10px 16px 12px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: var(--radius-card); background: var(--surface); display: grid; align-content: center; justify-items: center; gap: 4px; }
+.infoHead { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .infoTitle { font-size: 16px; margin: 0; }
-.infoText { color: var(--text); }
-.fact { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
-.hint { font-size: 12px; color: var(--muted); }
+.infoText { color: var(--text); font-size: 13.5px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.fact { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; font-size: 13px; }
+.hint { font-size: 12px; color: var(--muted); white-space: nowrap; }
 .centre { font-size: 15px; font-weight: 600; color: var(--text); }
 .table { width: 100%; border-collapse: collapse; }
 .table th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 500; padding: 6px 10px; border-bottom: 1px solid var(--border); }
@@ -22,7 +27,10 @@
 .rowButton:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 .id { color: var(--muted); font-size: 12px; }
 .muted { font-size: 12px; color: var(--muted); }
+/* Narrower screens wrap the title onto two lines, so the donut gets less of the height. */
+@media (max-width: 900px) { .hero { --chrome: 420px; } }
+/* Phones scroll: the info box just follows the donut's width and grows with its text. */
 @media (max-width: 720px) {
-  .hero { margin: -16px -16px 0; padding: 20px 16px 28px; }
-  .info { padding: 12px 14px; min-height: 110px; }
+  .hero { margin: -16px -16px 0; padding: 16px 16px 24px; }
+  .info { min-height: 120px; }
 }

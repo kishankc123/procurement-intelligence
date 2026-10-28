@@ -3,14 +3,8 @@ import { Link, useNavigate } from 'react-router'
 import { LIFECYCLE_STEPS, PLATFORM_AREAS } from '@pi/config'
 import { useFeedback, usePlan, useProjects, useReports, useTenderDraft, useUiStore } from '@pi/data'
 import { Card, DonutNav, EmptyState, ProvenanceChip, WheelPicker, type Provenance, TableScroll } from '@pi/ui'
+import { STEP_COLOR } from '../stepColors'
 import styles from './Home.module.css'
-
-const STEP_COLOR: Record<string, string> = {
-  planning: 'var(--step-planning)',
-  'tender-design': 'var(--step-tender)',
-  monitoring: 'var(--step-monitoring)',
-  learning: 'var(--step-learning)',
-}
 
 interface Fact { text: string; kind: Provenance }
 
@@ -69,7 +63,7 @@ export function Home() {
         </p>
         <DonutNav
           ariaLabel="Project lifecycle"
-          size="max(300px, min(640px, 56vh, 92vw))"
+          size="var(--donut)"
           segments={LIFECYCLE_STEPS.map((s) => ({ id: s.id, label: s.label, color: STEP_COLOR[s.id] ?? 'var(--primary)' }))}
           activeId={activeId}
           onActiveChange={setHoverId}
@@ -92,24 +86,21 @@ export function Home() {
         >
           {active ? (
             <>
-              <h2 className={styles.infoTitle}>{active.label}</h2>
-              {selected ? (
-                <>
-                  <p className={styles.infoText}><span className="mono">{selected.project_id}</span> · {selected.project_name}</p>
-                  <p className={styles.fact}><ProvenanceChip kind={facts[active.id]?.kind ?? 'missing'} /> {facts[active.id]?.text}</p>
-                  <p className={styles.hint}>{touch ? 'Tap again' : 'Click'} to open {active.label}.</p>
-                </>
-              ) : (
-                <>
-                  <p className={styles.infoText}>{active.summary}</p>
-                  <p className={styles.hint}>Add a project to open this step.</p>
-                </>
+              <div className={styles.infoHead}>
+                <h2 className={styles.infoTitle}>{active.label}</h2>
+                <span className={styles.hint}>
+                  {selected ? `${touch ? 'Tap again' : 'Click'} to open` : 'Add a project to open'}
+                </span>
+              </div>
+              <p className={styles.infoText}>{active.summary}</p>
+              {selected && (
+                <p className={styles.fact}><ProvenanceChip kind={facts[active.id]?.kind ?? 'missing'} /> {facts[active.id]?.text}</p>
               )}
             </>
           ) : (
             <p className={styles.infoText}>
               {selected
-                ? `${touch ? 'Tap' : 'Hover'} a step to preview ${selected.project_name}. ${touch ? 'Tap it again' : 'Click one'} to open it.`
+                ? `${touch ? 'Tap' : 'Hover'} a step to see what it does and what ${selected.project_name} has for it. ${touch ? 'Tap it again' : 'Click one'} to open it.`
                 : 'No projects found. Hover or click a step to see what it does.'}
             </p>
           )}
