@@ -15,7 +15,7 @@ export function Home() {
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [pinnedId, setPinnedId] = useState<string | null>(null)
 
-  // The global project filter is the single source of truth: the wheel, the table and the top bar all move it.
+  // The global project filter is the single source of truth: the wheel, the table, the menus and the filter rail all move it.
   const selected = projects.data?.find((p) => p.project_id === projectId) ?? projects.data?.[0] ?? null
   const selectedId = selected?.project_id ?? null
   // Empty id matches nothing in json-server, so these stay empty until a project is picked.

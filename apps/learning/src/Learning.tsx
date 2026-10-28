@@ -94,7 +94,7 @@ export default function Learning() {
       </Card>
 
       <Card title="Contract data readiness" aside={<ProvenanceChip kind="derived" detail={`n=${readiness.eligible}`} />} state={readinessState}>
-        {readiness.eligible === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the top bar." /> : (
+        {readiness.eligible === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the filters on the left." /> : (
           <div className={styles.stack}>
             <p className={styles.sub}>
               {readiness.eligible} contracts in FY{fiscalYear}. Each bar shows how many have a usable value for a field that Tender design or Monitoring reads.
@@ -124,7 +124,7 @@ export default function Learning() {
 
       <div className={styles.two}>
         <Card title="Data coverage by fiscal year" aside={<ProvenanceChip kind="derived" />}>
-          {fiscalYears.length === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the top bar." /> : (
+          {fiscalYears.length === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the filters on the left." /> : (
             <TableScroll><table className={styles.table}>
               <thead><tr><th>Fiscal year</th><th>Contracts with approved entered data</th></tr></thead>
               <tbody>{fiscalYears.map((fy) => {

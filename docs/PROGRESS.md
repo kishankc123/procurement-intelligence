@@ -127,6 +127,9 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Clicking a project name opens `/project` ("Project overview") for it: from the Home projects table (name button, tooltip "Open project overview") and from the top-bar Projects menu. There is no separate overview link or menu item. The page shows a Project card (dates, phase) and four sections labelled "From <section>" with "View more in <section>" links: Plans (Planning), Draft clauses (Tender design), Project schedule (Monitoring), Contract data readiness (Learning, same stacked bars).
 - The schedule section is the same `ScheduleCard` Monitoring shows, including the Gantt chart: the Monitoring remote now exposes `./ScheduleCard` (optional `badge` and `footer` props) and the shell lazy-loads it behind a `RemoteBoundary`. If Monitoring is down, only that section shows an error card; the rest of the overview still loads (the other sections read shared data through `@pi/data`).
 
+## Block 23: filter rail restored (nothing committed)
+- The left `FilterRail` is back as its own component (`apps/shell/src/FilterRail.tsx`): a thin strip with an arrow and "Project · Year · Role" that opens to Project, Fiscal year and the demo Role switcher (Planner, Contract manager, Reviewer, Admin; stored in localStorage). It sits beside the top-bar menus; on phones it is a drawer with a scrim. Checked: FY2025 empties the Learning readiness card and the StepNav shows FY2025; Reviewer disables Planning's Edit plan with "Needs role: Planner or Admin". Empty-state text now says "filters on the left" instead of "top bar".
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

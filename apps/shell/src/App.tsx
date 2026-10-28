@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { lazy, useState } from 'react'
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router'
 import { PLATFORM_AREAS } from '@pi/config'
 import { useProjects, useUiStore } from '@pi/data'
@@ -6,6 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { RemoteBoundary } from './RemoteBoundary'
 import { Home } from './pages/Home'
 import { StepNav } from './StepNav'
+import { FilterRail } from './FilterRail'
 import { Planned } from './pages/Planned'
 import { ProjectData } from './pages/ProjectData'
 import { TenderDesign } from './pages/TenderDesign'
@@ -62,10 +63,12 @@ function ToolsMenu() {
 }
 
 export function App() {
+  const [railOpen, setRailOpen] = useState(false)
   const { pathname } = useLocation()
 
   return (
-    <div className={styles.layout}>
+    <div className={`${styles.layout} ${railOpen ? styles.layoutRailOpen : ''}`}>
+      <FilterRail open={railOpen} onOpenChange={setRailOpen} />
       <div className={styles.main}>
         <header className={styles.top}>
           <Link to="/" className={styles.brand}>ProcureIntel</Link>
