@@ -1,9 +1,5 @@
 import { lazy, useState } from 'react'
-<<<<<<< HEAD
-import { Link, Navigate, Route, Routes } from 'react-router'
-=======
-import { Link, Route, Routes, useLocation } from 'react-router'
->>>>>>> origin/main
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router'
 import { FISCAL_YEARS, ROLES, fiscalYearLabel, type Role } from '@pi/config'
 import { Select } from '@pi/ui'
 import { useMeta, useProjects, useUiStore } from '@pi/data'
