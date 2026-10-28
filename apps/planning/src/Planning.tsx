@@ -8,7 +8,7 @@ import {
 } from '@pi/data'
 import {
   ArrowLeft, Badge, Button, Card, DataGate, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState,
-  ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
+  ProvenanceChip, Select, TableScroll, Paged, Carousel } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import { PlanAgenda } from './PlanAgenda'
 import styles from './Planning.module.css'
@@ -214,7 +214,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
       </Card>
       <EditPlanDialog plan={plan} open={editing} onOpenChange={setEditing} onDeleted={onDeleted} />
 
-      <div className={styles.kpis}>
+      <Carousel ariaLabel="Key figures for this plan">
         <Card title="Planned: advertisement to signing">
           <p><span className={styles.big}>{dur.advertisementToSigning}</span> <span className={styles.unit}>days</span></p>
           <ProvenanceChip kind="derived" detail="from your plan" />
@@ -238,7 +238,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
           <p className={styles.sub}>have a citation in this brief</p>
           <ProvenanceChip kind="derived" />
         </Card>
-      </div>
+      </Carousel>
 
       <Card title="Duration model" aside={<Badge>Simulated</Badge>}>
         <DataGate gate={durationGate} title="Duration curve locked" unit="completed projects with key dates">

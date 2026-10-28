@@ -4,7 +4,7 @@ import {
   dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
   tenderCoverage,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars, TableScroll, Paged } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars, TableScroll, Paged, Carousel } from '@pi/ui'
 import styles from './Learning.module.css'
 
 const STATUS_TONE = { new: 'medium', accepted: 'low', rejected: 'high', edited: 'neutral' } as const
@@ -52,7 +52,7 @@ export default function Learning() {
         <p>Feedback from planners and reviewers, and what changed because of it. Every figure is derived from the feedback and audit logs.</p>
       </div>
 
-      <div className={styles.kpis}>
+      <Carousel ariaLabel="Feedback figures">
         <Card title="Feedback received">
           {kpis ? <><p><span className={styles.big}>{kpis.total}</span></p><ProvenanceChip kind="derived" detail={`n=${kpis.total}`} /></>
             : <EmptyState title="No feedback yet" text="Use Helpful or Not helpful on a recommendation in Planning." />}
@@ -63,7 +63,7 @@ export default function Learning() {
               <p className={styles.sub}>{kpis.rejected} rejected</p><ProvenanceChip kind="derived" detail={`n=${kpis.reviewed}`} /></>
           ) : <EmptyState title="Nothing reviewed yet" text="Accept, edit or reject items in the queue below." />}
         </Card>
-      </div>
+      </Carousel>
 
       <Card title="Feedback queue" aside={<span className={styles.sub}>Reviewer decides</span>}>
         {rows.length === 0 ? <EmptyState title="Queue is empty" /> : (

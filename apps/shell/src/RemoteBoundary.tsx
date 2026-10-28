@@ -1,5 +1,5 @@
 import { Component, Suspense, type ReactNode } from 'react'
-import { Card } from '@pi/ui'
+import { Card, PageSkeleton } from '@pi/ui'
 
 class Boundary extends Component<{ name: string; children: ReactNode }, { failed: boolean }> {
   state = { failed: false }
@@ -12,5 +12,5 @@ class Boundary extends Component<{ name: string; children: ReactNode }, { failed
 
 /** Each remote gets its own error boundary and Suspense fallback. */
 export function RemoteBoundary({ name, children }: { name: string; children: ReactNode }) {
-  return <Boundary name={name}><Suspense fallback={<Card state="loading">{null}</Card>}>{children}</Suspense></Boundary>
+  return <Boundary name={name}><Suspense fallback={<PageSkeleton />}>{children}</Suspense></Boundary>
 }

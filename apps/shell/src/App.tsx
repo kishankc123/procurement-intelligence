@@ -8,6 +8,7 @@ import {
 } from '@pi/ui'
 import { RemoteBoundary } from './RemoteBoundary'
 import { Home } from './pages/Home'
+import { Breadcrumbs } from './Breadcrumbs'
 import { StepNav } from './StepNav'
 import { FilterRail } from './FilterRail'
 import { Planned } from './pages/Planned'
@@ -91,6 +92,7 @@ export function App() {
         </header>
         {/* <div className={styles.banner} role="note"><strong>Mock data.</strong> {meta?.dataset_label ?? '…'}. Every figure is bound to data and shows its source.</div> */}
         <main className={styles.content}>
+          <Breadcrumbs />
           {pathname !== '/' && <StepNav />}
           <Routes>
             <Route index element={<Home />} />

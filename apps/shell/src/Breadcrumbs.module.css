@@ -1,0 +1,9 @@
+.nav { min-width: 0; }
+.list { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.item { min-width: 0; overflow-wrap: anywhere; }
+.sep { display: inline-flex; color: var(--muted); }
+.link { color: var(--muted); text-decoration: none; }
+.link:hover { color: var(--text); text-decoration: underline; }
+.link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.group { color: var(--muted); }
+.current { color: var(--text); font-weight: 600; }
