@@ -4,7 +4,7 @@ import {
   deriveAlerts, timeElapsedPct, useAlertStates, useAmendments, useAssignAlert, useContracts, useCurrentUser,
   useEnrichments, useGovernance, useMeta, useProject, useReports, useUiStore, type Citation,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './Monitoring.module.css'
 
@@ -15,9 +15,7 @@ function AssignControl({ alertId, current }: { alertId: string; current: string 
   const allowed = can(role, 'assign_alerts')
   return (
     <span className={styles.assign}>
-      <select aria-label="Assign to" value={who} onChange={(e) => setWho(e.target.value)} disabled={!allowed}>
-        {ROLES.map((r) => <option key={r.id}>{r.label}</option>)}
-      </select>{' '}
+      <Select aria-label="Assign to" className="w-44" value={who} onValueChange={setWho} disabled={!allowed} options={ROLES.map((r) => ({ value: r.label, label: r.label }))} />{' '}
       <Button onClick={() => assign.mutate({ id: alertId, assignee: who })} disabledReason={allowed ? undefined : whyDisabled('assign_alerts')}>{current ? 'Reassign' : 'Assign'}</Button>
     </span>
   )
@@ -186,21 +184,21 @@ export default function Monitoring() {
 
       <div className={styles.two}>
         <Card title="Project key dates" aside={<ProvenanceChip kind="public" />}>
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Milestone</th><th>Planned</th><th>Actual or revised</th></tr></thead>
             <tbody>
               <tr><td>Approval</td><td className="mono">{project.approval_date}</td><td className="mono">{project.approval_date}</td></tr>
               <tr><td>Effectiveness</td><td className="mono">{project.effectiveness_planned}</td><td className="mono">{project.effectiveness_actual ?? '—'}</td></tr>
               <tr><td>Closing</td><td className="mono">{project.closing_date_planned}</td><td className="mono">{project.closing_date_revised ?? '—'}</td></tr>
             </tbody>
-          </table>
+          </table></TableScroll>
         </Card>
         <Card title="Governance context" aside={<ProvenanceChip kind="public" />}>
           {govLatest ? (
-            <table className={styles.table}><tbody>
+            <TableScroll><table className={styles.table}><tbody>
               {Object.entries(govLatest.wgi).map(([k, v]) => <tr key={k}><td>{k.replace(/_/g, ' ')}</td><td className="mono">{v}</td><td><ProvenanceChip kind="public" detail={`WGI ${govLatest.year}`} /></td></tr>)}
               <tr><td>Transparency and accountability (CPIA 16)</td><td className="mono">{govLatest.cpia_16 ?? <ProvenanceChip kind="missing" detail="not covered" />}</td><td /></tr>
-            </tbody></table>
+            </tbody></table></TableScroll>
           ) : <EmptyState title="No governance data for this country" />}
         </Card>
       </div>

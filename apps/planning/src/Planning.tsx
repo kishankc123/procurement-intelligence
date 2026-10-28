@@ -5,7 +5,7 @@ import {
   useCurrentUser, useDeletePlan, usePlan, useProject, useRecommendations, useSavePlan, useUiStore,
   type Citation, type Plan,
 } from '@pi/data'
-import { Badge, Button, Card, DataGate, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, DataGate, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './Planning.module.css'
 
@@ -51,7 +51,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
         <strong>Stage timeline</strong>
         <ProvenanceChip kind="entered" />
       </div>
-      <table className={styles.table}>
+      <TableScroll><table className={styles.table}>
         <thead><tr><th>Stage</th><th>Planned</th><th>Actual</th><th>Reference</th></tr></thead>
         <tbody>
           {STAGES.map((st) => (
@@ -63,7 +63,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></TableScroll>
       <div className={styles.row}>
         <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>
         <Button onClick={onFull}>Full details</Button>
@@ -94,17 +94,13 @@ function PlanEditor({ plan, startEditing, onDeleted }: { plan: Plan; startEditin
       <form onSubmit={(e) => { e.preventDefault(); save.mutate(draft, { onSuccess: () => setEditing(false) }) }}>
         <div className={styles.form}>
           <label>Category
-            <select value={draft.category} onChange={(e) => set('category', e.target.value)} disabled={!editing}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </select>
+            <Select value={draft.category} onValueChange={(v) => set('category', v)} disabled={!editing} options={CATEGORIES.map((c) => ({ value: c, label: c }))} />
           </label>
           <label>Method
-            <select value={draft.method} onChange={(e) => set('method', e.target.value)} disabled={!editing}>
-              {METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+            <Select value={draft.method} onValueChange={(v) => set('method', v)} disabled={!editing} options={METHODS.map((m) => ({ value: m, label: m }))} />
           </label>
         </div>
-        <table className={styles.table}>
+        <TableScroll><table className={styles.table}>
           <thead><tr><th>Stage</th><th>Planned</th><th>Actual</th><th>Reference</th></tr></thead>
           <tbody>
             {STAGES.map((st) => (
@@ -116,7 +112,7 @@ function PlanEditor({ plan, startEditing, onDeleted }: { plan: Plan; startEditin
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></TableScroll>
         <div className={styles.row}>
           {editing ? (
             <>
@@ -143,7 +139,7 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
   return (
     <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
-        <table className={styles.table}>
+        <TableScroll><table className={styles.table}>
           <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th></tr></thead>
           <tbody>
             {plans.map((p) => (
@@ -172,7 +168,7 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
               </Fragment>
             ))}
           </tbody>
-        </table>
+        </table></TableScroll>
       )}
       <p className={styles.sub}>Each row is a tender you are preparing to run. Click a row to see and edit its stage timeline.</p>
     </Card>
@@ -242,7 +238,7 @@ function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; sta
 
       <div className={styles.two}>
         <Card title="Country context" aside={<span className={styles.sub}>latest year reported</span>}>
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Indicator</th><th>Value</th><th>Year</th><th>Source</th></tr></thead>
             <tbody>
               {INDICATORS.map((i) => {
@@ -257,7 +253,7 @@ function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; sta
                 )
               })}
             </tbody>
-          </table>
+          </table></TableScroll>
           <p className={styles.sub}>
             {outlierYears.length > 0
               ? `Outlier values flagged and excluded from comparisons: ${outlierYears.map((y) => `${y.year} ${y.flags.join(', ')}`).join('; ')}.`
@@ -296,7 +292,7 @@ function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; sta
 
       <Card title="Similar completed projects" aside={<span className={styles.sub}>from completion reports</span>}>
         {completions.length === 0 ? <EmptyState title="No completion reports ingested" /> : (
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Project</th><th>Completion rating</th><th>Restructurings</th><th>Closing extension</th></tr></thead>
             <tbody>
               {completions.map((c) => (
@@ -308,7 +304,7 @@ function PlanDetail({ plan, startEditing, onBack, onDeleted }: { plan: Plan; sta
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
         <p className={styles.sub}>Outcomes come from the completion report. <ProvenanceChip kind="public" /></p>
       </Card>

@@ -1,0 +1,27 @@
+.root { --row: var(--wheel-row, 52px); width: 100%; display: grid; justify-items: center; pointer-events: none; }
+.picker { --row: var(--wheel-row, 52px); position: relative; width: 100%; height: calc(var(--row) * 3); overflow: hidden; pointer-events: auto; cursor: ns-resize; touch-action: none; border-radius: 6px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 28%, #000 72%, transparent); }
+.picker:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.rule { position: absolute; left: 0; right: 0; height: 1px; background: color-mix(in srgb, var(--text) 40%, transparent); z-index: 1; pointer-events: none; }
+.top { top: var(--row); }
+.bottom { top: calc(var(--row) * 2); }
+.track { transform: translateY(calc((1 - var(--i)) * var(--row))); transition: transform .22s ease; }
+.item { height: var(--row); display: grid; place-items: center; padding: 0 2px; text-align: center; font-size: var(--wheel-font, 14px); line-height: 1.2; transition: opacity .22s ease, transform .22s ease; }
+.item span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.current { opacity: 1; font-weight: 600; color: var(--text); }
+.near { opacity: .4; transform: scale(.9); color: var(--muted); }
+.far { opacity: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .track, .item { transition: none; } }
+
+/* Arrows are narrow on purpose: a wide button would reach the ring and take hover away from the donut slices. */
+.arrow { all: unset; box-sizing: border-box; pointer-events: auto; cursor: pointer; display: grid; place-items: center;
+  width: calc(var(--row) * .9); height: calc(var(--row) * .42); color: color-mix(in srgb, var(--text) 75%, transparent); transition: color .15s ease, opacity .15s ease; }
+.arrow svg { width: calc(var(--wheel-font, 14px) * 1.25); height: calc(var(--wheel-font, 14px) * 1.25); }
+.arrow:hover:not(:disabled) { color: var(--text); }
+.arrow:disabled { opacity: .22; cursor: default; }
+.arrowUp:not(:disabled) svg { animation: nudgeUp 1.8s ease-in-out infinite; }
+.arrowDown:not(:disabled) svg { animation: nudgeDown 1.8s ease-in-out infinite; }
+@keyframes nudgeUp { 0%, 100% { transform: translateY(1px); } 50% { transform: translateY(-2px); } }
+@keyframes nudgeDown { 0%, 100% { transform: translateY(-1px); } 50% { transform: translateY(2px); } }
+@media (prefers-reduced-motion: reduce) { .arrow svg { animation: none !important; } }
+@media (pointer: coarse) { .arrow { width: calc(var(--row) * 1.4); height: calc(var(--row) * .6); } }

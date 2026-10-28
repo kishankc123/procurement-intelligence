@@ -5,7 +5,7 @@ import {
   useContracts, useCurrentUser, useEnrichments, useReviewAmendment, useReviewEnrichment, useUiStore,
   type EnrichmentField,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import styles from './ProjectData.module.css'
 
 const FIELD_LABEL: Record<EnrichmentField, string> = {
@@ -65,7 +65,7 @@ export function ProjectData() {
       <Card title="Contracts" aside={<input aria-label="Search contracts" placeholder="Search contracts" value={search} onChange={(e) => setSearch(e.target.value)} />}>
         {visible.length === 0 ? <EmptyState title="No contracts match" text="Check the project and fiscal-year filters." /> : (
           <div className={styles.scroll}>
-            <table className={styles.table}>
+            <TableScroll><table className={styles.table}>
               <thead><tr>
                 <th>Reference</th><th>Supplier</th><th>Category</th><th>Amount (USD)</th><th>Signed</th>
                 {ENRICHMENT_FIELDS.map((f) => <th key={f}>{FIELD_LABEL[f]}</th>)}
@@ -85,7 +85,7 @@ export function ProjectData() {
                   )
                 })}
               </tbody>
-            </table>
+            </table></TableScroll>
           </div>
         )}
       </Card>
@@ -96,8 +96,8 @@ export function ProjectData() {
             e.preventDefault()
             addEnrichment.mutate({ contract_ref: selected, field, value, fiscal_year: fiscalYear, source_note: note }, { onSuccess: () => { setValue(''); setNote('') } })
           }}>
-            <label>Contract<select value={selected} onChange={(e) => setRef(e.target.value)}>{rows.map((c) => <option key={c.borrower_contract_reference_number}>{c.borrower_contract_reference_number}</option>)}</select></label>
-            <label>Field<select value={field} onChange={(e) => { setField(e.target.value as EnrichmentField); setValue('') }}>{ENRICHMENT_FIELDS.map((f) => <option key={f} value={f}>{FIELD_LABEL[f]}</option>)}</select></label>
+            <label>Contract<Select value={selected} onValueChange={setRef} options={rows.map((c) => ({ value: c.borrower_contract_reference_number, label: c.borrower_contract_reference_number }))} /></label>
+            <label>Field<Select value={field} onValueChange={(v) => { setField(v as EnrichmentField); setValue('') }} options={ENRICHMENT_FIELDS.map((f) => ({ value: f, label: FIELD_LABEL[f] }))} /></label>
             <label>Value<input type={isDate(field) ? 'date' : 'number'} min={0} value={value} onChange={(e) => setValue(e.target.value)} required /></label>
             <label>Source note<input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Where this came from" /></label>
             <Button type="submit" variant="primary" disabled={!value || Boolean(error) || addEnrichment.isPending} disabledReason={allowedField ? undefined : whyDisabled(permissionFor(field))}>Submit for review</Button>
@@ -110,7 +110,7 @@ export function ProjectData() {
             e.preventDefault()
             addAmendment.mutate({ contract_ref: selected, type: amd.type, date: amd.date, days_added: Number(amd.days), value_change_usd: Number(amd.value), reason: amd.reason }, { onSuccess: () => setAmd({ ...amd, date: '', days: '', reason: '' }) })
           }}>
-            <label>Type<select value={amd.type} onChange={(e) => setAmd({ ...amd, type: e.target.value })}><option>Time extension</option><option>Value change</option><option>Scope change</option></select></label>
+            <label>Type<Select value={amd.type} onValueChange={(v) => setAmd({ ...amd, type: v })} options={['Time extension', 'Value change', 'Scope change'].map((t) => ({ value: t, label: t }))} /></label>
             <label>Date<input type="date" value={amd.date} onChange={(e) => setAmd({ ...amd, date: e.target.value })} required /></label>
             <label>Days added<input type="number" min={0} value={amd.days} onChange={(e) => setAmd({ ...amd, days: e.target.value })} required /></label>
             <label>Value change (USD)<input type="number" value={amd.value} onChange={(e) => setAmd({ ...amd, value: e.target.value })} /></label>
@@ -122,7 +122,7 @@ export function ProjectData() {
 
       <Card title="Awaiting review" aside={<span className={styles.sub}>Reviewer approves or rejects</span>}>
         {pendingEnr.length + pendingAmd.length === 0 ? <EmptyState title="Nothing pending" text="Entries from planners and contract managers appear here." /> : (
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Entry</th><th>Contract</th><th>By</th><th>Decision</th></tr></thead>
             <tbody>
               {pendingEnr.map((e) => (
@@ -138,18 +138,18 @@ export function ProjectData() {
                     <Button onClick={() => reviewAmendment.mutate({ id: a.id, status: 'rejected' })} disabledReason={canReview ? undefined : whyDisabled('approve_entries')}>Reject</Button></td></tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
       </Card>
 
       <Card title="Audit trail">
         {audit.length === 0 ? <EmptyState title="No changes yet" /> : (
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>When</th><th>Role</th><th>Action</th><th>Target</th></tr></thead>
             <tbody>{[...audit].reverse().slice(0, 8).map((a) => (
               <tr key={a.id}><td className="mono">{a.at.slice(0, 19).replace('T', ' ')}</td><td>{a.role.replace('_', ' ')}</td><td>{a.action}</td><td className="mono">{a.target}</td></tr>
             ))}</tbody>
-          </table>
+          </table></TableScroll>
         )}
       </Card>
     </div>

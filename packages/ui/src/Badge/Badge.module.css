@@ -1,5 +1,0 @@
-.badge { display: inline-block; padding: 1px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
-.high { background: var(--sev-high-bg); color: var(--sev-high-fg); }
-.medium { background: var(--sev-med-bg); color: var(--sev-med-fg); }
-.low { background: var(--sev-low-bg); color: var(--sev-low-fg); }
-.neutral { background: var(--prov-public-bg); color: var(--prov-public-fg); }

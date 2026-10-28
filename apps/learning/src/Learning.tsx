@@ -4,7 +4,7 @@ import {
   dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
   tenderCoverage,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars, TableScroll } from '@pi/ui'
 import styles from './Learning.module.css'
 
 const STATUS_TONE = { new: 'medium', accepted: 'low', rejected: 'high', edited: 'neutral' } as const
@@ -66,7 +66,7 @@ export default function Learning() {
 
       <Card title="Feedback queue" aside={<span className={styles.sub}>Reviewer decides</span>}>
         {rows.length === 0 ? <EmptyState title="Queue is empty" /> : (
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Recommendation</th><th>Rating</th><th>From</th><th>Status</th><th>Decision</th></tr></thead>
             <tbody>
               {rows.map((f) => (
@@ -88,7 +88,7 @@ export default function Learning() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
       </Card>
 
@@ -124,25 +124,25 @@ export default function Learning() {
       <div className={styles.two}>
         <Card title="Data coverage by fiscal year" aside={<ProvenanceChip kind="derived" />}>
           {fiscalYears.length === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the top bar." /> : (
-            <table className={styles.table}>
+            <TableScroll><table className={styles.table}>
               <thead><tr><th>Fiscal year</th><th>Contracts with approved entered data</th></tr></thead>
               <tbody>{fiscalYears.map((fy) => {
                 const { covered, total } = tenderCoverage(contracts.filter((c) => c.fiscal_year === fy), enrichments)
                 return <tr key={fy}><td>FY{fy}</td><td className="mono">{covered} of {total}</td></tr>
               })}</tbody>
-            </table>
+            </table></TableScroll>
           )}
           <p className={styles.sub}>Benchmarks unlock at {THRESHOLDS.tenderBenchmarkMinContracts} contracts with the field entered.</p>
         </Card>
 
         <Card title="Update log" aside={<span className={styles.sub}>from audit log</span>}>
           {audit.length === 0 ? <EmptyState title="No updates yet" text="Every save, approval and decision is logged here." /> : (
-            <table className={styles.table}>
+            <TableScroll><table className={styles.table}>
               <thead><tr><th>When</th><th>Role</th><th>Action</th><th>Target</th></tr></thead>
               <tbody>{[...audit].reverse().slice(0, 10).map((a) => (
                 <tr key={a.id}><td className="mono">{a.at.slice(0, 19).replace('T', ' ')}</td><td>{a.role.replace('_', ' ')}</td><td>{a.action}</td><td className="mono">{a.target}</td></tr>
               ))}</tbody>
-            </table>
+            </table></TableScroll>
           )}
         </Card>
       </div>

@@ -1,13 +1,15 @@
-import type { ButtonHTMLAttributes } from 'react'
-import styles from './Button.module.css'
+import type { ComponentProps } from 'react'
+import { Button as ShadcnButton } from '../components/ui/button'
 
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface Props extends Omit<ComponentProps<'button'>, 'color'> {
   variant?: 'primary' | 'secondary' | 'success' | 'danger'
   /** Shown as the tooltip and read aloud when the button is disabled by a permission. */
   disabledReason?: string
 }
 
-export function Button({ variant = 'secondary', disabledReason, disabled, className, ...rest }: Props) {
-  const off = disabled || Boolean(disabledReason)
-  return <button {...rest} disabled={off} title={disabledReason ?? rest.title} className={`${styles.btn} ${styles[variant]} ${className ?? ''}`} />
+const VARIANT = { primary: 'default', secondary: 'outline', success: 'success', danger: 'danger' } as const
+
+/** Our button API on top of the shadcn Button, so screens keep their props. */
+export function Button({ variant = 'secondary', disabledReason, disabled, title, ...rest }: Props) {
+  return <ShadcnButton {...rest} variant={VARIANT[variant]} disabled={disabled || Boolean(disabledReason)} title={disabledReason ?? title} />
 }

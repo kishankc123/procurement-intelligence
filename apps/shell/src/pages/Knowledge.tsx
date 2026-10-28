@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useChunks, useDocs, useFetchSource, useMeta, useSources } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import styles from './ProjectData.module.css'
 
 export function Knowledge() {
@@ -26,7 +26,7 @@ export function Knowledge() {
       <div><h1>Knowledge base</h1><p className={styles.sub}>Source registry, ingested documents and their chunks. Fetching is simulated: nothing is downloaded.</p></div>
 
       <Card title="Source registry" aside={<Badge>Simulated fetch</Badge>}>
-        <table className={styles.table}>
+        <TableScroll><table className={styles.table}>
           <thead><tr><th>Source</th><th>Publisher</th><th>Kind</th><th>Status</th><th>Last fetched</th><th /></tr></thead>
           <tbody>{(sources.data ?? []).map((s) => (
             <tr key={s.id}>
@@ -36,27 +36,25 @@ export function Knowledge() {
               <td><Button onClick={() => fetchSource.mutate({ id: s.id })} disabled={fetchSource.isPending}>Fetch</Button></td>
             </tr>
           ))}</tbody>
-        </table>
+        </table></TableScroll>
       </Card>
 
       <div className={styles.two}>
         <Card title="Documents" aside={<ProvenanceChip kind="public" detail="mock titles" />}>
           <div className={styles.form}>
             <input aria-label="Search documents" placeholder="Search documents" value={query} onChange={(e) => setQuery(e.target.value)} />
-            <select aria-label="Filter by type" value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="">All types</option>{types.map((t) => <option key={t}>{t}</option>)}
-            </select>
+            <Select aria-label="Filter by type" value={type || 'all'} onValueChange={(v) => setType(v === 'all' ? '' : v)} options={[{ value: 'all', label: 'All types' }, ...types.map((t) => ({ value: t, label: t }))]} />
           </div>
           {visible.length === 0 ? <EmptyState title="No documents match" /> : (
-            <table className={styles.table}>
+            <TableScroll><table className={styles.table}>
               <thead><tr><th>Title</th><th>Type</th><th>Date</th><th>Parse</th></tr></thead>
               <tbody>{visible.map((d) => (
                 <tr key={d.doc_id}>
-                  <td><button type="button" onClick={() => setDocId(d.doc_id)}>{d.title}</button><br /><span className="mono">{d.doc_id}</span></td>
+                  <td><Button type="button" onClick={() => setDocId(d.doc_id)}>{d.title}</Button><br /><span className="mono">{d.doc_id}</span></td>
                   <td>{d.type}</td><td className="mono">{d.date}</td><td>{d.parse_status}</td>
                 </tr>
               ))}</tbody>
-            </table>
+            </table></TableScroll>
           )}
         </Card>
 

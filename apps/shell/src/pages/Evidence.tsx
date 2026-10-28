@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { can, whyDisabled } from '@pi/config'
 import { useAuditLog, useConflicts, useCurrentUser, useRecommendations, useResolveConflict, useUiStore, type Citation } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, TableScroll } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './ProjectData.module.css'
 
@@ -52,13 +52,13 @@ export function Evidence() {
 
       <Card title="Grounding table" aside={<ProvenanceChip kind="derived" />}>
         {recs.length === 0 ? <EmptyState title="No recommendations for this project" /> : (
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Claim</th><th>Citations</th><th>Status</th></tr></thead>
             <tbody>{recs.map((r) => (
               <tr key={r.id}><td>{r.title}<br /><span className="mono">{r.id}</span></td><td className="mono">{r.citations.length}</td>
                 <td>{r.citations.length > 0 ? <Badge tone="low">Grounded</Badge> : <Badge tone="medium">Withheld</Badge>}</td></tr>
             ))}</tbody>
-          </table>
+          </table></TableScroll>
         )}
       </Card>
       <SourceDrawer citation={open} onClose={() => setOpen(null)} />

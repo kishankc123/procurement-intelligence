@@ -1,15 +1,43 @@
-.layout { display: grid; grid-template-columns: 210px 1fr; min-height: 100vh; }
-.nav { background: var(--nav); color: #fff; padding: 18px 12px; display: flex; flex-direction: column; gap: 4px; }
-.nav h1 { font-size: 17px; margin: 0 0 14px 8px; }
-.nav a { color: #dbe5f1; text-decoration: none; padding: 8px 10px; border-radius: var(--radius-ctl); }
-.nav a.active { background: var(--nav-active); color: #fff; }
-.group { color: #8fa6bf; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; margin: 14px 0 4px 8px; }
-.foot { margin-top: auto; color: #8fa6bf; font-size: 11px; }
-.main { min-width: 0; }
-.top { display: flex; gap: 18px; align-items: end; padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
-.top label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
-.top select { font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: #fff; color: var(--text); min-width: 190px; }
-.label { font-size: 12px; color: var(--muted); }
-.legend { margin-left: auto; display: flex; gap: 6px; }
-.banner { background: #FFF6DB; border-bottom: 1px solid #F0DFA8; padding: 8px 24px; font-size: 13px; }
-.content { min-width: 0; padding: 24px; display: grid; gap: 16px; }
+.layout { min-height: 100vh; display: flex; }
+.main { flex: 1; min-width: 0; }
+
+/* Left filter rail. Closed: a thin strip with an arrow and a vertical label, no background and no line.
+   Open: the rail grows to the panel width and the main section slides over to make room (it is a flex sibling, not an overlay). */
+.rail { position: sticky; top: 0; align-self: flex-start; height: 100vh; width: 44px; flex-shrink: 0; z-index: 30; transition: width .2s ease; }
+.railOpen { width: 288px; }
+.railBody { height: 100%; width: 100%; overflow: hidden; display: flex; flex-direction: column; }
+.railOpen .railBody { background: var(--surface); }
+.railToggle { all: unset; box-sizing: border-box; cursor: pointer; display: grid; place-items: center; height: 44px; width: 44px; align-self: flex-end; color: var(--muted); }
+.railToggle:hover { color: var(--text); }
+.railToggle:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.railToggle svg { transition: transform .2s ease; }
+.chevronOpen { transform: rotate(180deg); }
+.railLabel { writing-mode: vertical-rl; margin: 14px auto; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+/* Fixed width so the dropdowns do not reflow while the rail is still sliding open. */
+.panel { width: 288px; padding: 4px 16px 16px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-content: start; }
+.panel label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; font-size: 12px; color: var(--muted); }
+.panelTitle { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; margin-top: -30px; margin-bottom: 4px; }
+
+/* Sticky top bar with only the brand, centred. */
+.top { position: sticky; top: 0; z-index: 20; display: flex; justify-content: center; padding: 12px 24px; background: var(--bg); }
+.brand { font-size: 17px; font-weight: 600; color: var(--text); text-decoration: none; }
+.brand:hover { color: var(--link); }
+.banner { background: var(--banner-bg); border-bottom: 1px solid var(--banner-border); padding: 8px 24px; font-size: 13px; }
+.content { min-width: 0; padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+
+/* Click outside the open rail to close it (phones only). */
+.scrim { display: none; }
+
+/* Phones: there is no room to squeeze the content beside a 288px panel, so the rail becomes a drawer and the whole page slides right. */
+@media (max-width: 720px) {
+  .content { padding: 16px; }
+  .top { padding: 10px 52px; }
+  .rail { position: fixed; top: 0; left: 0; width: 0; transition: none; }
+  .railBody { position: absolute; top: 0; bottom: 0; left: 0; width: 44px; height: auto; transition: width .2s ease; }
+  .railOpen .railBody { width: min(288px, 86vw); }
+  .panel { width: min(288px, 86vw); }
+  .railLabel { display: none; }
+  .main { transition: transform .2s ease; }
+  .layoutRailOpen .main { transform: translateX(min(288px, 86vw)); }
+  .railOpen .scrim { display: block; position: fixed; inset: 0; z-index: -1; border: 0; padding: 0; background: rgba(0, 0, 0, .35); cursor: default; }
+}

@@ -5,7 +5,7 @@ import {
   plannedDurations, tenderComparison, useContracts, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
   type Citation, type Comparison, type Plan, type TenderDraft,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './ProjectData.module.css'
 
@@ -22,7 +22,7 @@ function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | un
     <details className={styles.planRef}>
       <summary><span>Compared with plan: <strong>{plan.name}</strong> <span className="mono">{plan.id}</span></span></summary>
       <div className={styles.scroll}>
-        <table className={styles.table}>
+        <TableScroll><table className={styles.table}>
           <thead><tr><th>Category</th><th>Method</th><th>Advertisement</th><th>Bid opening</th><th>Evaluation complete</th><th>Signing</th><th>Bid opening to signing</th></tr></thead>
           <tbody><tr>
             <td>{plan.category}</td><td>{plan.method}</td>
@@ -30,13 +30,11 @@ function PlanReference({ plans, plan, onPick }: { plans: Plan[]; plan: Plan | un
             <td className="mono">{plan.planned_evaluation_complete}</td><td className="mono">{plan.planned_signing}</td>
             <td className="mono">{d.bidOpeningToSigning} days <ProvenanceChip kind="derived" /></td>
           </tr></tbody>
-        </table>
+        </table></TableScroll>
       </div>
       {plans.length > 1 && (
         <label className={styles.planPick}>Compare with another plan
-          <select value={plan.id} onChange={(e) => onPick(e.target.value)}>
-            {plans.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
-          </select>
+          <Select value={plan.id} onValueChange={onPick} options={plans.map((p) => ({ value: p.id, label: `${p.name} (${p.id})` }))} />
         </label>
       )}
     </details>
@@ -59,7 +57,8 @@ function ReferenceCell({ c }: { c: Comparison }) {
 export function TenderDesign() {
   const { projectId, fiscalYear } = useUiStore()
   const { role } = useCurrentUser()
-  const stored = useTenderDraft(projectId).data?.[0]
+  const storedQuery = useTenderDraft(projectId)
+  const stored = storedQuery.data?.[0]
   const plans = usePlan(projectId).data ?? []
   const [planId, setPlanId] = useState<string | null>(null)
   const plan = plans.find((p) => p.id === planId) ?? plans[0]
@@ -70,6 +69,13 @@ export function TenderDesign() {
   const [open, setOpen] = useState<Citation | null>(null)
   useEffect(() => setDraft(stored), [stored])
 
+  if (storedQuery.isSuccess && !stored) {
+    return (
+      <Card title="Draft clauses" aside={<ProvenanceChip kind="missing" />}>
+        <EmptyState title="No tender draft for this project yet" text="Tender clauses are entered by a planner once a draft exists. Nothing is estimated in the meantime." />
+      </Card>
+    )
+  }
   if (!draft || !stored) return <Card state="loading">{null}</Card>
   const allowed = can(role, 'edit_tender_draft')
   const changed = (k: keyof TenderDraft) => draft[k] !== stored[k]
@@ -96,9 +102,7 @@ export function TenderDesign() {
           {num('min_similar_contracts', 'Minimum similar contracts')}
           {num('min_similar_value_usd', 'Minimum similar contract value (USD)')}
           <label>Evaluation method
-            <select value={draft.evaluation_method} disabled={!allowed} onChange={(e) => setDraft({ ...draft, evaluation_method: e.target.value })}>
-              {METHODS.map((m) => <option key={m}>{m}</option>)}
-            </select>
+            <Select value={draft.evaluation_method} disabled={!allowed} onValueChange={(v) => setDraft({ ...draft, evaluation_method: v })} options={METHODS.map((m) => ({ value: m, label: m }))} />
             {changed('evaluation_method') && <span className={styles.changed}>Saved: {stored.evaluation_method} → now {draft.evaluation_method}</span>}
           </label>
           <div className={styles.actions}>
@@ -111,7 +115,7 @@ export function TenderDesign() {
 
       <Card title="Draft vs. plan and benchmarks" aside={<ProvenanceChip kind="derived" />}>
         <div className={styles.scroll}>
-          <table className={styles.table}>
+          <TableScroll><table className={styles.table}>
             <thead><tr><th>Clause</th><th>Your draft</th><th>Compared with</th><th>Reference</th><th>Difference</th><th>What it means</th></tr></thead>
             <tbody>
               {rows.map((r) => (
@@ -136,7 +140,7 @@ export function TenderDesign() {
                 </Fragment>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         </div>
         <p className={styles.sub}>Difference is your draft minus the reference. Benchmarks use contracts in FY{fiscalYear} and appear only once enough contracts have the value. Nothing is estimated where a source is missing.</p>
       </Card>

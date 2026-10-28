@@ -1,8 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 :root {
+  color-scheme: dark;
+  --bg: #0A1322; --surface: #121E32; --border: #25354D; --text: #E6EDF5; --muted: #9DB0C7;
+  --nav: #0A1322; --nav-active: #1B3A5C; --primary: #3F73CC;
+  /* Action colours: blue = edit/primary, green = save/confirm, red = close/delete. Solid fills carry white text. */
+  --success: #1E7B4B; --danger: #C4392F; --on-solid: #FFFFFF;
+  --prov-public-bg: #26323F; --prov-public-fg: #C3CFDB;
+  --prov-entered-bg: #3A2D12; --prov-entered-fg: #F2C879;
+  --prov-derived-bg: #14301F; --prov-derived-fg: #8BD9AB;
+  --prov-missing-border: #FF9C94; --prov-missing-fg: #FFB4AD;
+  --sev-high-bg: #3B1A17; --sev-high-fg: #FFB4AD; --sev-med-bg: #3A2D12; --sev-med-fg: #F2C879; --sev-low-bg: #14301F; --sev-low-fg: #8BD9AB;
+  --cite-bg: #1C2F4D; --cite-fg: #A9C6F5;
+  /* Lifecycle step colours (Home donut). Distinct from the provenance and severity colours. */
+  --step-planning: #3568C0; --step-tender: #0B7A7A; --step-monitoring: #A35A14; --step-learning: #7557C9;
+  /* Extra surfaces so screens never hard-code a colour. */
+  --link: #8DB6F5; --selected: #1C2F4D; --banner-bg: #2B2410; --banner-border: #4A3D1A;
+  --radius-card: 12px; --radius-ctl: 8px;
+  --font: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+/* Light palette, opt-in with <html data-theme="light">. */
+:root[data-theme='light'] {
+  color-scheme: light;
   --bg: #F4F6F8; --surface: #FFFFFF; --border: #DDE3EA; --text: #14202B; --muted: #566678;
   --nav: #0E2238; --nav-active: #1B3A5C; --primary: #2456A6;
-  /* Action colours: blue = edit/primary, green = save/confirm, red = close/delete. Solid fills carry white text. */
   --success: #1E7B4B; --danger: #B3261E; --on-solid: #FFFFFF;
   --prov-public-bg: #E8ECF1; --prov-public-fg: #3C4B5C;
   --prov-entered-bg: #FEF0D6; --prov-entered-fg: #7A4A06;
@@ -10,23 +30,13 @@
   --prov-missing-border: #B3261E; --prov-missing-fg: #8A1C14;
   --sev-high-bg: #FDE7E5; --sev-high-fg: #8A1C14; --sev-med-bg: #FEF0D6; --sev-med-fg: #7A4A06; --sev-low-bg: #DDF3E6; --sev-low-fg: #14603A;
   --cite-bg: #E2ECFB; --cite-fg: #1B4586;
-  --radius-card: 12px; --radius-ctl: 8px;
-  --font: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace;
-}
-/* Dark palette, opt-in with <html data-theme="dark">. Defined for the next UI pass; the screens still use some light-only colours. */
-:root[data-theme='dark'] {
-  --bg: #0F1720; --surface: #17212B; --border: #2A3947; --text: #E6EDF3; --muted: #9AABBC;
-  --nav: #0A1623; --nav-active: #1B3A5C; --primary: #3B6FC4;
-  --success: #1E7B4B; --danger: #C4392F;
-  --prov-public-bg: #26323F; --prov-public-fg: #C3CFDB;
-  --prov-entered-bg: #3A2D12; --prov-entered-fg: #F2C879;
-  --prov-derived-bg: #14301F; --prov-derived-fg: #8BD9AB;
-  --prov-missing-border: #FF9C94; --prov-missing-fg: #FFB4AD;
-  --sev-high-bg: #3B1A17; --sev-high-fg: #FFB4AD; --sev-med-bg: #3A2D12; --sev-med-fg: #F2C879; --sev-low-bg: #14301F; --sev-low-fg: #8BD9AB;
-  --cite-bg: #1C2F4D; --cite-fg: #A9C6F5;
+  --link: #1B4586; --selected: #E2ECFB; --banner-bg: #FFF6DB; --banner-border: #F0DFA8;
 }
 * { box-sizing: border-box; }
+/* Safety net: one stray wide element must not make a phone zoom out the whole page. */
+html, body { overflow-x: clip; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); }
 h1, h2, h3, p { margin: 0; }
+a { color: var(--link); }
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .mono { font-family: var(--mono); }
