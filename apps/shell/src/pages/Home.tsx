@@ -3,14 +3,8 @@ import { Link, useNavigate } from 'react-router'
 import { LIFECYCLE_STEPS, PLATFORM_AREAS } from '@pi/config'
 import { useFeedback, usePlan, useProjects, useReports, useTenderDraft, useUiStore } from '@pi/data'
 import { Card, DonutNav, EmptyState, ProvenanceChip, WheelPicker, type Provenance, TableScroll } from '@pi/ui'
+import { STEP_COLOR } from '../stepColors'
 import styles from './Home.module.css'
-
-const STEP_COLOR: Record<string, string> = {
-  planning: 'var(--step-planning)',
-  'tender-design': 'var(--step-tender)',
-  monitoring: 'var(--step-monitoring)',
-  learning: 'var(--step-learning)',
-}
 
 interface Fact { text: string; kind: Provenance }
 

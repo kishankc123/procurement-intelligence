@@ -16,6 +16,8 @@ interface Props {
   ariaLabel: string
   /** CSS max width of the donut, e.g. 'min(480px, 50vh)'. */
   size?: string
+  /** Small version for page headers: slices show only their number and the orbit ring is hidden. */
+  compact?: boolean
 }
 
 const CENTRE = 100
@@ -68,7 +70,7 @@ function labelPath(start: number, end: number, bottom: boolean): string {
 }
 
 /** Donut of equal slices used as navigation. Each slice is a real button: hover or focus highlights it, click or Enter selects it. */
-export function DonutNav({ segments, activeId, onActiveChange, onSelect, centre, ariaLabel, size }: Props) {
+export function DonutNav({ segments, activeId, onActiveChange, onSelect, centre, ariaLabel, size, compact }: Props) {
   const slice = 360 / Math.max(segments.length, 1)
   const uid = useId().replace(/:/g, '')
 
@@ -89,7 +91,7 @@ export function DonutNav({ segments, activeId, onActiveChange, onSelect, centre,
   }
 
   return (
-    <div className={styles.wrap} style={size ? { maxWidth: size } : undefined}>
+    <div className={`${styles.wrap} ${compact ? styles.compact : ''}`} style={size ? { maxWidth: size } : undefined}>
       <svg viewBox="-8 -8 216 216" role="group" aria-label={ariaLabel} className={styles.svg}>
         <defs>
           <radialGradient id={`${uid}-hole`} cx="50%" cy="50%" r="50%">
@@ -144,6 +146,14 @@ export function DonutNav({ segments, activeId, onActiveChange, onSelect, centre,
           const { start, end, mid } = angles(i)
           const pathId = `${uid}-${s.id}`
           const bottom = Math.sin((mid * Math.PI) / 180) > 0
+          if (compact) {
+            const [nx, ny] = polar((OUTER + INNER) / 2, mid)
+            return (
+              <g key={s.id} className={`${styles.seg} ${stateClass(s.id)}`} style={popOut(s.id, mid)}>
+                <text x={nx} y={ny} className={styles.numLabel} textAnchor="middle" dominantBaseline="central">{i + 1}</text>
+              </g>
+            )
+          }
           return (
             <g key={s.id} className={`${styles.seg} ${stateClass(s.id)}`} style={popOut(s.id, mid)}>
               <path id={pathId} d={labelPath(start, end, bottom)} fill="none" />
