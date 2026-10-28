@@ -193,6 +193,9 @@ Why: the assessment asks for ingestion of public data, linking structured record
 ## Block 38: supplier icons (step 3)
 - New `SupplierName` in `@pi/ui`: a very small round organization icon (12px in an 18px circle) before a supplier name. All suppliers get the same icon because the public record has no person type; no data change. Used in the Suppliers list and the Project data contracts table.
 
+## Block 39: record linking as a tree (step 4)
+- `groupLinksByRecord` in `@pi/data` (tested, 73 tests) groups the links by structured record. Work with AI layer 3 now shows each record once on the left (for example "Supervision report 1", with a count) and an arrow from it to every document text linked to it, with the reason on each row. The tree is CSS only (a trunk and arrowheads in a narrow column). The table pages and scrolls by record, and each document row has an Open document link that opens the full-screen document.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

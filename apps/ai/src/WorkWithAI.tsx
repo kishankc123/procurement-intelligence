@@ -2,12 +2,12 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
 import {
-  SPEC_STATUS_LABEL, checkReachable, checkRetender, countryReference, specificationChecks, useCountryYears, useTenderDraft, checkSourceUrl, classifySource, ingestionSteps, linkRecords, tenderCandidates,
+  SPEC_STATUS_LABEL, checkReachable, checkRetender, countryReference, specificationChecks, useCountryYears, useTenderDraft, checkSourceUrl, classifySource, ingestionSteps, groupLinksByRecord, linkRecords, tenderCandidates,
   useAddSourceLink, useAllPlans, useTenderHistory, useChunks, useContracts, useCurrentUser, useDocs, useIngestionRuns, useProject, useRecordIngestionRun,
   useProjects, useReports, useSourceLinks, useUiStore, type Citation, type RetenderMatch, type TenderStatus, type UrlCheck,
 } from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
-import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
+import { CitationChip, DocumentDialog, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './WorkWithAI.module.css'
 
 const STEP_LABEL = { done: 'Done', failed: 'Failed', skipped: 'Skipped', planned: 'Planned' } as const
@@ -84,6 +84,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
   const canRun = can(role, 'run_ingestion')
   const linkId = pickedLink || links[0]?.id || ''
   const link = links.find((l) => l.id === linkId)
+  const [docOpen, setDocOpen] = useState<string | null>(null)
   const lastRun = [...runs].filter((r) => r.link_id === linkId).sort((a, b) => a.ran_at.localeCompare(b.ran_at)).at(-1)
   const candidates = tenderCandidates(history, allPlans)
   const projectPlans = allPlans.filter((p) => p.project_id === projectId)
@@ -102,6 +103,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
     if (!check?.ok || !check.url || !check.host || (reach !== 'reachable' && reach !== 'unreachable')) return
     const known = classifySource(check.host)
     addLink.mutate(
+  const groups = groupLinksByRecord(linked)
       { project_id: projectId, url: check.url, host: check.host, reachability: reach, publisher: known?.publisher ?? null, kind: known?.kind ?? null },
       { onSuccess: () => { setRaw(''); setCheck(null); setReach('idle') } },
     )
@@ -218,24 +220,33 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {linked.length === 0 ? (
           <EmptyState title="No links found for this project" text="No document text names this project's contracts, and no document matches a report date." />
         ) : (
-          <Paged items={linked} label="record links" maxHeight="520px">{(pageRows) =>
+          <Paged items={groups} label="structured records" maxHeight="520px">{(pageRows) =>
             <table className={styles.table}>
-              <thead><tr><th>Structured record</th><th>Document text</th><th>Why they are linked</th></tr></thead>
-              <tbody>
-                {pageRows.map((l) => (
-                  <tr key={l.id}>
-                    <td>
-                      <CitationChip citation={{ ref_type: 'record', ref_id: l.structured.id, label: l.structured.label }} onOpen={setOpen} />{' '}
-                      <ProvenanceChip kind="public" />
-                    </td>
-                    <td>
-                      <CitationChip citation={{ ref_type: 'chunk', ref_id: l.chunk.chunk_id, label: `${l.doc?.title ?? l.chunk.doc_id} · p.${l.chunk.page}` }} onOpen={setOpen} />
-                      <p className={styles.snippet}>{l.chunk.text.length > 140 ? `${l.chunk.text.slice(0, 140)}…` : l.chunk.text}</p>
-                    </td>
-                    <td>{l.why} <ProvenanceChip kind="derived" /></td>
-                  </tr>
-                ))}
-              </tbody>
+              <thead><tr><th>Structured record</th><th aria-label="Link" /><th>Document text</th><th>Why they are linked</th></tr></thead>
+              {pageRows.map((g) => (
+                <tbody key={g.key} className={styles.group}>
+                  {g.links.map((l, i) => (
+                    <tr key={l.id}>
+                      {i === 0 && (
+                        <td rowSpan={g.links.length} className={styles.node}>
+                          <CitationChip citation={{ ref_type: 'record', ref_id: g.structured.id, label: g.structured.label }} onOpen={setOpen} />{' '}
+                          <ProvenanceChip kind="public" />
+                          <p className={styles.snippet}>{g.links.length} document {g.links.length === 1 ? 'text' : 'texts'} linked</p>
+                        </td>
+                      )}
+                      <td className={`${styles.branch} ${g.links.length === 1 ? styles.only : i === 0 ? styles.first : i === g.links.length - 1 ? styles.last : styles.mid}`} aria-hidden="true">
+                        <span className={styles.arrow} />
+                      </td>
+                      <td>
+                        <CitationChip citation={{ ref_type: 'chunk', ref_id: l.chunk.chunk_id, label: `${l.doc?.title ?? l.chunk.doc_id} · p.${l.chunk.page}` }} onOpen={setOpen} />
+                        {l.doc && <button type="button" className={styles.docLink} onClick={() => setDocOpen(l.doc?.doc_id ?? null)}>Open document</button>}
+                        <p className={styles.snippet}>{l.chunk.text.length > 140 ? `${l.chunk.text.slice(0, 140)}…` : l.chunk.text}</p>
+                      </td>
+                      <td>{l.why} <ProvenanceChip kind="derived" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
             </table>}
           </Paged>
         )}
@@ -252,6 +263,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         </label>
         {typed ? (
           <div role="status" className={styles.layer}>
+        <DocumentDialog docId={docOpen} onClose={() => setDocOpen(null)} />
             <div className={styles.result}>
               <div className={styles.row}><Badge tone={VERDICT_TONE[typed.verdict.tone]}>{typed.verdict.tone === 'ok' ? 'No match' : typed.verdict.tone === 'attention' ? 'Check before issuing' : 'Note'}</Badge> <span className={styles.sub}>{typed.compared} tenders compared</span></div>
               <p>{typed.verdict.text}</p>
