@@ -37,7 +37,7 @@ function ProjectMenu() {
   const { projectId, setProject } = useUiStore()
   const projects = useProjects().data ?? []
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button type="button" className={styles.navTrigger}><FolderKanban size={16} aria-hidden="true" />Projects<ChevronDown size={14} aria-hidden="true" /></button>
       </DropdownMenuTrigger>
@@ -57,7 +57,7 @@ function ProjectMenu() {
 /** Top-bar "Tools" menu: the platform areas that work across projects. */
 function ToolsMenu() {
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button type="button" className={styles.navTrigger}><Wrench size={16} aria-hidden="true" />Tools<ChevronDown size={14} aria-hidden="true" /></button>
       </DropdownMenuTrigger>

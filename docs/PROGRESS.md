@@ -180,6 +180,11 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Monitoring early-warning board: shows high-severity alerts first with "Show all N"; the full list scrolls in a bounded box. With no high alert it shows everything.
 - Learning feedback queue: Accept (green, check) and Reject (red, cross) share the Decision column; Edit (blue, pencil) has its own column and opens a modal with a note field. Saving marks the item edited.
 
+## Block 36: top bar and filter rail no longer scroll away (step 1)
+- Cause: Radix menus, selects and dialogs lock page scroll by setting `overflow: hidden` on the body. The body then became a scroll container, so the sticky top bar and filter rail stopped sticking and scrolled out of view while a menu or the rail's selects were open (measured: both at -400px after scrolling 400px). Fix: `html body[data-scroll-locked]` keeps `overflow-x: clip` / `overflow-y: visible` in `packages/ui/src/tokens.css`.
+- The Projects and Tools menus are now non-modal (`modal={false}`), so a click on the page while one is open closes it and still reaches what was clicked.
+- Not changed: on narrow screens (720px and below) the open filter rail is a drawer, and a click on the page still closes it by design.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |
