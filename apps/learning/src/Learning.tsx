@@ -4,7 +4,7 @@ import {
   dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
   tenderCoverage,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars, TableScroll, Paged, Carousel } from '@pi/ui'
+import { Badge, Button, Card, Check, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState, Pencil, ProvenanceChip, StackedBars, TableScroll, Paged, Carousel, X } from '@pi/ui'
 import styles from './Learning.module.css'
 
 const STATUS_TONE = { new: 'medium', accepted: 'low', rejected: 'high', edited: 'neutral' } as const
@@ -29,6 +29,7 @@ export default function Learning() {
   const review = useReviewFeedback()
   const [editing, setEditing] = useState<string | null>(null)
   const [reason, setReason] = useState('')
+  const editingItem = (feedback.data ?? []).find((f) => f.id === editing)
 
   if (feedback.isLoading) return <Card state="loading">{null}</Card>
   if (feedback.isError) return <Card state="error">{null}</Card>
@@ -68,7 +69,7 @@ export default function Learning() {
       <Card title="Feedback queue" aside={<span className={styles.sub}>Reviewer decides</span>}>
         {rows.length === 0 ? <EmptyState title="Queue is empty" /> : (
           <Paged items={rows} label="feedback items" maxHeight="520px">{(pageRows) =><table className={styles.table}>
-            <thead><tr><th>Recommendation</th><th>Rating</th><th>From</th><th>Status</th><th>Decision</th></tr></thead>
+            <thead><tr><th>Recommendation</th><th>Rating</th><th>From</th><th>Status</th><th>Decision</th><th>Edit</th></tr></thead>
             <tbody>
               {pageRows.map((f) => (
                 <tr key={f.id}>
@@ -76,15 +77,12 @@ export default function Learning() {
                   <td>{f.rating === 'helpful' ? 'Helpful' : 'Not helpful'}</td>
                   <td>{f.role.replace('_', ' ')}</td>
                   <td><Badge tone={STATUS_TONE[f.status]}>{f.status}</Badge></td>
-                  <td className={styles.actions}>
-                    <Button onClick={() => review.mutate({ id: f.id, status: 'accepted' })} disabledReason={reason_}>Accept</Button>
-                    {editing === f.id ? (
-                      <>
-                        <input aria-label="Edit note" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Edited note" />
-                        <Button onClick={() => { review.mutate({ id: f.id, status: 'edited', reason }); setEditing(null); setReason('') }} disabled={!reason}>Save edit</Button>
-                      </>
-                    ) : <Button onClick={() => { setEditing(f.id); setReason(f.reason) }} disabledReason={reason_}>Edit</Button>}
-                    <Button onClick={() => review.mutate({ id: f.id, status: 'rejected' })} disabledReason={reason_}>Reject</Button>
+                  <td>
+                    <div className={styles.actions}><Button variant="success" onClick={() => review.mutate({ id: f.id, status: 'accepted' })} disabledReason={reason_}><Check size={16} aria-hidden="true" />Accept</Button>
+                    <Button variant="danger" onClick={() => review.mutate({ id: f.id, status: 'rejected' })} disabledReason={reason_}><X size={16} aria-hidden="true" />Reject</Button></div>
+                  </td>
+                  <td>
+                    <Button variant="primary" onClick={() => { setEditing(f.id); setReason(f.reason) }} disabledReason={reason_}><Pencil size={16} aria-hidden="true" />Edit</Button>
                   </td>
                 </tr>
               ))}
@@ -92,6 +90,24 @@ export default function Learning() {
           </table>}</Paged>
         )}
       </Card>
+
+      <Dialog open={editingItem !== undefined} onOpenChange={(o) => { if (!o) { setEditing(null); setReason('') } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit feedback note</DialogTitle>
+            <DialogDescription>{editingItem ? `${titleOf(editingItem.target_id)} (${editingItem.target_id})` : ''}. Saving marks it as edited.</DialogDescription>
+          </DialogHeader>
+          <form className={styles.editForm} onSubmit={(e) => { e.preventDefault(); if (editingItem) review.mutate({ id: editingItem.id, status: 'edited', reason }, { onSuccess: () => { setEditing(null); setReason('') } }) }}>
+            <label>Note
+              <textarea aria-label="Edited note" rows={4} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Edited note" />
+            </label>
+            <div className={styles.actions}>
+              <Button type="submit" variant="success" disabled={!reason || review.isPending}><Check size={16} aria-hidden="true" />Save edit</Button>
+              <Button type="button" onClick={() => { setEditing(null); setReason('') }}>Cancel</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Card title="Contract data readiness" aside={<ProvenanceChip kind="derived" detail={`n=${readiness.eligible}`} />} state={readinessState}>
         {readiness.eligible === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the filters on the left." /> : (

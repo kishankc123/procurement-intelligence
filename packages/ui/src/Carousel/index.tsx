@@ -51,13 +51,13 @@ export function Carousel({ children, ariaLabel }: { children: ReactNode; ariaLab
   return (
     <div className={cls('root')}>
       <div className={cls('stage')}>
-      <button type="button" className={`${cls('arrow')} ${cls('arrowPrev')}`} onClick={() => go(-1)} disabled={!state.canPrev} aria-label="Previous cards"><Chevron dir="left" /></button>
+      {overflow && <button type="button" className={`${cls('arrow')} ${cls('arrowPrev')}`} onClick={() => go(-1)} disabled={!state.canPrev} aria-label="Previous cards"><Chevron dir="left" /></button>}
       <div ref={track} className={cls('track')} role="region" aria-roledescription="carousel" aria-label={ariaLabel} tabIndex={0} onScroll={measure} onKeyDown={onKey}>
         {slides.map((s, i) => (
           <div key={i} className={cls('slide')} role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${slides.length}`}>{s}</div>
         ))}
       </div>
-      <button type="button" className={`${cls('arrow')} ${cls('arrowNext')}`} onClick={() => go(1)} disabled={!state.canNext} aria-label="Next cards"><Chevron dir="right" /></button>
+      {overflow && <button type="button" className={`${cls('arrow')} ${cls('arrowNext')}`} onClick={() => go(1)} disabled={!state.canNext} aria-label="Next cards"><Chevron dir="right" /></button>}
       </div>
       {overflow && (
         <div className={cls('dots')}>

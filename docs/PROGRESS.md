@@ -169,6 +169,17 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Delete (`ConfirmDeleteDialog` and `DeleteButton` in `@pi/ui`): every plan row has a trash icon with "Delete", and the Tender design draft card has one too. Both open "Are you sure you want to delete this ...?" with Yes (red) and No (green); Edit plan's own delete uses the same dialog. Deleting writes to `audit_log`. Needs the `edit_plan` / `edit_tender_draft` permission, otherwise disabled with the reason. New hook `useDeleteTenderDraft`. After the only draft is deleted Tender design shows its "No tender draft" empty state; there is no New draft button yet (`pnpm reset-db` restores it).
 - Carousel arrows are plain chevrons in the page margin and the back button is an arrowhead above the breadcrumbs.
 
+## Block 34: seeded volumes (nothing committed)
+- New `mock/seed-extra.ts`, merged by `seed.ts`: more of every collection so paging, sticky-header scroll and carousels show. All rows are Mock and validate against the Zod schemas. Counts: 49 contracts (28 FY2026 on P-MOCK-001), 60 enrichments, 17 amendments, 27 milestones, 22 plans, 3 tender drafts, 6 supervision and 6 completion reports, 22 documents, 30 chunks, 16 feedback items, about 165 audit entries, 12 source links with 8 simulated runs, 28 schedule items, 15 tender-history records.
+- Gates by design: bid validity (12 contracts) and tender duration inputs unlock their benchmarks; contract end date has 9 of 10 (one more approved entry unlocks it live); bidders has 7 of 10 and stays gated. Two end dates are already past, so two alerts exist before the demo starts.
+- Honesty unchanged: every added value carries a Mock source note; nothing is estimated.
+
+## Block 35: scrolling and decision controls (nothing committed)
+- Carousel: arrows and dots show only when the cards overflow; otherwise it is a plain row (reverses the earlier "always visible" arrows).
+- Gantt (`@pi/ui`): works like a frozen spreadsheet. The label column and the month row stay in view while the chart scrolls up, down and sideways; its width follows the number of months. `visibleRows` (Monitoring passes 8) limits the height, with a Show all / Show fewer button.
+- Monitoring early-warning board: shows high-severity alerts first with "Show all N"; the full list scrolls in a bounded box. With no high alert it shows everything.
+- Learning feedback queue: Accept (green, check) and Reject (red, cross) share the Decision column; Edit (blue, pencil) has its own column and opens a modal with a note field. Saving marks the item edited.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

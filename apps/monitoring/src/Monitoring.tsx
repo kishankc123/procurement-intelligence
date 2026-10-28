@@ -128,6 +128,7 @@ export default function Monitoring() {
   const asOf = useMeta().data?.as_of_date
   const gov = useGovernance(project?.borrower_country_code ?? '').data ?? []
   const [open, setOpen] = useState<Citation | null>(null)
+  const [showAllAlerts, setShowAllAlerts] = useState(false)
 
   if (!project || !asOf) return <Card state="loading">{null}</Card>
 
@@ -142,6 +143,10 @@ export default function Monitoring() {
   const elapsed = latest ? timeElapsedPct(project, latest.date) : null
   const points = [...reports].sort((a, b) => a.sequence - b.sequence).map((r) => ({ x: timeElapsedPct(project, r.date), y: r.disbursed_pct, label: `ISR ${r.sequence}`, date: r.date }))
   const count = (signal: string) => alerts.filter((a) => a.signal === signal).length
+  // Urgent (high) alerts first; the rest on request. With no urgent alert there is nothing to hide the others behind.
+  const urgent = alerts.filter((a) => a.severity === 'high')
+  const listAll = showAllAlerts || urgent.length === 0
+  const shown = listAll ? alerts : urgent
   const govLatest = [...gov].sort((a, b) => b.year - a.year)[0]
 
   return (
@@ -171,18 +176,32 @@ export default function Monitoring() {
       <ScheduleCard project={project} />
 
       <Card title="Early-warning board" aside={<span className={styles.sub}>every flag shows where it comes from</span>}>
-        {alerts.length === 0 ? <EmptyState title="No alerts for this selection" text="Signals appear when supervision ratings change or approved entered data crosses a rule." /> : alerts.map((a) => (
-          <div key={a.id} className={`${styles.alert} ${styles[a.severity]}`}>
-            <div className={styles.row}><Badge tone={a.severity}>{a.severity[0]?.toUpperCase() + a.severity.slice(1)}</Badge><strong>{a.title}</strong><span className="mono">{a.id}</span>{a.assignee && <Badge>Assigned to {a.assignee}</Badge>}</div>
-            <p className={styles.sub}>{a.text}</p>
-            <div className={styles.row}>
-              <ProvenanceChip kind={a.provenance} />
-              {a.citations.map((c) => <CitationChip key={c.ref_id} citation={c} onOpen={setOpen} />)}
-              <Button onClick={() => { const c = a.citations[0]; if (c) setOpen(c) }}>See evidence</Button>
-              <AssignControl alertId={a.id} current={a.assignee} />
+        {alerts.length === 0 ? <EmptyState title="No alerts for this selection" text="Signals appear when supervision ratings change or approved entered data crosses a rule." /> : (
+          <>
+            <div className={styles.alertBar}>
+              <span className={styles.sub} role="status">
+                {urgent.length === 0 ? `No urgent alerts. Showing all ${alerts.length}.` : listAll ? `Showing all ${alerts.length} alerts, urgent first. Scroll for the rest.` : `Showing ${urgent.length} urgent ${urgent.length === 1 ? 'alert' : 'alerts'} of ${alerts.length}.`}
+              </span>
+              {urgent.length > 0 && alerts.length > urgent.length && (
+                <Button onClick={() => setShowAllAlerts(!showAllAlerts)} aria-expanded={showAllAlerts}>{showAllAlerts ? 'Show urgent only' : `Show all ${alerts.length}`}</Button>
+              )}
             </div>
-          </div>
-        ))}
+            <div className={listAll ? styles.alertScroll : undefined} role={listAll ? 'region' : undefined} tabIndex={listAll ? 0 : undefined} aria-label={listAll ? 'Alerts. Scroll to see all of them.' : undefined}>
+              {shown.map((a) => (
+                <div key={a.id} className={`${styles.alert} ${styles[a.severity]}`}>
+                  <div className={styles.row}><Badge tone={a.severity}>{a.severity[0]?.toUpperCase() + a.severity.slice(1)}</Badge><strong>{a.title}</strong><span className="mono">{a.id}</span>{a.assignee && <Badge>Assigned to {a.assignee}</Badge>}</div>
+                  <p className={styles.sub}>{a.text}</p>
+                  <div className={styles.row}>
+                    <ProvenanceChip kind={a.provenance} />
+                    {a.citations.map((c) => <CitationChip key={c.ref_id} citation={c} onOpen={setOpen} />)}
+                    <Button onClick={() => { const c = a.citations[0]; if (c) setOpen(c) }}>See evidence</Button>
+                    <AssignControl alertId={a.id} current={a.assignee} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </Card>
 
       <div className={styles.two}>
