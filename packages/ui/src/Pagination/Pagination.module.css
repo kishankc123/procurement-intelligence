@@ -1,0 +1,6 @@
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding-top: 10px; }
+.range { margin: 0; font-size: 13px; color: var(--muted); }
+.range strong { color: var(--text); }
+.pages { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.gap { padding: 0 4px; color: var(--muted); }
+.size { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }

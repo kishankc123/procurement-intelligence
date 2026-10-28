@@ -8,8 +8,7 @@ import {
 } from '@pi/data'
 import {
   ArrowLeft, Badge, Button, Card, DataGate, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState,
-  ProvenanceChip, Select, TableScroll,
-} from '@pi/ui'
+  ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
 import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import { PlanAgenda } from './PlanAgenda'
 import styles from './Planning.module.css'
@@ -142,10 +141,10 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
   return (
     <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
-        <TableScroll><table className={`${styles.table} ${styles.plans}`}>
+        <Paged items={plans} label="plans">{(pageRows) =><table className={`${styles.table} ${styles.plans}`}>
           <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th></tr></thead>
           <tbody>
-            {plans.map((p) => (
+            {pageRows.map((p) => (
               <Fragment key={p.id}>
               <tr
                 className={`${styles.clickable} ${p.id === selectedId ? styles.selected : ''}`}
@@ -171,7 +170,7 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit }: { plans: Plan
               </Fragment>
             ))}
           </tbody>
-        </table></TableScroll>
+        </table>}</Paged>
       )}
       <p className={styles.sub}>Each row is a tender you are preparing to run. Click a row to see and edit its stage timeline.</p>
     </Card>

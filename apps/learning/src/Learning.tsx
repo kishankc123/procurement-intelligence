@@ -4,7 +4,7 @@ import {
   dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
   tenderCoverage,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars, TableScroll } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, StackedBars, TableScroll, Paged } from '@pi/ui'
 import styles from './Learning.module.css'
 
 const STATUS_TONE = { new: 'medium', accepted: 'low', rejected: 'high', edited: 'neutral' } as const
@@ -67,10 +67,10 @@ export default function Learning() {
 
       <Card title="Feedback queue" aside={<span className={styles.sub}>Reviewer decides</span>}>
         {rows.length === 0 ? <EmptyState title="Queue is empty" /> : (
-          <TableScroll><table className={styles.table}>
+          <Paged items={rows} label="feedback items" maxHeight="520px">{(pageRows) =><table className={styles.table}>
             <thead><tr><th>Recommendation</th><th>Rating</th><th>From</th><th>Status</th><th>Decision</th></tr></thead>
             <tbody>
-              {rows.map((f) => (
+              {pageRows.map((f) => (
                 <tr key={f.id}>
                   <td>{titleOf(f.target_id)}<br /><span className="mono">{f.target_id}</span>{f.reason && <p className={styles.sub}>Note: {f.reason}</p>}</td>
                   <td>{f.rating === 'helpful' ? 'Helpful' : 'Not helpful'}</td>
@@ -89,7 +89,7 @@ export default function Learning() {
                 </tr>
               ))}
             </tbody>
-          </table></TableScroll>
+          </table>}</Paged>
         )}
       </Card>
 
@@ -138,12 +138,12 @@ export default function Learning() {
 
         <Card title="Update log" aside={<span className={styles.sub}>from audit log</span>}>
           {audit.length === 0 ? <EmptyState title="No updates yet" text="Every save, approval and decision is logged here." /> : (
-            <TableScroll><table className={styles.table}>
+            <Paged items={[...audit].reverse()} label="updates" maxHeight="520px">{(pageRows) =><table className={styles.table}>
               <thead><tr><th>When</th><th>Role</th><th>Action</th><th>Target</th></tr></thead>
-              <tbody>{[...audit].reverse().slice(0, 10).map((a) => (
+              <tbody>{pageRows.slice(0, 10).map((a) => (
                 <tr key={a.id}><td className="mono">{a.at.slice(0, 19).replace('T', ' ')}</td><td>{a.role.replace('_', ' ')}</td><td>{a.action}</td><td className="mono">{a.target}</td></tr>
               ))}</tbody>
-            </table></TableScroll>
+            </table>}</Paged>
           )}
         </Card>
       </div>
