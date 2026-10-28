@@ -11,3 +11,7 @@ declare module 'learning/Learning' {
   const Learning: React.ComponentType
   export default Learning
 }
+declare module 'ai/WorkWithAI' {
+  const WorkWithAI: React.ComponentType
+  export default WorkWithAI
+}

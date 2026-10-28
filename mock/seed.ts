@@ -25,6 +25,49 @@ const contracts = contractRows.map(([ref, supplier, cat, method, amt, signed], i
   contract_description: `Mock ${cat.toLowerCase()} package ${i + 1} for the road rehabilitation`,
 }))
 
+// Earlier and current contracts of the same suppliers on other projects, so a supplier has a history across projects.
+// [ref, supplier number (1 to 6, as in contractRows), project, category, method, amount, signing]
+const SUPPLIER_NAMES = contractRows.map((r) => r[1])
+const otherRows: [string, number, string, string, string, number, string][] = [
+  ['REF-101', 1, 'P-MOCK-101', 'Works', 'Open competitive', 6_800_000, '2022-03-15'],
+  ['REF-103', 1, 'P-MOCK-103', 'Works', 'Open competitive', 3_100_000, '2023-09-01'],
+  ['REF-104', 2, 'P-MOCK-103', 'Works', 'Open competitive', 5_500_000, '2023-02-20'],
+  ['REF-102', 3, 'P-MOCK-102', 'Goods', 'Shopping', 900_000, '2021-09-10'],
+  ['REF-107', 3, 'P-MOCK-103', 'Goods', 'Shopping', 400_000, '2023-11-05'],
+  ['REF-105', 4, 'P-MOCK-101', 'Works', 'Limited competitive', 600_000, '2022-08-22'],
+  ['REF-106', 5, 'P-MOCK-102', 'Consulting services', 'Quality-based', 250_000, '2021-06-14'],
+  ['REF-202', 5, 'P-MOCK-002', 'Consulting services', 'Quality-based', 180_000, '2026-02-12'],
+]
+const otherContracts = otherRows.map(([ref, sup, project, cat, method, amt, signed], i) => ({
+  borrower_contract_reference_number: ref, wb_contract_number: `MOCK-WB-${String(i + 7).padStart(3, '0')}`,
+  project_id: project, supplier: SUPPLIER_NAMES[sup - 1], supplier_id: `MOCK-SUP-${sup}`, supplier_country: 'Romania',
+  procurement_category: cat, procurement_method: method, review_type: i % 2 ? 'Post' : 'Prior',
+  supplier_contract_amount_usd: amt, contract_signing_date: signed, fiscal_year: fiscalYearOf(signed),
+  contract_description: `Mock ${cat.toLowerCase()} package for ${project}`,
+}))
+const allContracts = [...contracts, ...otherContracts]
+
+// Approved changes after signing, and milestones with planned and actual dates (mock history).
+const amd = (n: number, ref: string, type: string, date: string, days: number, value: number, reason: string) => ({
+  id: `AMD-MOCK-${n}`, contract_ref: ref, type, date, days_added: days, value_change_usd: value, reason, status: 'approved', entered_by_role: 'contract_manager',
+})
+const amendmentRows = [
+  amd(1, 'REF-101', 'Time extension and value change', '2023-01-12', 120, 1_220_000, 'Land acquisition delays and extra earthworks (mock).'),
+  amd(2, 'REF-103', 'Time extension and value change', '2024-04-02', 90, 280_000, 'Foundation redesign (mock).'),
+  amd(3, 'REF-104', 'Time extension and value change', '2023-12-18', 180, 1_210_000, 'Scope change on the abutments (mock).'),
+  amd(4, 'REF-102', 'Value change', '2022-02-03', 0, 18_000, 'Quantity adjustment (mock).'),
+]
+const ms = (n: number, ref: string, name: string, planned: string, actual: string | null) => ({ id: `MS-MOCK-${n}`, contract_ref: ref, name, planned_date: planned, actual_date: actual })
+const milestoneRows = [
+  ms(1, 'REF-101', 'Mobilisation', '2022-05-01', '2022-06-20'), ms(2, 'REF-101', 'Substantial completion', '2023-06-30', '2023-10-28'),
+  ms(3, 'REF-103', 'Mobilisation', '2023-10-15', '2023-11-30'), ms(4, 'REF-103', 'Substantial completion', '2024-08-30', '2024-11-28'),
+  ms(5, 'REF-001', 'Mobilisation', '2025-11-15', '2026-01-20'),
+  ms(6, 'REF-104', 'Substantial completion', '2024-01-31', '2024-07-29'),
+  ms(7, 'REF-102', 'Delivery complete', '2021-12-15', '2021-12-15'), ms(8, 'REF-107', 'Delivery complete', '2024-01-20', '2024-01-25'),
+  ms(9, 'REF-105', 'Substantial completion', '2022-12-15', '2023-01-10'),
+  ms(10, 'REF-106', 'Final report', '2021-12-01', '2021-11-26'), ms(11, 'REF-202', 'Final report', '2026-04-30', '2026-04-27'),
+]
+
 const enr = (id: string, ref: string, field: string, value: string, note: string) => ({
   id, contract_ref: ref, field, value, entered_by_role: 'contract_manager', fiscal_year: 2026,
   status: 'approved', source_note: note, entered_at: '2026-03-01T10:00:00Z',
@@ -120,7 +163,7 @@ const db = {
     approval_date: '2025-05-22', effectiveness_planned: '2025-09-15', effectiveness_actual: null,
     closing_date_planned: '2030-03-31', closing_date_revised: null,
   }],
-  contracts, enrichments, amendments: [], contract_milestones: [],
+  contracts: allContracts, enrichments, amendments: amendmentRows, contract_milestones: milestoneRows,
   // Future tenders this project team is preparing to run (dates are after as_of_date). Entered by the planner.
   plans: [
     { id: `PLAN-${P}-1`, project_id: P, name: 'Road resurfacing works, Lot 3', planned_advertisement: '2026-06-15', planned_bid_opening: '2026-07-20',
@@ -140,6 +183,47 @@ const db = {
     { id: 'EE-2023', country: 'EE', year: 2023, wgi: { regulatory_quality: 90, government_effectiveness: 88, control_of_corruption: 90 }, cpia_16: null },
   ],
   recommendations, alerts: [], feedback: [], audit_log: [],
+  // Mock operational records for the Schedule page: running projects in different phases. Progress values are mock inputs, not measurements.
+  schedule_items: [
+    ...([
+      ['Lot 1 earthworks (REF-001)', 'Works', '2025-10-20', '2026-09-30', 38],
+      ['Bridge works (REF-002)', 'Works', '2025-11-18', '2026-12-15', 30],
+      ['Asphalt delivery (REF-003)', 'Supplies', '2026-01-14', '2026-07-31', 55],
+      ['Site crew mobilisation', 'Manpower', '2025-10-01', '2026-03-31', 100],
+      ['Mid-term review', 'Milestone', '2026-09-01', '2026-09-01', null],
+    ] as const).map(([name, group, start, end, progress_pct], i) => ({ id: `SCH-${P}-${i + 1}`, project_id: P, name, group, start, end, progress_pct })),
+    ...([
+      ['Pipe supply tender', 'Procurement', '2026-04-15', '2026-08-30', 40],
+      ['Pump station works tender', 'Procurement', '2026-05-10', '2026-10-15', 10],
+      ['Survey crew mobilisation', 'Manpower', '2026-07-15', '2026-09-30', null],
+      ['Pipe stock build-up', 'Supplies', '2026-09-01', '2027-03-31', null],
+      ['Pump station works', 'Works', '2026-11-01', '2027-12-31', null],
+      ['Mid-term review', 'Milestone', '2027-07-01', '2027-07-01', null],
+    ] as const).map(([name, group, start, end, progress_pct], i) => ({ id: `SCH-P-MOCK-002-${i + 1}`, project_id: 'P-MOCK-002', name, group, start, end, progress_pct })),
+    ...([
+      ['Design and bidding documents', 'Procurement', '2025-11-01', '2026-06-15', 70],
+      ['Effectiveness conditions met', 'Milestone', '2026-07-15', '2026-07-15', null],
+      ['Clinic works tender', 'Procurement', '2026-07-01', '2026-12-15', null],
+      ['Medical equipment stock order', 'Supplies', '2026-09-01', '2027-06-30', null],
+      ['Clinic staff recruitment', 'Manpower', '2026-10-01', '2027-03-31', null],
+    ] as const).map(([name, group, start, end, progress_pct], i) => ({ id: `SCH-P-MOCK-003-${i + 1}`, project_id: 'P-MOCK-003', name, group, start, end, progress_pct })),
+  ],
+  // Mock record of earlier tenders across projects, so a new tender can be checked against them. Cancelled and re-tendered ones carry the reason.
+  tender_history: [
+    { id: 'TND-MOCK-001', project_id: P, name: 'Lot 1 earthworks and drainage', status: 'awarded', date: '2025-10-20', reason: null, contract_ref: 'REF-001', replaces: null,
+      citation: { ref_type: 'record', ref_id: 'REF-001', label: 'Contract REF-001' } },
+    { id: 'TND-MOCK-002', project_id: P, name: 'Bridge works', status: 'awarded', date: '2025-11-18', reason: null, contract_ref: 'REF-002', replaces: null,
+      citation: { ref_type: 'record', ref_id: 'REF-002', label: 'Contract REF-002' } },
+    { id: 'TND-MOCK-003', project_id: P, name: 'Road safety signage supply', status: 'cancelled', date: '2026-02-10', reason: 'Bid validity expired on two packages after low participation.', contract_ref: null, replaces: null,
+      citation: { ref_type: 'chunk', ref_id: 'CH-MOCK-006', label: 'ISR 3 · Risk' } },
+    { id: 'TND-MOCK-005', project_id: 'P-MOCK-101', name: 'Road resurfacing works, Lot 2', status: 'cancelled', date: '2023-05-10', reason: 'Bid validity was shorter than the evaluation and approval period, which forced re-bidding.', contract_ref: null, replaces: null,
+      citation: { ref_type: 'chunk', ref_id: 'CH-MOCK-007', label: 'ICR 101 · Section 6' } },
+    { id: 'TND-MOCK-006', project_id: 'P-MOCK-101', name: 'Road resurfacing works, Lot 2', status: 're_tendered', date: '2023-07-21', reason: 'Re-issued with a longer bid validity.', contract_ref: null, replaces: 'TND-MOCK-005',
+      citation: { ref_type: 'chunk', ref_id: 'CH-MOCK-007', label: 'ICR 101 · Section 6' } },
+    { id: 'TND-MOCK-007', project_id: 'P-MOCK-002', name: 'Pipe supply tender', status: 'cancelled', date: '2026-03-12', reason: 'No compliant bids were received (mock record).', contract_ref: null, replaces: null, citation: null },
+    { id: 'TND-MOCK-008', project_id: 'P-MOCK-002', name: 'Pipe supply tender (re-issued)', status: 're_tendered', date: '2026-04-15', reason: 'Re-issued after the first tender was cancelled.', contract_ref: null, replaces: 'TND-MOCK-007', citation: null },
+  ],
+  source_links: [], ingestion_runs: [],
   sources: [
     { id: 'SRC-MOCK-1', name: 'Mock contract awards extract', publisher: 'Mock registry', kind: 'Contract awards', status: 'registered', last_fetched: null, simulated: false },
     { id: 'SRC-MOCK-2', name: 'Mock supervision reports (ISR)', publisher: 'Mock registry', kind: 'Supervision reports', status: 'registered', last_fetched: null, simulated: false },
@@ -157,4 +241,4 @@ const db = {
 
 const out = fileURLToPath(new URL('./db.json', import.meta.url))
 writeFileSync(out, JSON.stringify(db, null, 2))
-console.log(`Wrote ${out}: ${contracts.length} contracts, ${db.country_years.length} country-years`)
+console.log(`Wrote ${out}: ${db.contracts.length} contracts, ${db.country_years.length} country-years`)

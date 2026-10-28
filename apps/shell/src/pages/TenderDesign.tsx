@@ -2,14 +2,15 @@ import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
 import {
-  plannedDurations, tenderComparison, useContracts, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
+  SPEC_STATUS_LABEL, countryReference, plannedDurations, specificationChecks, tenderCandidates, tenderComparison, useAllPlans, useChunks, useContracts, useCountryYears, useDocs, useProject, useTenderHistory, useCurrentUser, useEnrichments, usePlan, useSaveTenderDraft, useTenderDraft, useUiStore,
   type Citation, type Comparison, type Plan, type TenderDraft,
 } from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll } from '@pi/ui'
-import { CitationChip, SourceDrawer } from '@pi/domain'
+import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './ProjectData.module.css'
 
 const METHODS = ['Lowest evaluated price', 'Quality and cost based', 'Fixed budget']
+const SPEC_TONE = { pass: 'low', warn: 'medium', fail: 'high', not_checkable: 'neutral' } as const
 const TONE = { ok: { tone: 'low', label: 'OK' }, attention: { tone: 'high', label: 'Check' }, info: { tone: 'neutral', label: 'Info' } } as const
 
 type NumKey = 'duration_months' | 'bid_validity_days' | 'performance_security_pct' | 'min_similar_contracts' | 'min_similar_value_usd'
@@ -65,6 +66,12 @@ export function TenderDesign() {
   const contracts = useContracts(projectId, fiscalYear).data ?? []
   const enrichments = useEnrichments().data ?? []
   const save = useSaveTenderDraft()
+  const project = useProject(projectId).data?.[0]
+  const history = useTenderHistory().data ?? []
+  const allPlans = useAllPlans().data ?? []
+  const docs = useDocs().data ?? []
+  const chunks = useChunks().data ?? []
+  const years = useCountryYears(project?.borrower_country_code ?? '').data ?? []
   const [draft, setDraft] = useState<TenderDraft | undefined>(stored)
   const [open, setOpen] = useState<Citation | null>(null)
   useEffect(() => setDraft(stored), [stored])
@@ -88,6 +95,13 @@ export function TenderDesign() {
   )
   // The comparison reflects the unsaved draft, so every edit shows its effect straight away.
   const rows = tenderComparison(draft, plan, contracts, enrichments)
+  const checks = project
+    ? specificationChecks({
+      draft, plan, project, contracts, candidates: tenderCandidates(history, allPlans), docs, chunks,
+      evaluationReference: countryReference(years, project.borrower_country_code, 'C5.2'),
+    })
+    : []
+  const count = (st: string) => checks.filter((c) => c.status === st).length
 
   return (
     <div className={styles.page}>
@@ -143,6 +157,33 @@ export function TenderDesign() {
           </table></TableScroll>
         </div>
         <p className={styles.sub}>Difference is your draft minus the reference. Benchmarks use contracts in FY{fiscalYear} and appear only once enough contracts have the value. Nothing is estimated where a source is missing.</p>
+      </Card>
+
+      <Card title="Specification checks" aside={<ProvenanceChip kind="derived" detail={`${checks.length} rules`} />}>
+        <p className={styles.sub}>
+          The draft above, including unsaved changes, checked against {plan ? <>the plan <strong>{plan.name}</strong></> : 'a plan (none chosen)'}, the project, contract data and the guidance note. Each rule is shown, with what it found and its evidence.
+        </p>
+        <p role="status">
+          <Badge tone="low">{count('pass')} pass</Badge> <Badge tone="medium">{count('warn')} to check</Badge> <Badge tone="high">{count('fail')} fail</Badge> <Badge>{count('not_checkable')} cannot check</Badge>
+        </p>
+        <TableScroll>
+          <table className={styles.table}>
+            <thead><tr><th>Clause and rule</th><th>Result</th><th>Your draft</th><th>Compared with</th><th>What it found</th></tr></thead>
+            <tbody>
+              {checks.map((c) => (
+                <tr key={c.id}>
+                  <td><strong>{c.clause}</strong><p className={styles.sub}>{c.rule}</p></td>
+                  <td><Badge tone={SPEC_TONE[c.status]}>{SPEC_STATUS_LABEL[c.status]}</Badge></td>
+                  <td className="mono">{c.draftValue}</td>
+                  <td>{c.reference ?? <ProvenanceChip kind="missing" />}</td>
+                  <td>{c.detail}{c.citations.length > 0 && <div>{c.citations.map((cit) => <span key={cit.ref_id}><CitationChip citation={cit} onOpen={setOpen} />{' '}</span>)}</div>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableScroll>
+        <p className={styles.sub}>Performance security uses the range in the mock guidance note (change it in <span className="mono">SPEC_RULES</span>). "Cannot check" means no source here holds the number; nothing is estimated.</p>
+        <div><span className={styles.sub}>Was this check useful? </span><FeedbackWidget targetId={`AI-LAYER-spec-${projectId}`} /></div>
       </Card>
 
       <Card title="Qualification and assistant"><EmptyState title="Planned" text="The qualification card and the retrieval assistant are specified but not built yet." /></Card>

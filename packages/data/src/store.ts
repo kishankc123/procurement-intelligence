@@ -4,6 +4,8 @@ import { emit } from '@pi/events'
 
 interface UiState {
   projectId: string
+  /** False until someone picks a project (donut wheel, projects table or filter); the default project is not a choice. */
+  projectChosen: boolean
   fiscalYear: number
   role: Role
   setProject: (projectId: string) => void
@@ -23,9 +25,10 @@ function readRole(): Role {
 // Shared singleton: the shell and every remote import this same module instance.
 export const useUiStore = create<UiState>((set) => ({
   projectId: DEFAULT_PROJECT_ID,
+  projectChosen: false,
   fiscalYear: DEFAULT_FISCAL_YEAR,
   role: readRole(),
-  setProject: (projectId) => { set({ projectId }); emit('project:selected', { projectId }) },
+  setProject: (projectId) => { set({ projectId, projectChosen: true }); emit('project:selected', { projectId }) },
   setFiscalYear: (fiscalYear) => { set({ fiscalYear }); emit('fiscalYear:changed', { fiscalYear }) },
   setRole: (role) => {
     try { localStorage.setItem(ROLE_KEY, role) } catch { /* ignore */ }

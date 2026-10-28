@@ -42,7 +42,8 @@ export default function Learning() {
   const inYear = contracts.filter((c) => c.fiscal_year === fiscalYear)
   const readiness = dataReadiness(inYear, enrichments)
   const readinessState = contractsQuery.isError || enrichmentsQuery.isError ? 'error' : contractsQuery.isLoading || enrichmentsQuery.isLoading ? 'loading' : 'ready'
-  const titleOf = (id: string) => recs.find((r) => r.id === id)?.title ?? id
+  const LAYER = { link: 'Work with AI · source link', ingestion: 'Work with AI · ingestion', records: 'Work with AI · record linking', schedule: 'Schedule', retender: 'Work with AI · retender check', spec: 'Tender design · specification checks', supplier: 'Suppliers · profile' } as const
+  const titleOf = (id: string) => recs.find((r) => r.id === id)?.title ?? LAYER[id.split('-')[2] as keyof typeof LAYER] ?? id
 
   return (
     <div className={styles.page}>

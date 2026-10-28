@@ -15,9 +15,12 @@ export const useProjects = () => useQuery(list('projects', '/projects', S.Projec
 export const useProject = (id: string) => useQuery(list('projects', `/projects?project_id=${q(id)}`, S.Project))
 export const useContracts = (projectId: string, fy?: number) =>
   useQuery(list('contracts', `/contracts?project_id=${q(projectId)}${fy ? `&fiscal_year=${fy}` : ''}`, S.Contract))
+export const useAllContracts = () => useQuery(list('contracts', '/contracts', S.Contract))
+export const useContractMilestones = () => useQuery(list('contract_milestones', '/contract_milestones', S.ContractMilestone))
 export const useEnrichments = () => useQuery(list('enrichments', '/enrichments', S.Enrichment))
 export const useAmendments = () => useQuery(list('amendments', '/amendments', S.Amendment))
 export const usePlan = (projectId: string) => useQuery(list('plans', `/plans?project_id=${q(projectId)}`, S.Plan))
+export const useAllPlans = () => useQuery(list('plans', '/plans', S.Plan))
 export const useTenderDraft = (projectId: string) => useQuery(list('tender_drafts', `/tender_drafts?project_id=${q(projectId)}`, S.TenderDraft))
 export const useReports = (projectId: string) => useQuery(list('supervision_reports', `/supervision_reports?project_id=${q(projectId)}`, S.SupervisionReport))
 export const useCompletionReports = () => useQuery(list('completion_reports', '/completion_reports', S.CompletionReport))
@@ -29,6 +32,10 @@ export const useDocs = () => useQuery(list('documents', '/documents', S.Doc))
 export const useAlertStates = () => useQuery(list('alerts', '/alerts', S.AlertState))
 export const useFeedback = () => useQuery(list('feedback', '/feedback', S.Feedback))
 export const useSources = () => useQuery(list('sources', '/sources', S.Source))
+export const useSourceLinks = (projectId: string) => useQuery(list('source_links', `/source_links?project_id=${q(projectId)}`, S.SourceLink))
+export const useIngestionRuns = (projectId: string) => useQuery(list('ingestion_runs', `/ingestion_runs?project_id=${q(projectId)}`, S.IngestionRun))
+export const useScheduleItems = () => useQuery(list('schedule_items', '/schedule_items', S.ScheduleItem))
+export const useTenderHistory = () => useQuery(list('tender_history', '/tender_history', S.TenderRecord))
 export const useConflicts = () => useQuery(list('conflicts', '/conflicts', S.Conflict))
 export const useAuditLog = () => useQuery(list('audit_log', '/audit_log', S.AuditEvent))
 
@@ -131,4 +138,17 @@ export const useResolveConflict = () =>
     await send('PATCH', `/conflicts/${conflict.id}`, { status: 'resolved', resolution })
     if (keep === 'public') await send('PATCH', `/enrichments/${conflict.entered_ref}`, { status: 'rejected' })
     return { action: `Resolved conflict: ${resolution}`, target: conflict.id }
+  })
+
+export const useAddSourceLink = () =>
+  useWrite<Omit<S.SourceLink, 'id' | 'checked_at' | 'added_by_role'> & { checked_at?: string }>(async (l, role) => {
+    const id = `LNK-${Date.now()}`
+    await send('POST', '/source_links', { ...l, id, checked_at: l.checked_at ?? new Date().toISOString(), added_by_role: role })
+    return { action: 'Added source link', target: `${l.project_id} · ${l.host}` }
+  })
+
+export const useRecordIngestionRun = () =>
+  useWrite<Omit<S.IngestionRun, 'id' | 'ran_at' | 'simulated'>>(async (r) => {
+    await send('POST', '/ingestion_runs', { ...r, id: `RUN-${Date.now()}`, ran_at: new Date().toISOString(), simulated: true })
+    return { action: 'Ran ingestion (simulated)', target: r.link_id }
   })

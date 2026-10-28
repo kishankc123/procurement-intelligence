@@ -1,0 +1,19 @@
+.page { display: grid; gap: 16px; min-width: 0; }
+.page h1 { font-size: 24px; }
+.sub { color: var(--muted); }
+.layer { display: grid; gap: 12px; }
+.num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: var(--primary); color: var(--on-solid); font-size: 12px; font-weight: 600; margin-right: 8px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.field { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.field input { font: inherit; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); color: var(--text); width: 100%; }
+.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.result { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); display: grid; gap: 4px; }
+.problem { color: var(--prov-missing-fg); }
+.warn { color: var(--prov-entered-fg); }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+.table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.url { overflow-wrap: anywhere; }
+.snippet { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.feedback { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
+.step { display: grid; grid-template-columns: 90px 1fr; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }

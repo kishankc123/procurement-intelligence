@@ -4,7 +4,7 @@
 ```
 pnpm reset-db        # restores the seed (also clears feedback, entries, alerts, audit log)
 pnpm api             # :3001, leave running in one terminal
-pnpm demo            # builds all four apps, then serves them with vite preview on :5173-5176
+pnpm demo            # builds all five apps, then serves them with vite preview on :5173-5177
 ```
 Rebuild (`pnpm demo`) after any code change; `pnpm reset-db` only needs the API running. For live code edits use the dev servers instead:
 `pnpm dev` runs all four apps in dev mode.

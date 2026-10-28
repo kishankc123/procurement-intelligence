@@ -20,6 +20,7 @@ export default defineConfig({
     federation({
       name: 'shell',
       remotes: {
+        ai: { type: 'module', name: 'ai', entry: remoteEntry('ai', 5177) },
         learning: { type: 'module', name: 'learning', entry: remoteEntry('learning', 5176) },
         monitoring: { type: 'module', name: 'monitoring', entry: remoteEntry('monitoring', 5175) },
         planning: { type: 'module', name: 'planning', entry: remoteEntry('planning', 5174) },

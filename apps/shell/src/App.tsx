@@ -10,11 +10,14 @@ import { ProjectData } from './pages/ProjectData'
 import { TenderDesign } from './pages/TenderDesign'
 import { Knowledge } from './pages/Knowledge'
 import { Evidence } from './pages/Evidence'
+import { Schedule } from './pages/Schedule'
+import { Suppliers } from './pages/Suppliers'
 import styles from './App.module.css'
 
 const Planning = lazy(() => import('planning/Planning'))
 const Learning = lazy(() => import('learning/Learning'))
 const Monitoring = lazy(() => import('monitoring/Monitoring'))
+const WorkWithAI = lazy(() => import('ai/WorkWithAI'))
 
 /** Left rail with the global filters. Closed by default so the page stays clean; the arrow opens it. */
 function FilterRail({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -57,6 +60,14 @@ function FilterRail({ open, onOpenChange }: { open: boolean; onOpenChange: (open
   )
 }
 
+/** "Work with AI", or "Work with AI on <project>" once a project has been picked on purpose. */
+function AiLink() {
+  const { projectId, projectChosen } = useUiStore()
+  const name = useProjects().data?.find((p) => p.project_id === projectId)?.project_name
+  const label = projectChosen && name ? `Work with AI on ${name}` : 'Work with AI'
+  return <Link to="/work-with-ai" className={styles.aiLink} title={label}>{label}</Link>
+}
+
 export function App() {
   const [railOpen, setRailOpen] = useState(false)
   const meta = useMeta().data
@@ -67,6 +78,9 @@ export function App() {
       <div className={styles.main}>
         <header className={styles.top}>
           <Link to="/" className={styles.brand}>ProcureIntel</Link>
+          <Link to="/suppliers" className={styles.navLink}>Suppliers</Link>
+          <Link to="/schedule" className={styles.navLinkNext}>Schedule</Link>
+          <AiLink />
         </header>
         {/* <div className={styles.banner} role="note"><strong>Mock data.</strong> {meta?.dataset_label ?? '…'}. Every figure is bound to data and shows its source.</div> */}
         <main className={styles.content}>
@@ -79,6 +93,9 @@ export function App() {
             <Route path="/knowledge" element={<Knowledge />} />
             <Route path="/evidence" element={<Evidence />} />
             <Route path="/project-data" element={<ProjectData />} />
+            <Route path="/work-with-ai" element={<RemoteBoundary name="Work with AI"><WorkWithAI /></RemoteBoundary>} />
+            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/suppliers" element={<Suppliers />} />
             <Route path="*" element={<Planned />} />
           </Routes>
         </main>

@@ -134,6 +134,126 @@
       "contract_signing_date": "2026-04-21",
       "fiscal_year": 2026,
       "contract_description": "Mock works package 6 for the road rehabilitation"
+    },
+    {
+      "borrower_contract_reference_number": "REF-101",
+      "wb_contract_number": "MOCK-WB-007",
+      "project_id": "P-MOCK-101",
+      "supplier": "Mock Civil Works Ltd",
+      "supplier_id": "MOCK-SUP-1",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 6800000,
+      "contract_signing_date": "2022-03-15",
+      "fiscal_year": 2022,
+      "contract_description": "Mock works package for P-MOCK-101"
+    },
+    {
+      "borrower_contract_reference_number": "REF-103",
+      "wb_contract_number": "MOCK-WB-008",
+      "project_id": "P-MOCK-103",
+      "supplier": "Mock Civil Works Ltd",
+      "supplier_id": "MOCK-SUP-1",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 3100000,
+      "contract_signing_date": "2023-09-01",
+      "fiscal_year": 2024,
+      "contract_description": "Mock works package for P-MOCK-103"
+    },
+    {
+      "borrower_contract_reference_number": "REF-104",
+      "wb_contract_number": "MOCK-WB-009",
+      "project_id": "P-MOCK-103",
+      "supplier": "Mock Bridge Builders",
+      "supplier_id": "MOCK-SUP-2",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Open competitive",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 5500000,
+      "contract_signing_date": "2023-02-20",
+      "fiscal_year": 2023,
+      "contract_description": "Mock works package for P-MOCK-103"
+    },
+    {
+      "borrower_contract_reference_number": "REF-102",
+      "wb_contract_number": "MOCK-WB-010",
+      "project_id": "P-MOCK-102",
+      "supplier": "Mock Asphalt Supply",
+      "supplier_id": "MOCK-SUP-3",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 900000,
+      "contract_signing_date": "2021-09-10",
+      "fiscal_year": 2022,
+      "contract_description": "Mock goods package for P-MOCK-102"
+    },
+    {
+      "borrower_contract_reference_number": "REF-107",
+      "wb_contract_number": "MOCK-WB-011",
+      "project_id": "P-MOCK-103",
+      "supplier": "Mock Asphalt Supply",
+      "supplier_id": "MOCK-SUP-3",
+      "supplier_country": "Romania",
+      "procurement_category": "Goods",
+      "procurement_method": "Shopping",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 400000,
+      "contract_signing_date": "2023-11-05",
+      "fiscal_year": 2024,
+      "contract_description": "Mock goods package for P-MOCK-103"
+    },
+    {
+      "borrower_contract_reference_number": "REF-105",
+      "wb_contract_number": "MOCK-WB-012",
+      "project_id": "P-MOCK-101",
+      "supplier": "Mock Road Safety Co",
+      "supplier_id": "MOCK-SUP-4",
+      "supplier_country": "Romania",
+      "procurement_category": "Works",
+      "procurement_method": "Limited competitive",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 600000,
+      "contract_signing_date": "2022-08-22",
+      "fiscal_year": 2023,
+      "contract_description": "Mock works package for P-MOCK-101"
+    },
+    {
+      "borrower_contract_reference_number": "REF-106",
+      "wb_contract_number": "MOCK-WB-013",
+      "project_id": "P-MOCK-102",
+      "supplier": "Mock Survey Partners",
+      "supplier_id": "MOCK-SUP-5",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Quality-based",
+      "review_type": "Prior",
+      "supplier_contract_amount_usd": 250000,
+      "contract_signing_date": "2021-06-14",
+      "fiscal_year": 2021,
+      "contract_description": "Mock consulting services package for P-MOCK-102"
+    },
+    {
+      "borrower_contract_reference_number": "REF-202",
+      "wb_contract_number": "MOCK-WB-014",
+      "project_id": "P-MOCK-002",
+      "supplier": "Mock Survey Partners",
+      "supplier_id": "MOCK-SUP-5",
+      "supplier_country": "Romania",
+      "procurement_category": "Consulting services",
+      "procurement_method": "Quality-based",
+      "review_type": "Post",
+      "supplier_contract_amount_usd": 180000,
+      "contract_signing_date": "2026-02-12",
+      "fiscal_year": 2026,
+      "contract_description": "Mock consulting services package for P-MOCK-002"
     }
   ],
   "enrichments": [
@@ -193,8 +313,131 @@
       "entered_at": "2026-03-01T10:00:00Z"
     }
   ],
-  "amendments": [],
-  "contract_milestones": [],
+  "amendments": [
+    {
+      "id": "AMD-MOCK-1",
+      "contract_ref": "REF-101",
+      "type": "Time extension and value change",
+      "date": "2023-01-12",
+      "days_added": 120,
+      "value_change_usd": 1220000,
+      "reason": "Land acquisition delays and extra earthworks (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-2",
+      "contract_ref": "REF-103",
+      "type": "Time extension and value change",
+      "date": "2024-04-02",
+      "days_added": 90,
+      "value_change_usd": 280000,
+      "reason": "Foundation redesign (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-3",
+      "contract_ref": "REF-104",
+      "type": "Time extension and value change",
+      "date": "2023-12-18",
+      "days_added": 180,
+      "value_change_usd": 1210000,
+      "reason": "Scope change on the abutments (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    },
+    {
+      "id": "AMD-MOCK-4",
+      "contract_ref": "REF-102",
+      "type": "Value change",
+      "date": "2022-02-03",
+      "days_added": 0,
+      "value_change_usd": 18000,
+      "reason": "Quantity adjustment (mock).",
+      "status": "approved",
+      "entered_by_role": "contract_manager"
+    }
+  ],
+  "contract_milestones": [
+    {
+      "id": "MS-MOCK-1",
+      "contract_ref": "REF-101",
+      "name": "Mobilisation",
+      "planned_date": "2022-05-01",
+      "actual_date": "2022-06-20"
+    },
+    {
+      "id": "MS-MOCK-2",
+      "contract_ref": "REF-101",
+      "name": "Substantial completion",
+      "planned_date": "2023-06-30",
+      "actual_date": "2023-10-28"
+    },
+    {
+      "id": "MS-MOCK-3",
+      "contract_ref": "REF-103",
+      "name": "Mobilisation",
+      "planned_date": "2023-10-15",
+      "actual_date": "2023-11-30"
+    },
+    {
+      "id": "MS-MOCK-4",
+      "contract_ref": "REF-103",
+      "name": "Substantial completion",
+      "planned_date": "2024-08-30",
+      "actual_date": "2024-11-28"
+    },
+    {
+      "id": "MS-MOCK-5",
+      "contract_ref": "REF-001",
+      "name": "Mobilisation",
+      "planned_date": "2025-11-15",
+      "actual_date": "2026-01-20"
+    },
+    {
+      "id": "MS-MOCK-6",
+      "contract_ref": "REF-104",
+      "name": "Substantial completion",
+      "planned_date": "2024-01-31",
+      "actual_date": "2024-07-29"
+    },
+    {
+      "id": "MS-MOCK-7",
+      "contract_ref": "REF-102",
+      "name": "Delivery complete",
+      "planned_date": "2021-12-15",
+      "actual_date": "2021-12-15"
+    },
+    {
+      "id": "MS-MOCK-8",
+      "contract_ref": "REF-107",
+      "name": "Delivery complete",
+      "planned_date": "2024-01-20",
+      "actual_date": "2024-01-25"
+    },
+    {
+      "id": "MS-MOCK-9",
+      "contract_ref": "REF-105",
+      "name": "Substantial completion",
+      "planned_date": "2022-12-15",
+      "actual_date": "2023-01-10"
+    },
+    {
+      "id": "MS-MOCK-10",
+      "contract_ref": "REF-106",
+      "name": "Final report",
+      "planned_date": "2021-12-01",
+      "actual_date": "2021-11-26"
+    },
+    {
+      "id": "MS-MOCK-11",
+      "contract_ref": "REF-202",
+      "name": "Final report",
+      "planned_date": "2026-04-30",
+      "actual_date": "2026-04-27"
+    }
+  ],
   "plans": [
     {
       "id": "PLAN-P-MOCK-001-1",
@@ -2289,6 +2532,253 @@
   "alerts": [],
   "feedback": [],
   "audit_log": [],
+  "schedule_items": [
+    {
+      "id": "SCH-P-MOCK-001-1",
+      "project_id": "P-MOCK-001",
+      "name": "Lot 1 earthworks (REF-001)",
+      "group": "Works",
+      "start": "2025-10-20",
+      "end": "2026-09-30",
+      "progress_pct": 38
+    },
+    {
+      "id": "SCH-P-MOCK-001-2",
+      "project_id": "P-MOCK-001",
+      "name": "Bridge works (REF-002)",
+      "group": "Works",
+      "start": "2025-11-18",
+      "end": "2026-12-15",
+      "progress_pct": 30
+    },
+    {
+      "id": "SCH-P-MOCK-001-3",
+      "project_id": "P-MOCK-001",
+      "name": "Asphalt delivery (REF-003)",
+      "group": "Supplies",
+      "start": "2026-01-14",
+      "end": "2026-07-31",
+      "progress_pct": 55
+    },
+    {
+      "id": "SCH-P-MOCK-001-4",
+      "project_id": "P-MOCK-001",
+      "name": "Site crew mobilisation",
+      "group": "Manpower",
+      "start": "2025-10-01",
+      "end": "2026-03-31",
+      "progress_pct": 100
+    },
+    {
+      "id": "SCH-P-MOCK-001-5",
+      "project_id": "P-MOCK-001",
+      "name": "Mid-term review",
+      "group": "Milestone",
+      "start": "2026-09-01",
+      "end": "2026-09-01",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-002-1",
+      "project_id": "P-MOCK-002",
+      "name": "Pipe supply tender",
+      "group": "Procurement",
+      "start": "2026-04-15",
+      "end": "2026-08-30",
+      "progress_pct": 40
+    },
+    {
+      "id": "SCH-P-MOCK-002-2",
+      "project_id": "P-MOCK-002",
+      "name": "Pump station works tender",
+      "group": "Procurement",
+      "start": "2026-05-10",
+      "end": "2026-10-15",
+      "progress_pct": 10
+    },
+    {
+      "id": "SCH-P-MOCK-002-3",
+      "project_id": "P-MOCK-002",
+      "name": "Survey crew mobilisation",
+      "group": "Manpower",
+      "start": "2026-07-15",
+      "end": "2026-09-30",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-002-4",
+      "project_id": "P-MOCK-002",
+      "name": "Pipe stock build-up",
+      "group": "Supplies",
+      "start": "2026-09-01",
+      "end": "2027-03-31",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-002-5",
+      "project_id": "P-MOCK-002",
+      "name": "Pump station works",
+      "group": "Works",
+      "start": "2026-11-01",
+      "end": "2027-12-31",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-002-6",
+      "project_id": "P-MOCK-002",
+      "name": "Mid-term review",
+      "group": "Milestone",
+      "start": "2027-07-01",
+      "end": "2027-07-01",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-003-1",
+      "project_id": "P-MOCK-003",
+      "name": "Design and bidding documents",
+      "group": "Procurement",
+      "start": "2025-11-01",
+      "end": "2026-06-15",
+      "progress_pct": 70
+    },
+    {
+      "id": "SCH-P-MOCK-003-2",
+      "project_id": "P-MOCK-003",
+      "name": "Effectiveness conditions met",
+      "group": "Milestone",
+      "start": "2026-07-15",
+      "end": "2026-07-15",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-003-3",
+      "project_id": "P-MOCK-003",
+      "name": "Clinic works tender",
+      "group": "Procurement",
+      "start": "2026-07-01",
+      "end": "2026-12-15",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-003-4",
+      "project_id": "P-MOCK-003",
+      "name": "Medical equipment stock order",
+      "group": "Supplies",
+      "start": "2026-09-01",
+      "end": "2027-06-30",
+      "progress_pct": null
+    },
+    {
+      "id": "SCH-P-MOCK-003-5",
+      "project_id": "P-MOCK-003",
+      "name": "Clinic staff recruitment",
+      "group": "Manpower",
+      "start": "2026-10-01",
+      "end": "2027-03-31",
+      "progress_pct": null
+    }
+  ],
+  "tender_history": [
+    {
+      "id": "TND-MOCK-001",
+      "project_id": "P-MOCK-001",
+      "name": "Lot 1 earthworks and drainage",
+      "status": "awarded",
+      "date": "2025-10-20",
+      "reason": null,
+      "contract_ref": "REF-001",
+      "replaces": null,
+      "citation": {
+        "ref_type": "record",
+        "ref_id": "REF-001",
+        "label": "Contract REF-001"
+      }
+    },
+    {
+      "id": "TND-MOCK-002",
+      "project_id": "P-MOCK-001",
+      "name": "Bridge works",
+      "status": "awarded",
+      "date": "2025-11-18",
+      "reason": null,
+      "contract_ref": "REF-002",
+      "replaces": null,
+      "citation": {
+        "ref_type": "record",
+        "ref_id": "REF-002",
+        "label": "Contract REF-002"
+      }
+    },
+    {
+      "id": "TND-MOCK-003",
+      "project_id": "P-MOCK-001",
+      "name": "Road safety signage supply",
+      "status": "cancelled",
+      "date": "2026-02-10",
+      "reason": "Bid validity expired on two packages after low participation.",
+      "contract_ref": null,
+      "replaces": null,
+      "citation": {
+        "ref_type": "chunk",
+        "ref_id": "CH-MOCK-006",
+        "label": "ISR 3 · Risk"
+      }
+    },
+    {
+      "id": "TND-MOCK-005",
+      "project_id": "P-MOCK-101",
+      "name": "Road resurfacing works, Lot 2",
+      "status": "cancelled",
+      "date": "2023-05-10",
+      "reason": "Bid validity was shorter than the evaluation and approval period, which forced re-bidding.",
+      "contract_ref": null,
+      "replaces": null,
+      "citation": {
+        "ref_type": "chunk",
+        "ref_id": "CH-MOCK-007",
+        "label": "ICR 101 · Section 6"
+      }
+    },
+    {
+      "id": "TND-MOCK-006",
+      "project_id": "P-MOCK-101",
+      "name": "Road resurfacing works, Lot 2",
+      "status": "re_tendered",
+      "date": "2023-07-21",
+      "reason": "Re-issued with a longer bid validity.",
+      "contract_ref": null,
+      "replaces": "TND-MOCK-005",
+      "citation": {
+        "ref_type": "chunk",
+        "ref_id": "CH-MOCK-007",
+        "label": "ICR 101 · Section 6"
+      }
+    },
+    {
+      "id": "TND-MOCK-007",
+      "project_id": "P-MOCK-002",
+      "name": "Pipe supply tender",
+      "status": "cancelled",
+      "date": "2026-03-12",
+      "reason": "No compliant bids were received (mock record).",
+      "contract_ref": null,
+      "replaces": null,
+      "citation": null
+    },
+    {
+      "id": "TND-MOCK-008",
+      "project_id": "P-MOCK-002",
+      "name": "Pipe supply tender (re-issued)",
+      "status": "re_tendered",
+      "date": "2026-04-15",
+      "reason": "Re-issued after the first tender was cancelled.",
+      "contract_ref": null,
+      "replaces": "TND-MOCK-007",
+      "citation": null
+    }
+  ],
+  "source_links": [],
+  "ingestion_runs": [],
   "sources": [
     {
       "id": "SRC-MOCK-1",
