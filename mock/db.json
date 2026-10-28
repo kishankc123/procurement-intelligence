@@ -2529,9 +2529,23 @@
       "citations": []
     }
   ],
-  "alerts": [],
+  "alerts": [
+    {
+      "id": "ALR-P-MOCK-001-rating",
+      "assignee": "Planner",
+      "status": "assigned"
+    }
+  ],
   "feedback": [],
-  "audit_log": [],
+  "audit_log": [
+    {
+      "id": "AUD-1793224099359",
+      "at": "2026-10-28T21:48:19.359Z",
+      "role": "contract_manager",
+      "action": "Assigned alert to Planner",
+      "target": "ALR-P-MOCK-001-rating"
+    }
+  ],
   "schedule_items": [
     {
       "id": "SCH-P-MOCK-001-1",
