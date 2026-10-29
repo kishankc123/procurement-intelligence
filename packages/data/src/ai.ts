@@ -89,3 +89,17 @@ export function linkRecords(input: { project: Project; contracts: Contract[]; re
   }
   return out
 }
+
+export interface RecordGroup { key: string; structured: RecordLink['structured']; links: RecordLink[] }
+
+/** One entry per structured record, with every document text linked to it, in the order the records first appear. */
+export function groupLinksByRecord(links: RecordLink[]): RecordGroup[] {
+  const groups = new Map<string, RecordGroup>()
+  for (const l of links) {
+    const key = `${l.structured.type}:${l.structured.id}`
+    const group = groups.get(key)
+    if (group) group.links.push(l)
+    else groups.set(key, { key, structured: l.structured, links: [l] })
+  }
+  return [...groups.values()]
+}

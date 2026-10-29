@@ -1,0 +1,2 @@
+.root { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.icon { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--cite-bg); color: var(--cite-fg); flex-shrink: 0; }

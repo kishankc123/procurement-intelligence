@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { checkSourceUrl, classifySource, ingestionSteps, linkRecords } from './ai'
+import { checkSourceUrl, classifySource, groupLinksByRecord, ingestionSteps, linkRecords } from './ai'
 import type { Chunk, Contract, Doc, Project, SourceLink, SupervisionReport } from './schemas'
 
 describe('checkSourceUrl', () => {
@@ -54,6 +54,12 @@ describe('linkRecords', () => {
   })
   it('does not link a contract nothing mentions', () => {
     expect(links.some((l) => l.structured.id === 'REF-002')).toBe(false)
+  })
+  it('groups the links by structured record, keeping the order records first appear', () => {
+    const groups = groupLinksByRecord([...links, ...links])
+    expect(groups.map((g) => g.structured.id)).toEqual(['REF-001', 'R1'])
+    expect(groups.map((g) => g.links.length)).toEqual([2, 2])
+    expect(groupLinksByRecord([])).toEqual([])
   })
   it('returns nothing without documents', () => {
     expect(linkRecords({ project, contracts: [contract('REF-001')], reports: [report], docs: [], chunks })).toEqual([])

@@ -2,12 +2,12 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { can, whyDisabled } from '@pi/config'
 import {
-  SPEC_STATUS_LABEL, checkReachable, checkRetender, countryReference, specificationChecks, useCountryYears, useTenderDraft, checkSourceUrl, classifySource, ingestionSteps, linkRecords, tenderCandidates,
+  SPEC_STATUS_LABEL, checkReachable, checkRetender, countryReference, specificationChecks, useCountryYears, useTenderDraft, checkSourceUrl, classifySource, ingestionSteps, groupLinksByRecord, linkRecords, tenderCandidates,
   useAddSourceLink, useAllPlans, useTenderHistory, useChunks, useContracts, useCurrentUser, useDocs, useIngestionRuns, useProject, useRecordIngestionRun,
   useProjects, useReports, useSourceLinks, useUiStore, type Citation, type RetenderMatch, type TenderStatus, type UrlCheck,
 } from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
-import { CitationChip, FeedbackWidget, SourceDrawer } from '@pi/domain'
+import { CitationChip, DocumentDialog, FeedbackWidget, SourceDrawer } from '@pi/domain'
 import styles from './WorkWithAI.module.css'
 
 const STEP_LABEL = { done: 'Done', failed: 'Failed', skipped: 'Skipped', planned: 'Planned' } as const
@@ -27,22 +27,35 @@ function LayerFeedback({ layer, projectId }: { layer: string; projectId: string 
   )
 }
 
+/**
+ * The earlier tenders that look like the one checked, one at a time: the box shows a single match and scrolls (or snaps) to the next.
+ * The box scrolls, not the page or the table, and a counter says which one is showing.
+ */
 function MatchList({ matches, onOpen }: { matches: RetenderMatch[]; onOpen: (c: Citation) => void }) {
+  const [shown, setShown] = useState(0)
+  const many = matches.length > 1
   return (
-    <ul className={styles.list}>
-      {matches.map((m) => (
-        <li key={m.candidate.id} className={styles.result}>
-          <div className={styles.row}>
-            <strong>{m.candidate.name}</strong> <span className="mono">{m.candidate.id}</span>
-            <Badge tone={TENDER_STATUS[m.candidate.status].tone}>{TENDER_STATUS[m.candidate.status].label}</Badge>
-            <span className={styles.sub}>{m.candidate.project_id}{m.candidate.date ? ` · ${m.candidate.date}` : ''}</span>
-          </div>
-          <p>{m.why} <ProvenanceChip kind="derived" /></p>
-          {m.candidate.reason && <p className={styles.sub}>Reason: {m.candidate.reason}</p>}
-          {m.candidate.citation && <div className={styles.row}><CitationChip citation={m.candidate.citation} onOpen={onOpen} /></div>}
-        </li>
-      ))}
-    </ul>
+    <div className={styles.matches}>
+      <ul
+        className={styles.matchBox}
+        role="region" tabIndex={0} aria-label={many ? `Earlier tenders that look like it, ${matches.length} found. Scroll for the next.` : 'Earlier tender that looks like it'}
+        onScroll={(e) => setShown(Math.round(e.currentTarget.scrollTop / Math.max(e.currentTarget.clientHeight, 1)))}
+      >
+        {matches.map((m) => (
+          <li key={m.candidate.id} className={styles.matchItem}>
+            <div className={styles.row}>
+              <strong>{m.candidate.name}</strong> <span className="mono">{m.candidate.id}</span>
+              <Badge tone={TENDER_STATUS[m.candidate.status].tone}>{TENDER_STATUS[m.candidate.status].label}</Badge>
+              <span className={styles.sub}>{m.candidate.project_id}{m.candidate.date ? ` · ${m.candidate.date}` : ''}</span>
+            </div>
+            <p>{m.why} <ProvenanceChip kind="derived" /></p>
+            {m.candidate.reason && <p className={styles.sub}>Reason: {m.candidate.reason}</p>}
+            {m.candidate.citation && <div className={styles.row}><CitationChip citation={m.candidate.citation} onOpen={onOpen} /></div>}
+          </li>
+        ))}
+      </ul>
+      {many && <span className={styles.sub} role="status">Match {Math.min(shown + 1, matches.length)} of {matches.length}. Scroll inside the box for the next one.</span>}
+    </div>
   )
 }
 
@@ -71,6 +84,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
   const addLink = useAddSourceLink()
   const recordRun = useRecordIngestionRun()
 
+  const [docOpen, setDocOpen] = useState<string | null>(null)
   const [raw, setRaw] = useState('')
   const [check, setCheck] = useState<UrlCheck | null>(null)
   const [reach, setReach] = useState<'idle' | 'checking' | 'reachable' | 'unreachable'>('idle')
@@ -89,6 +103,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
   const projectPlans = allPlans.filter((p) => p.project_id === projectId)
   const typed = tenderQuery.trim() ? checkRetender(tenderQuery, candidates) : null
   const linked = linkRecords({ project, contracts, reports, docs, chunks })
+  const groups = groupLinksByRecord(linked)
 
   const onCheck = async () => {
     const result = checkSourceUrl(raw)
@@ -160,7 +175,7 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {links.length === 0 ? (
           <EmptyState title="No source links on this project yet" text="Paste a link above, check it, then save it to the project." />
         ) : (
-          <Paged items={links} label="source links">{(pageRows) =>
+          <Paged items={links} label="source links" maxHeight="420px">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Link</th><th>Publisher</th><th>Server</th><th>Checked</th><th>Added by</th></tr></thead>
               <tbody>
@@ -218,27 +233,37 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {linked.length === 0 ? (
           <EmptyState title="No links found for this project" text="No document text names this project's contracts, and no document matches a report date." />
         ) : (
-          <Paged items={linked} label="record links" maxHeight="520px">{(pageRows) =>
+          <Paged items={groups} label="structured records" maxHeight="520px">{(pageRows) =>
             <table className={styles.table}>
-              <thead><tr><th>Structured record</th><th>Document text</th><th>Why they are linked</th></tr></thead>
-              <tbody>
-                {pageRows.map((l) => (
-                  <tr key={l.id}>
-                    <td>
-                      <CitationChip citation={{ ref_type: 'record', ref_id: l.structured.id, label: l.structured.label }} onOpen={setOpen} />{' '}
-                      <ProvenanceChip kind="public" />
-                    </td>
-                    <td>
-                      <CitationChip citation={{ ref_type: 'chunk', ref_id: l.chunk.chunk_id, label: `${l.doc?.title ?? l.chunk.doc_id} · p.${l.chunk.page}` }} onOpen={setOpen} />
-                      <p className={styles.snippet}>{l.chunk.text.length > 140 ? `${l.chunk.text.slice(0, 140)}…` : l.chunk.text}</p>
-                    </td>
-                    <td>{l.why} <ProvenanceChip kind="derived" /></td>
-                  </tr>
-                ))}
-              </tbody>
+              <thead><tr><th>Structured record</th><th aria-label="Link" /><th>Document text</th><th>Why they are linked</th></tr></thead>
+              {pageRows.map((g) => (
+                <tbody key={g.key} className={styles.group}>
+                  {g.links.map((l, i) => (
+                    <tr key={l.id}>
+                      {i === 0 && (
+                        <td rowSpan={g.links.length} className={styles.node}>
+                          <CitationChip citation={{ ref_type: 'record', ref_id: g.structured.id, label: g.structured.label }} onOpen={setOpen} />{' '}
+                          <ProvenanceChip kind="public" />
+                          <p className={styles.snippet}>{g.links.length} document {g.links.length === 1 ? 'text' : 'texts'} linked</p>
+                        </td>
+                      )}
+                      <td className={`${styles.branch} ${g.links.length === 1 ? styles.only : i === 0 ? styles.first : i === g.links.length - 1 ? styles.last : styles.mid}`} aria-hidden="true">
+                        <span className={styles.arrow} />
+                      </td>
+                      <td>
+                        <CitationChip citation={{ ref_type: 'chunk', ref_id: l.chunk.chunk_id, label: `${l.doc?.title ?? l.chunk.doc_id} · p.${l.chunk.page}` }} onOpen={setOpen} />
+                        {l.doc && <button type="button" className={styles.docLink} onClick={() => setDocOpen(l.doc?.doc_id ?? null)}>Open document</button>}
+                        <p className={styles.snippet}>{l.chunk.text.length > 140 ? `${l.chunk.text.slice(0, 140)}…` : l.chunk.text}</p>
+                      </td>
+                      <td>{l.why} <ProvenanceChip kind="derived" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              ))}
             </table>}
           </Paged>
         )}
+        <DocumentDialog docId={docOpen} onClose={() => setDocOpen(null)} />
         <LayerFeedback layer="records" projectId={projectId} />
       </Layer>
 
@@ -261,11 +286,11 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         ) : <p className={styles.sub}>Type above to check one tender. Your plans for this project are checked below.</p>}
         <h3>Your plans for this project</h3>
         {projectPlans.length === 0 ? <EmptyState title="No plans on this project" text="Add a plan in Planning to check it here." /> : (
-          <TableScroll>
+          <Paged items={projectPlans} label="plans" maxHeight="560px">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Plan</th><th>Result</th><th>Earlier tenders that look like it</th></tr></thead>
               <tbody>
-                {projectPlans.map((p) => {
+                {pageRows.map((p) => {
                   const r = checkRetender(p.name, candidates, { excludeIds: [p.id] })
                   return (
                     <tr key={p.id}>
@@ -276,8 +301,8 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
                   )
                 })}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
         <LayerFeedback layer="retender" projectId={projectId} />
       </Layer>
@@ -290,11 +315,11 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
         {!draft ? <EmptyState title="No tender draft for this project" text="Save a draft in Tender design first." action={<Link to="/tender-design">Open Tender design</Link>} /> : projectPlans.length === 0 ? (
           <EmptyState title="No plans on this project" text="Add a plan in Planning to check the draft against it." />
         ) : (
-          <TableScroll>
+          <Paged items={projectPlans} label="plans" maxHeight="560px">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Plan</th><th>Pass</th><th>To check</th><th>Fail</th><th>Cannot check</th><th>First issue</th></tr></thead>
               <tbody>
-                {projectPlans.map((p) => {
+                {pageRows.map((p) => {
                   const checks = specificationChecks({ draft, plan: p, project, contracts, candidates, docs, chunks, evaluationReference: countryReference(years, project.borrower_country_code, 'C5.2') })
                   const n = (st: string) => checks.filter((c) => c.status === st).length
                   const first = checks.find((c) => c.status === 'fail') ?? checks.find((c) => c.status === 'warn')
@@ -307,8 +332,8 @@ function Features({ onChangeProject }: { onChangeProject: () => void }) {
                   )
                 })}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
         <div className={styles.row}><Link to="/tender-design">Open Tender design</Link></div>
         <LayerFeedback layer="spec" projectId={projectId} />
@@ -335,11 +360,11 @@ function ProjectPicker({ onPicked }: { onPicked: () => void }) {
         {(projects.data ?? []).length === 0 ? (
           <EmptyState title="No projects found" text="Add a project to mock/db.json and run pnpm reset-db." />
         ) : (
-          <TableScroll>
+          <Paged items={projects.data ?? []} label="projects">{(pageRows) =>
             <table className={styles.table}>
               <thead><tr><th>Project</th><th>Country</th><th>Sector</th><th /></tr></thead>
               <tbody>
-                {(projects.data ?? []).map((p) => (
+                {pageRows.map((p) => (
                   <tr key={p.project_id}>
                     <td>{p.project_name}<br /><span className="mono">{p.project_id}</span>{p.project_id === projectId && <> <Badge>Current</Badge></>}</td>
                     <td>{p.borrower_country}</td>
@@ -348,8 +373,8 @@ function ProjectPicker({ onPicked }: { onPicked: () => void }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </TableScroll>
+            </table>}
+          </Paged>
         )}
       </Card>
     </div>

@@ -303,10 +303,10 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
 
       <Card title="Similar completed projects" aside={<span className={styles.sub}>from completion reports</span>}>
         {completions.length === 0 ? <EmptyState title="No completion reports ingested" /> : (
-          <TableScroll><table className={styles.table}>
+          <Paged items={completions} label="completion reports" maxHeight="420px">{(pageRows) => <table className={styles.table}>
             <thead><tr><th>Project</th><th>Completion rating</th><th>Restructurings</th><th>Closing extension</th></tr></thead>
             <tbody>
-              {completions.map((c) => (
+              {pageRows.map((c) => (
                 <tr key={c.id}>
                   <td>{c.project_name}<br /><span className="mono">{c.id}</span></td>
                   <td>{c.outcome_rating}</td>
@@ -315,7 +315,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
                 </tr>
               ))}
             </tbody>
-          </table></TableScroll>
+          </table>}</Paged>
         )}
         <p className={styles.sub}>Outcomes come from the completion report. <ProvenanceChip kind="public" /></p>
       </Card>

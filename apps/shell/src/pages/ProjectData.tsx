@@ -5,7 +5,7 @@ import {
   useContracts, useCurrentUser, useEnrichments, useReviewAmendment, useReviewEnrichment, useUiStore,
   type EnrichmentField,
 } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Paged } from '@pi/ui'
+import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, SupplierName, TableScroll, Paged } from '@pi/ui'
 import styles from './ProjectData.module.css'
 
 const FIELD_LABEL: Record<EnrichmentField, string> = {
@@ -81,7 +81,7 @@ export function ProjectData() {
                   return (
                     <tr key={r}>
                       <td className="mono">{r}</td>
-                      <td>{c.supplier} <ProvenanceChip kind="public" /></td>
+                      <td><SupplierName name={c.supplier} /> <ProvenanceChip kind="public" /></td>
                       <td>{c.procurement_category}</td>
                       <td className="mono">{c.supplier_contract_amount_usd.toLocaleString()}</td>
                       <td className="mono">{c.contract_signing_date}</td>
@@ -127,7 +127,7 @@ export function ProjectData() {
 
       <Card title="Awaiting review" aside={<span className={styles.sub}>Reviewer approves or rejects</span>}>
         {pendingEnr.length + pendingAmd.length === 0 ? <EmptyState title="Nothing pending" text="Entries from planners and contract managers appear here." /> : (
-          <Paged items={pending} label="pending entries">{(pageRows) => <table className={styles.table}>
+          <Paged items={pending} label="pending entries" maxHeight="420px">{(pageRows) => <table className={styles.table}>
             <thead><tr><th>Entry</th><th>Contract</th><th>By</th><th>Decision</th></tr></thead>
             <tbody>
               {pageRows.map((item) => item.kind === 'enrichment' ? (

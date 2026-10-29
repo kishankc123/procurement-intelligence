@@ -35,6 +35,9 @@
 * { box-sizing: border-box; }
 /* Safety net: one stray wide element must not make a phone zoom out the whole page. */
 html, body { overflow-x: clip; }
+/* Radix menus, selects and dialogs lock page scroll by setting `overflow: hidden` on the body. That turns the body into a scroll container,
+   so the sticky top bar and filter rail stop sticking and scroll out of view while a menu is open. Keep the body as it is; the page may scroll behind an open menu. */
+html body[data-scroll-locked] { overflow-x: clip !important; overflow-y: visible !important; margin-right: 0 !important; padding-right: 0 !important; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); }
 h1, h2, h3, p { margin: 0; }
 a { color: var(--link); }

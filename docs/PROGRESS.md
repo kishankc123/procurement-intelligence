@@ -180,6 +180,29 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Monitoring early-warning board: shows high-severity alerts first with "Show all N"; the full list scrolls in a bounded box. With no high alert it shows everything.
 - Learning feedback queue: Accept (green, check) and Reject (red, cross) share the Decision column; Edit (blue, pencil) has its own column and opens a modal with a note field. Saving marks the item edited.
 
+## Block 36: top bar and filter rail no longer scroll away (step 1)
+- Cause: Radix menus, selects and dialogs lock page scroll by setting `overflow: hidden` on the body. The body then became a scroll container, so the sticky top bar and filter rail stopped sticking and scrolled out of view while a menu or the rail's selects were open (measured: both at -400px after scrolling 400px). Fix: `html body[data-scroll-locked]` keeps `overflow-x: clip` / `overflow-y: visible` in `packages/ui/src/tokens.css`.
+- The Projects and Tools menus are now non-modal (`modal={false}`), so a click on the page while one is open closes it and still reaches what was clicked.
+- Not changed: on narrow screens (720px and below) the open filter rail is a drawer, and a click on the page still closes it by design.
+
+## Block 37: documents open full screen (step 2)
+- New `DocumentDialog` in `@pi/domain`: a document opens full screen with a title bar (document icon, title, type and ID, Close), a page-style card with type, date, pages, project, parse status and source chip, then its text grouped by section with page numbers (paged, 4 sections per page). A document with no chunks (pending or failed parse) shows "No text to show" with the parse status; nothing is estimated.
+- Knowledge base: the split "Document detail" card is gone. Documents is one full-width, paged, scrolling table whose rows are a document icon tile plus title and ID (not a button), with a type column, date, pages and a coloured parse badge. Clicking a row opens the dialog. Search and type filter share one row.
+- Evidence drawer: the document name is a link that opens the same full-screen document (`DocumentDialog` is used from `SourceDrawer`).
+
+## Block 38: supplier icons (step 3)
+- New `SupplierName` in `@pi/ui`: a very small round organization icon (12px in an 18px circle) before a supplier name. All suppliers get the same icon because the public record has no person type; no data change. Used in the Suppliers list and the Project data contracts table.
+
+## Block 39: record linking as a tree (step 4)
+- `groupLinksByRecord` in `@pi/data` (tested, 73 tests) groups the links by structured record. Work with AI layer 3 now shows each record once on the left (for example "Supervision report 1", with a count) and an arrow from it to every document text linked to it, with the reason on each row. The tree is CSS only (a trunk and arrowheads in a narrow column). The table pages and scrolls by record, and each document row has an Open document link that opens the full-screen document.
+
+## Block 40: retender matches one at a time (step 5)
+- Work with AI layer 4: the "earlier tenders that look like it" cell shows one match in a fixed-height box. With more than one, scroll inside the box (it snaps to the next match) and a line reads "Match 1 of N". The page and table do not move. A single match fits the box with no scrollbar. The same component serves the typed check and each plan row.
+
+## Block 41: scroll and paging sweep (step 6)
+- Now paged with a bounded, scrolling table: Project overview plans, Suppliers contract history, Planning similar completed projects, Knowledge source registry, Work with AI projects, "Your plans" retender table and the specification-check table (14 plans each, pages of 10). Source links and pending entries got a maximum height. Pagers appear only above 10 rows, as before.
+- Left as they are because they cannot grow: key dates, governance, country context, plan stage table, coverage by fiscal year, platform tools, spec-check groups, grounding table, plan reference.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |
