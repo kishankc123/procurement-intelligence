@@ -5,7 +5,25 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
-  "scripts": { "typecheck": "tsc -p ." },
-  "dependencies": {"@pi/ui":"workspace:*","@pi/data":"workspace:*","@pi/events":"workspace:*","@pi/config":"workspace:*"},
-  "peerDependencies": { "react": "^19.0.0" }
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@pi/config": "workspace:*",
+    "@pi/data": "workspace:*",
+    "@pi/events": "workspace:*",
+    "@pi/ui": "workspace:*",
+    "d3-geo": "^3.1.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/d3-geo": "^3.1.1",
+    "@types/geojson": "^7946.0.16",
+    "@types/topojson-client": "^3.1.5",
+    "@types/topojson-specification": "^1.0.5"
+  }
 }

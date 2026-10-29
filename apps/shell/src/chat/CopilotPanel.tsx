@@ -4,6 +4,7 @@ import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdat
 import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
+import { MapBlock } from './MapBlock'
 import { LifecycleProposal, PlanProposal, TenderProposal } from './ProposalCards'
 import { FeatureOptions, MyLifecycleCard } from './MyLifecycle'
 import styles from './CopilotPanel.module.css'
@@ -90,6 +91,20 @@ function useCardTools() {
   })
 }
 
+/** A map card: where the suppliers are (for one project or all), or where the projects are. Marked as a frontend tool so the model can pick it for any "where" question. */
+function useMapTool() {
+  const projects = useProjects()
+  const known = useRef(new Set<string>())
+  known.current = new Set((projects.data ?? []).map((p) => p.project_id))
+  useFrontendTool({
+    name: 'show_map',
+    description: 'Show a world map card. kind "suppliers" maps the countries of the suppliers on the contract awards (pass projectId for one project, or null for all); kind "projects" maps the countries of the stored projects. Use it when the user asks where suppliers or projects are, or for a comparison by country. It maps countries, not exact sites.',
+    parameters: z.object({ kind: z.enum(['suppliers', 'projects']), projectId: z.string().nullable().optional() }),
+    handler: async ({ kind, projectId }) => (projectId && !known.current.has(projectId) ? `There is no project with id ${projectId}. Tell the user, and ask which project they mean.` : `Showed the ${kind} map${projectId ? ` for ${projectId}` : ''}.`),
+    render: ({ args }) => (args.kind ? <div className={styles.cards}><MapBlock kind={args.kind} projectId={args.projectId} /></div> : <p>Drawing the map…</p>),
+  })
+}
+
 /** The user's own lifecycle drawn in the chat. A click on a missing stage asks the model for the next suggestion, as if the user had typed it. */
 function MyLifecycleInChat() {
   const send = useSendToChat()
@@ -149,6 +164,7 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   const projects = useProjects()
   const chatProjectId = useUiStore((s) => s.chatProjectId)
   useCardTools()
+  useMapTool()
   useProposalTools()
   // Once anyone has said anything, the page gives the chat the room (same as the rule-based chat).
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
