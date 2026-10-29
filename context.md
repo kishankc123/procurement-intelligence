@@ -95,7 +95,7 @@ type Block =
 ./run.sh dev        # json-server :3001, assistant :3002, shell :5173, remotes :5174 to 5177 (hot reload)
 ./run.sh            # reset data, build, serve the production build (use to present)
 pnpm reset-db       # restore seed data (mock/seed.ts + mock/seed-extra.ts)
-pnpm assistant      # assistant server alone
+pnpm assistant      # assistant server alone (CopilotKit chat turns on when OPENAI_API_KEY is in .env.local)
 pnpm -r typecheck && pnpm test
 ```
 

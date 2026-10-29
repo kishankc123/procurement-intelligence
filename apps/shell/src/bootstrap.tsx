@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '@pi/ui'
 import '@pi/ui/styles.css'
+import '@copilotkit/react-core/v2/styles.css'
 import { App } from './App'
 
 // The shell owns the single QueryClient; remotes reuse it through the shared react-query singleton.

@@ -10,6 +10,8 @@
     "typecheck": "tsc -p ."
   },
   "dependencies": {
+    "@copilotkit/react-core": "^1.83.0",
+    "zod": "*",
     "@pi/config": "workspace:*",
     "@pi/data": "workspace:*",
     "@pi/domain": "workspace:*",

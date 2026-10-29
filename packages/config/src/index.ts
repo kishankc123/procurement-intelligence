@@ -86,6 +86,9 @@ export const API_BASE =
 export const ASSISTANT_BASE =
   typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api' : 'http://localhost:3002'
 
+/** CopilotKit runtime (the model-backed assistant). Same host as the assistant server; it answers only when OPENAI_API_KEY is set there. */
+export const COPILOT_URL = `${ASSISTANT_BASE.replace(/\/api$/, '')}/api/copilotkit`
+
 /** The four lifecycle steps of one project. Order, labels and copy shown on the Home donut and in the nav. */
 export const LIFECYCLE_STEPS = [
   { id: 'planning', to: '/planning', label: 'Planning',

@@ -311,3 +311,11 @@ Needs K's choice before any dependency is added (CLAUDE.md: ask before adding de
 
 ## Next (wait for K)
 Pick the UI library approach, then rehearse the full script from `./run.sh`, then tag.
+
+## Block 54: CopilotKit chat backed by an OpenAI model (nothing committed)
+- Server: `server/copilot.ts` mounts a CopilotKit runtime at `/api/copilotkit` on the assistant server (:3002) when `OPENAI_API_KEY` is set (read from git-ignored `.env.local`, see `.env.example`; `OPENAI_MODEL` optional, default `openai/gpt-4.1-mini`). Its tools (`list_projects`, `get_project_overview`, `find_contracts`, `get_supervision_reports`, `search_documents`) are pure lookups in `packages/data/src/assistantData.ts` over `mock/db.json`, so answers come from stored records and the model is told to cite chunk ids.
+- Shell: `apps/shell/src/chat/CopilotPanel.tsx` is CopilotKit's `CopilotChat`. The model shows our cards through three frontend tools (`show_lifecycle`, `show_stage`, `show_tool`) that render the existing `BlockView`, so the cards keep reading live data and feedback still lands in Learning. `useCopilotAvailable` probes `/api/copilotkit/info`; with no key or no server the page keeps the rule-based chat unchanged.
+- New dependencies (approved by K): `@copilotkit/runtime` (root), `@copilotkit/react-core` (shell); `zod` added to the shell's own dependencies.
+- Verified: typecheck, 128 tests, runtime `/info`, shell mounts the chat and reaches OpenAI (a dummy key was rejected by OpenAI and the page shows that error). **Not verified:** a real model reply (no real key used by me), tool-card rendering with a real model, the `gpt-4.1-mini` name being available on K's account.
+- Vercel: `api/copilotkit/[...path].js` (plain CommonJS) runs the runtime from `api/_lib/copilot.js`, generated from `server/copilot.ts` by `pnpm build:chat` (packages stay external; a test fails when it is stale). Without `OPENAI_API_KEY` it answers 404 and the page keeps the rule-based chat. Tested locally as a plain Node handler with and without a key; **not tested on Vercel itself** (dependency tracing, routing next to `api/[...path].js`, request timeout on long answers). Set `OPENAI_API_KEY` (and optionally `OPENAI_MODEL`) in the Vercel project, then redeploy.
+- CopilotKit runtime telemetry is on by default; opt-out is in its docs.

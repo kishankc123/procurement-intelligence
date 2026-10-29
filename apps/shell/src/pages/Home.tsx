@@ -5,6 +5,8 @@ import { DonutNav } from '@pi/ui'
 import { ChatWindow, type ChatMessageView } from '@pi/domain'
 import { STEP_COLOR } from '../stepColors'
 import { AgentRun } from './AgentRun'
+import { CopilotPanel } from '../chat/CopilotPanel'
+import { useCopilotAvailable } from '../chat/useCopilotAvailable'
 import styles from './Home.module.css'
 
 /**
@@ -16,6 +18,7 @@ export function Home() {
   const projects = useProjects()
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [clicked, setClicked] = useState(false)
+  const copilot = useCopilotAvailable()
   const engaged = clicked || chat.length > 0 || pending
   const active = LIFECYCLE_STEPS.find((s) => s.id === hoverId) ?? null
 
@@ -54,7 +57,7 @@ export function Home() {
         </section>
       )}
       <div className={styles.chatWrap}>
-        <ChatWindow onEngage={() => setClicked(true)} size={engaged ? 'full' : 'compact'} messages={messages} onSend={send} pending={pending} suggestions={suggestions} placeholder="e.g. Help me with the road project" />
+        {copilot === 'on' ? <CopilotPanel onEngage={() => setClicked(true)} /> : <ChatWindow onEngage={() => setClicked(true)} size={engaged ? 'full' : 'compact'} messages={messages} onSend={send} pending={pending} suggestions={suggestions} placeholder="e.g. Help me with the road project" />}
       </div>
     </div>
   )

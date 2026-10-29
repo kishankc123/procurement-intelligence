@@ -8,6 +8,9 @@
     },
     "api/chat.js": {
       "includeFiles": "mock/db.json"
+    },
+    "api/copilotkit/[...path].js": {
+      "includeFiles": "mock/db.json"
     }
   },
   "rewrites": [

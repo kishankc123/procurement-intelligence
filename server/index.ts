@@ -4,6 +4,10 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { AssistantRequest, answer, type AssistantDb } from '../packages/data/src/assistant'
+import { COPILOT_BASE_PATH, createCopilotListener } from './copilot'
+
+// The model key lives in .env.local (git-ignored). Without it the rule-based assistant is used and CopilotKit is not started.
+try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))) } catch { /* no key file */ }
 
 const PORT = Number(process.env.ASSISTANT_PORT ?? 3002)
 const DB_PATH = fileURLToPath(new URL('../mock/db.json', import.meta.url))
@@ -36,8 +40,12 @@ function readBody(req: IncomingMessage): Promise<string> {
   })
 }
 
+const copilot = createCopilotListener(() => loadDb())
+
 createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`)
+  // CopilotKit (model-backed chat) owns everything under its base path; it answers its own CORS preflight.
+  if (copilot && url.pathname.startsWith(COPILOT_BASE_PATH)) return copilot(req, res)
   if (req.method === 'OPTIONS') return send(res, 204, {})
   if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { ok: true, simulated: true })
   if (req.method === 'POST' && url.pathname === '/chat') {
@@ -50,4 +58,4 @@ createServer(async (req, res) => {
     }
   }
   return send(res, 404, { error: 'Not found' })
-}).listen(PORT, () => console.log(`Assistant server (simulated, rule-based) on http://localhost:${PORT}`))
+}).listen(PORT, () => console.log(`Assistant server on http://localhost:${PORT}: rule-based chat at /chat${copilot ? `, CopilotKit with ${process.env.OPENAI_MODEL ?? 'openai/gpt-4.1-mini'} at ${COPILOT_BASE_PATH}` : ' (no OPENAI_API_KEY, so CopilotKit is off)'}`))

@@ -5,3 +5,4 @@ gppd_data.json
 dist-vercel
 apps/shell/@mf-types
 ingest/cache
+.env.local
