@@ -28,6 +28,12 @@ describe('the view registry', () => {
     expect(best('How can I evaluate and monitor my project?')).toBe('monitoring-options')
     expect(best('how should I add learning to my project')).toBe('learning-options')
     expect(best('what is still missing from my lifecycle')).toBe('my-lifecycle')
+    // A map is a different view from the table, even for the same data.
+    expect(best('Show me a map of where the suppliers on the Lao Road Sector Project 2 are')).toBe('suppliers-map')
+    expect(best('where are our suppliers located?')).toBe('suppliers-map')
+    expect(best('show a map of our projects')).toBe('projects-map')
+    expect(best('where are the projects')).toBe('projects-map')
+    expect(findViews('list the suppliers')[0]?.view.id).toBe('suppliers')
     // The names a stored project's stages go by.
     expect(best('show plans executed for the Lao project')).toBe('planning')
     expect(best('show tenders published for the Lao project')).toBe('tender-design')

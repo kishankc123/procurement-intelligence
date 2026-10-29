@@ -9,7 +9,7 @@ export interface ViewEntry {
   /** What the user sees. */
   description: string
   /** The tool that draws it, and the arguments to pass. `projectId` is filled in from the selected project. */
-  show: { tool: 'show_lifecycle' | 'show_stage' | 'show_tool' | 'show_my_lifecycle' | 'propose_lifecycle' | 'propose_monitoring' | 'propose_learning' | 'propose_plan' | 'propose_tender_draft'; args: Record<string, string> }
+  show: { tool: 'show_lifecycle' | 'show_stage' | 'show_tool' | 'show_map' | 'show_my_lifecycle' | 'propose_lifecycle' | 'propose_monitoring' | 'propose_learning' | 'propose_plan' | 'propose_tender_draft'; args: Record<string, string> }
   needsProject: boolean
   /** Words and phrases a user might use for it, including synonyms. Matching ignores case and a trailing s. */
   keywords: string[]
@@ -33,6 +33,9 @@ export const VIEWS: ViewEntry[] = [
   { id: 'lifecycle', title: 'Whole lifecycle', description: 'All four stages for one project with what was found in each.', show: { tool: 'show_lifecycle', args: {} }, needsProject: true, keywords: ['lifecycle', 'overview', 'everything', 'all stages', 'summary of the project', 'whole project'] },
   ...STAGES.map((step): ViewEntry => ({ id: step, ...STAGE_VIEWS[step], show: { tool: 'show_stage', args: { step } }, needsProject: true })),
   ...TOOLS.map((tool): ViewEntry => ({ id: tool, ...TOOL_VIEWS[tool], show: { tool: 'show_tool', args: { tool } }, needsProject: tool !== 'knowledge' && tool !== 'evidence' })),
+  // The maps come before the tables in ties, so "map of the suppliers" draws the map and "list the suppliers" still draws the table.
+  { id: 'suppliers-map', title: 'Supplier map', description: 'A world map of the countries the suppliers come from, for one project or for all.', show: { tool: 'show_map', args: { kind: 'suppliers' } }, needsProject: false, keywords: ['map', 'supplier map', 'where are the supplier', 'where do the supplier', 'supplier location', 'supplier located', 'supplier country', 'supplier countries', 'geography', 'geographic'] },
+  { id: 'projects-map', title: 'Project map', description: 'A world map of the countries the projects are in.', show: { tool: 'show_map', args: { kind: 'projects' } }, needsProject: false, keywords: ['project map', 'where are the project', 'where are our project', 'project location', 'project located', 'project countries'] },
   { id: 'lifecycle-proposal', title: 'Proposed lifecycle (estimates)', description: 'Estimated durations, clauses, reporting rhythm and contract sizes for the user\'s own procurement, as medians of similar projects.', show: { tool: 'propose_lifecycle', args: {} }, needsProject: false, keywords: ['propose a lifecycle', 'suggest a lifecycle', 'lifecycle for my', 'how long should', 'how long would', 'estimate', 'typical duration', 'contract be valid', 'bid validity should', 'for my procurement', 'for my project'] },
   { id: 'my-lifecycle', title: 'My lifecycle', description: 'The lifecycle the user is building for their own procurement, with what is still missing.', show: { tool: 'show_my_lifecycle', args: {} }, needsProject: false, keywords: ['my lifecycle', 'my plan so far', 'what do i have', 'what is missing from my', 'what is still missing', 'saved lifecycle'] },
   { id: 'monitoring-options', title: 'Monitoring options', description: 'The charts, schedule and early-warning board the user can add to monitor their own project.', show: { tool: 'propose_monitoring', args: {} }, needsProject: false, keywords: ['how can i monitor', 'how can i evaluate', 'evaluate and monitor', 'monitor my project', 'monitoring options', 'which charts'] },
