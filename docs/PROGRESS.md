@@ -489,3 +489,9 @@ This is the light version of the "user's own lifecycle" step noted above (K aske
 - **Word file:** `DownloadProject` (`apps/shell/src/exportProject.tsx`) saves everything stored for a project: facts and phase, plans and the plan rows read from the World Bank plan, draft clauses, tenders published, schedule items, supervision reports, contracts and data readiness. A stage with nothing stored says so; nothing is estimated. Shared Word helpers moved to `apps/shell/src/docxKit.ts` (the lifecycle export uses them too).
 - **Where:** the Project page (`/project`) header has Download project (.docx) and Download page as PNG. In the chat, every card under an answer (stage, lifecycle, tool) now has Download PNG, and Download project (.docx) when it belongs to a project.
 - Checked in the browser on `/project` (docx and page PNG saved, no errors). The chat card buttons are typechecked but were not clicked in the browser. 197 tests pass; no new unit test.
+
+## Block 26: lifecycle list view and sample labels (nothing committed)
+- My lifecycle: a stage with more than one item (several plans, several tender drafts) is now a list, one row per item with its summary and View / Hide, Remove; the opened row shows its full view and PNG button. A stage with one item still shows it in full.
+- Monitoring features added from the chat carry a Sample badge and a note: no values entered yet, drawn with a stored project's data, and the user can use the indicator for their own project.
+- Learning features use a lifecycle queue (`useLifecycleFeedback` in `@pi/data`, sessionStorage, not the shared queue): three labelled samples (accepted, rejected, pending). Pending rows have only Accept and Reject (no Edit); decided rows show status only. "Add your feedback" adds a pending row; Reset to samples restores the start. Learning figures read the same queue (`lifecycleFeedbackKpis`).
+- `LearningFeature` gained a `sample` prop. 3 new tests (203 total).

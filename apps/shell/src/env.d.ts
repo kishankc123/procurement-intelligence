@@ -44,6 +44,6 @@ declare module 'monitoring/MonitoringFeature' {
   export default MonitoringFeature
 }
 declare module 'learning/LearningFeature' {
-  const LearningFeature: React.ComponentType<{ feature: 'feedback-queue' | 'learning-figures'; projectId: string }>
+  const LearningFeature: React.ComponentType<{ feature: 'feedback-queue' | 'learning-figures'; projectId: string; sample?: boolean }>
   export default LearningFeature
 }

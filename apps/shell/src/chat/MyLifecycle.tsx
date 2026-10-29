@@ -15,18 +15,28 @@ const MonitoringFeature = lazy(() => import('monitoring/MonitoringFeature'))
 const LearningFeature = lazy(() => import('learning/LearningFeature'))
 
 /**
- * One monitoring or learning feature, drawn by the monitoring or learning micro front-end. A user's own project has no data yet, so it is shown with a
- * stored project's data as an example, and says so; their own data replaces it once they have it.
+ * One monitoring or learning feature, drawn by the monitoring or learning micro front-end. A user who has just added an indicator has no values for it yet,
+ * so a monitoring feature is drawn with a stored project's data as a labelled sample, and the learning queue starts with a few labelled sample rows the user
+ * can accept or reject and add their own to. Their own data replaces the sample once they have it.
  */
 export function FeatureView({ stage, featureId }: { stage: 'monitoring' | 'learning'; featureId: string }) {
   const example = useExampleProject()
-  if (!example) return <EmptyState title="No example to draw" text="No stored project has the data this feature needs yet." />
+  if (stage === 'learning') {
+    return (
+      <div className={styles.feature}>
+        <p className={styles.sample}><Badge tone="medium">Sample</Badge> These rows are examples. Add your own feedback to start your real queue.</p>
+        <RemoteBoundary name="Learning"><LearningFeature feature={featureId as 'feedback-queue' | 'learning-figures'} projectId={example?.project_id ?? ''} sample /></RemoteBoundary>
+      </div>
+    )
+  }
+  if (!example) return <EmptyState title="No sample to draw" text="No stored project has the data this indicator needs yet." />
   return (
     <div className={styles.feature}>
-      <p className={styles.sub}>Shown with the data of <strong>{example.project_name}</strong> <span className="mono">{example.project_id}</span> as an example. Your own project's data replaces it.</p>
-      {stage === 'monitoring'
-        ? <RemoteBoundary name="Monitoring"><MonitoringFeature feature={featureId as 'disbursement-chart' | 'project-schedule' | 'early-warning'} projectId={example.project_id} /></RemoteBoundary>
-        : <RemoteBoundary name="Learning"><LearningFeature feature={featureId as 'feedback-queue' | 'learning-figures'} projectId={example.project_id} /></RemoteBoundary>}
+      <p className={styles.sample}>
+        <Badge tone="medium">Sample</Badge> You have not entered values for this indicator yet, so it is drawn with the data of <strong>{example.project_name}</strong> <span className="mono">{example.project_id}</span>.
+        You can use this indicator for your own project; it shows your values once you add them.
+      </p>
+      <RemoteBoundary name="Monitoring"><MonitoringFeature feature={featureId as 'disbursement-chart' | 'project-schedule' | 'early-warning'} projectId={example.project_id} /></RemoteBoundary>
     </div>
   )
 }
@@ -76,23 +86,48 @@ function ItemView({ item }: { item: LifecycleItem }) {
   return null
 }
 
-/** One item with its heading, basis and view. Remove and the PNG button are left out of the picture the PNG button saves. */
-function ItemRow({ item, onRemove }: { item: LifecycleItem; onRemove: () => void }) {
+/** Monitoring and learning features have no values of the user's yet, so they are always shown as samples. */
+const isSample = (item: LifecycleItem) => item.kind === 'monitoring-feature' || item.kind === 'learning-feature'
+
+/**
+ * One item with its heading, basis and view. Remove and the PNG button are left out of the picture the PNG button saves. In a list (`open` given), only the
+ * heading shows until the row is opened.
+ */
+function ItemRow({ item, onRemove, open, onToggle }: { item: LifecycleItem; onRemove: () => void; open?: boolean; onToggle?: () => void }) {
   const ref = useRef<HTMLLIElement>(null)
+  const inList = open !== undefined
   return (
     <li ref={ref} className={styles.item}>
       <div className={styles.itemHead}>
         <div>
-          <strong>{item.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />
-          <p className={styles.sub}>Basis: {item.basis}</p>
+          <strong>{item.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />{isSample(item) && <> <Badge tone="medium">Sample</Badge></>}
+          <p className={styles.sub}>{inList && !open ? item.summary : `Basis: ${item.basis}`}</p>
         </div>
         <div className={styles.row} data-export-ignore="">
-          <DownloadPng targetRef={ref} name={item.title} />
+          {inList && <Button onClick={onToggle} aria-expanded={open}>{open ? 'Hide' : 'View'}</Button>}
+          {(!inList || open) && <DownloadPng targetRef={ref} name={item.title} />}
           <Button onClick={onRemove}>Remove</Button>
         </div>
       </div>
-      <ItemView item={item} />
+      {(!inList || open) && <ItemView item={item} />}
     </li>
+  )
+}
+
+/**
+ * The items of one stage. One item is shown in full. Several (more than one plan, or more than one tender draft) become a list: a row each with its title
+ * and summary, and the row you open shows its full view underneath.
+ */
+function StageItems({ items, onRemove }: { items: LifecycleItem[]; onRemove: (id: string) => void }) {
+  const [openId, setOpenId] = useState<string | null>(null)
+  if (items.length === 1) return <ul className={styles.list}><ItemRow item={items[0]!} onRemove={() => onRemove(items[0]!.id)} /></ul>
+  return (
+    <>
+      <p className={styles.sub}>{items.length} items in this stage. Open one to see it in full.</p>
+      <ul className={`${styles.list} ${styles.itemList}`}>
+        {items.map((i) => <ItemRow key={i.id} item={i} open={openId === i.id} onToggle={() => setOpenId(openId === i.id ? null : i.id)} onRemove={() => onRemove(i.id)} />)}
+      </ul>
+    </>
   )
 }
 
@@ -190,9 +225,7 @@ export function MyLifecycleCard({ onSend }: { onSend?: (text: string) => void })
             {onSend && <Button variant="primary" onClick={() => onSend(NEXT_PROMPT[shown])}>{NEXT_PROMPT[shown]}</Button>}
           </>
         ) : (
-          <ul className={styles.list}>
-            {byStage[shown].map((i) => <ItemRow key={i.id} item={i} onRemove={() => remove(i.id)} />)}
-          </ul>
+          <StageItems items={byStage[shown]} onRemove={remove} />
         )}
       </section>
       {items.length > 0 && <div className={styles.actions}><Button onClick={clear}>Clear my lifecycle</Button></div>}

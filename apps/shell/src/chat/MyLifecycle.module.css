@@ -26,3 +26,8 @@
 .table th { color: var(--muted); width: 50%; }
 
 .row { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* A label above an indicator that is drawn with sample data, and the list of several items in one stage. */
+.sample { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 1px dashed var(--border); border-radius: var(--radius-ctl); background: var(--bg); color: var(--muted); font-size: 0.93em; line-height: 1.45; }
+.itemList > li { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
+.itemList > li:last-child { padding-bottom: 10px; border-bottom: 1px solid var(--border); }
