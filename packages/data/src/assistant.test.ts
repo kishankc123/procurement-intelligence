@@ -32,6 +32,13 @@ describe('resolveProject', () => {
   it('takes the project with the most contracts when the user names none but wants one', () => {
     expect(resolveProject('help me with one of the mock projects', db)).toMatchObject({ kind: 'default', project: { project_id: 'P-MOCK-001' } })
   })
+  it('keeps "one of the mock projects" among the mock ones even when a real project has more contracts', () => {
+    const real = project('P158504', 'Lao Road Sector Project 2', 'Lao PDR', 'Transport')
+    const many = Array.from({ length: 9 }, (_, i) => contract(`L${i}`, 'P158504'))
+    const mixed = { projects: [...db.projects, real], contracts: [...db.contracts, ...many] }
+    expect(resolveProject('help me with one of the mock projects', mixed)).toMatchObject({ kind: 'default', project: { project_id: 'P-MOCK-001' } })
+    expect(resolveProject('pick any project for me', mixed)).toMatchObject({ kind: 'default', project: { project_id: 'P158504' } })
+  })
   it('finds nothing for an unrelated message', () => {
     expect(resolveProject('what is the weather', db).kind).toBe('none')
   })

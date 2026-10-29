@@ -138,10 +138,11 @@ export function resolveProject(message: string, db: Pick<AssistantDb, 'projects'
 
   const anyOne = /\b(one of|any|some|whichever|random|pick|choose|surprise|a project|your choice)\b/.test(text) && /project|mock|session/.test(text)
   if (anyOne) {
-    // No project named: take the one with the most contracts, and say so in the reply.
+    // No project named: take the one with the most contracts, and say so in the reply. "Mock" limits the choice to the mock projects.
     const counts = new Map<string, number>()
     for (const c of db.contracts) counts.set(c.project_id, (counts.get(c.project_id) ?? 0) + 1)
-    const fullest = [...db.projects].sort((a, b) => (counts.get(b.project_id) ?? 0) - (counts.get(a.project_id) ?? 0))[0]
+    const pool = /\bmock\b/.test(text) ? db.projects.filter((p) => /mock/i.test(p.project_id) || /^mock/i.test(p.project_name)) : db.projects
+    const fullest = [...(pool.length > 0 ? pool : db.projects)].sort((a, b) => (counts.get(b.project_id) ?? 0) - (counts.get(a.project_id) ?? 0))[0]
     if (fullest) return { kind: 'default', project: fullest }
   }
   return { kind: 'none' }
@@ -323,7 +324,7 @@ export function answer(rawDb: Partial<AssistantDb>, message: string, contextProj
     const { dossier, steps } = buildDossier(db, named)
     return {
       ...base,
-      reply: `${resolved.kind === 'default' ? `You did not name a project, so I took ${named.project_name}. ` : ''}${named.project_name} (${named.project_id}) is a ${named.project_global_practice.toLowerCase()} project in ${named.borrower_country}. I gathered its records from the project, contract, plan, supervision and document services. Your procurement solution is ready: pick a stage to open it.`,
+      reply: `${resolved.kind === 'default' ? `You did not name a project, so I took ${named.project_name}. ` : ''}${named.project_name} (${named.project_id}) is a project in ${named.borrower_country}, sector: ${named.project_global_practice.split(';').map((x) => x.trim()).join(' and ')}. I gathered its records from the project, contract, plan, supervision and document services. Your procurement solution is ready: pick a stage to open it.`,
       steps: [understood(resolved.kind === 'default'
         ? `No project was named, so I picked ${named.project_name} (${named.project_id}), the one with the most contracts.`
         : `Matched ${named.project_name} (${named.project_id}).`), ...steps],

@@ -56,7 +56,7 @@ export function KnowledgeCard({ projectId }: { projectId: string | null }) {
                         <span className={styles.docText}><strong>{d.title}</strong><span className={`${styles.mono} ${styles.sub}`}>{d.doc_id}</span></span>
                       </button>
                     </td>
-                    <td>{d.type}</td><td className={styles.mono}>{d.date}</td><td className={styles.mono}>{d.pages}</td>
+                    <td>{d.type}</td><td className={styles.mono}>{d.date}</td><td className={styles.mono}>{d.pages > 0 ? d.pages : '—'}</td>
                     <td><Badge tone={d.parse_status === 'parsed' ? 'low' : d.parse_status === 'failed' ? 'high' : 'medium'}>{d.parse_status}</Badge></td>
                   </tr>
                 ))}</tbody>

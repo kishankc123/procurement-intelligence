@@ -24,7 +24,8 @@ export default function MonitoringCard({ projectId }: { projectId: string }) {
   const alerts = deriveAlerts({ project, reports, contracts, enrichments: enrichments.filter((e) => refs.has(e.contract_ref)), amendments: amendments.filter((a) => refs.has(a.contract_ref)), states, asOf })
   const urgent = alerts.filter((a) => a.severity === 'high').length
   const latest = [...reports].sort((a, b) => b.sequence - a.sequence)[0]
-  const gap = latest ? timeElapsedPct(project, latest.date) - latest.disbursed_pct : null
+  // Real disbursement has decimals; one decimal is plenty and avoids 2.9000000000000057.
+  const gap = latest ? Math.round((timeElapsedPct(project, latest.date) - latest.disbursed_pct) * 10) / 10 : null
 
   return (
     <div className={styles.chatCard}>

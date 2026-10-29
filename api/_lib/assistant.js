@@ -170,7 +170,8 @@ function resolveProject(message, db) {
   if (anyOne) {
     const counts = /* @__PURE__ */ new Map();
     for (const c of db.contracts) counts.set(c.project_id, (counts.get(c.project_id) ?? 0) + 1);
-    const fullest = [...db.projects].sort((a, b) => (counts.get(b.project_id) ?? 0) - (counts.get(a.project_id) ?? 0))[0];
+    const pool = /\bmock\b/.test(text) ? db.projects.filter((p) => /mock/i.test(p.project_id) || /^mock/i.test(p.project_name)) : db.projects;
+    const fullest = [...pool.length > 0 ? pool : db.projects].sort((a, b) => (counts.get(b.project_id) ?? 0) - (counts.get(a.project_id) ?? 0))[0];
     if (fullest) return { kind: "default", project: fullest };
   }
   return { kind: "none" };
@@ -328,7 +329,7 @@ function answer(rawDb, message, contextProjectId) {
     const { dossier, steps } = buildDossier(db, named);
     return {
       ...base,
-      reply: `${resolved.kind === "default" ? `You did not name a project, so I took ${named.project_name}. ` : ""}${named.project_name} (${named.project_id}) is a ${named.project_global_practice.toLowerCase()} project in ${named.borrower_country}. I gathered its records from the project, contract, plan, supervision and document services. Your procurement solution is ready: pick a stage to open it.`,
+      reply: `${resolved.kind === "default" ? `You did not name a project, so I took ${named.project_name}. ` : ""}${named.project_name} (${named.project_id}) is a project in ${named.borrower_country}, sector: ${named.project_global_practice.split(";").map((x) => x.trim()).join(" and ")}. I gathered its records from the project, contract, plan, supervision and document services. Your procurement solution is ready: pick a stage to open it.`,
       steps: [understood(resolved.kind === "default" ? `No project was named, so I picked ${named.project_name} (${named.project_id}), the one with the most contracts.` : `Matched ${named.project_name} (${named.project_id}).`), ...steps],
       dossier,
       projectId: named.project_id,

@@ -1,6 +1,6 @@
 // Rebuilds mock/db.json from scratch. `pnpm reset-db` runs this. Everything here is mock data.
 // @ts-ignore Node.js type declarations are not included for this mock script.
-import { writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 // @ts-ignore Node.js type declarations are not included for this mock script.
 import { fileURLToPath } from 'node:url'
 import { fiscalYearOf } from '../packages/config/src/index'
@@ -246,6 +246,21 @@ const db = {
   }],
 }
 
+// Real, pre-ingested projects (pnpm ingest <id>) are merged in as they are: same collections, same shapes.
+const ingestedDir = fileURLToPath(new URL('./ingested/', import.meta.url))
+const ingested: string[] = []
+if (existsSync(ingestedDir)) {
+  for (const file of readdirSync(ingestedDir).filter((f: string) => f.endsWith('.json')).sort()) {
+    const snapshot = JSON.parse(readFileSync(ingestedDir + file, 'utf8')) as { manifest: { project_id: string; ingested_at: string }; collections: Record<string, unknown[]> }
+    for (const [name, rows] of Object.entries(snapshot.collections)) {
+      const target = (db as unknown as Record<string, unknown[]>)[name]
+      if (Array.isArray(target)) target.push(...rows)
+    }
+    ingested.push(`${snapshot.manifest.project_id} (ingested ${snapshot.manifest.ingested_at.slice(0, 10)})`)
+  }
+}
+if (ingested.length > 0) db.meta.dataset_label += ` · Real World Bank data, ingested snapshot: ${ingested.join(', ')}`
+
 const out = fileURLToPath(new URL('./db.json', import.meta.url))
 writeFileSync(out, JSON.stringify(db, null, 2))
-console.log(`Wrote ${out}: ${db.contracts.length} contracts, ${db.country_years.length} country-years`)
+console.log(`Wrote ${out}: ${db.contracts.length} contracts, ${db.country_years.length} country-years${ingested.length ? `, ingested: ${ingested.join(', ')}` : ''}`)

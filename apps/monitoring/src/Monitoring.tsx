@@ -109,7 +109,7 @@ function DisbursementChart({ points }: { points: ChartPoint[] }) {
           <strong>{current.label}</strong> <span className="mono">{current.date}</span>
           <div>Disbursed: <span className="mono">{current.y}%</span></div>
           <div>Time elapsed: <span className="mono">{current.x}%</span></div>
-          <div>Gap: <span className="mono">{current.y - current.x} points</span> {current.x - current.y > lag ? '(past the alert line)' : current.y >= current.x ? '(on or ahead of pace)' : '(behind pace)'}</div>
+          <div>Gap: <span className="mono">{Math.round((current.y - current.x) * 10) / 10} points</span> {current.x - current.y > lag ? '(past the alert line)' : current.y >= current.x ? '(on or ahead of pace)' : '(behind pace)'}</div>
         </div>
       )}
       <p className={styles.sub}>Move the pointer over the chart, or tab to a point, to read each report. Points below the red line are more than {lag} points behind pace.</p>
@@ -219,7 +219,7 @@ export default function Monitoring() {
         <Card title="Rating drops"><p><span className={styles.big}>{count('rating_drop')}</span></p><ProvenanceChip kind="public" detail="supervision reports" /></Card>
         <Card title="Disbursed vs. time elapsed">
           {latest && elapsed !== null ? (<>
-            <p><span className={styles.big}>{latest.disbursed_pct - elapsed}</span> <span className={styles.unit}>points</span></p>
+            <p><span className={styles.big}>{Math.round((latest.disbursed_pct - elapsed) * 10) / 10}</span> <span className={styles.unit}>points</span></p>
             <p className={styles.sub}>Latest report: {latest.disbursed_pct}% disbursed, {elapsed}% of time elapsed. Alert above {THRESHOLDS.disbursementLagPoints} points.</p>
             <ProvenanceChip kind="derived" detail={`n=${reports.length} reports`} />
           </>) : <EmptyState title="No supervision reports" />}
