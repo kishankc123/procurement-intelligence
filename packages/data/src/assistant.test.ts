@@ -71,6 +71,10 @@ describe('answer', () => {
 describe('detectIntent', () => {
   it('reads the four lifecycle stages from everyday words', () => {
     expect(detectIntent('show me the plan timeline')).toBe('planning')
+    expect(detectIntent('show plans executed for the Lao project')).toBe('planning')
+    expect(detectIntent('show tenders published for the Lao project')).toBe('tender-design')
+    expect(detectIntent('show evaluation for the Lao project')).toBe('monitoring')
+    expect(detectIntent('show feedback for the Lao project')).toBe('learning')
     expect(detectIntent('I need a tender draft')).toBe('tender-design')
     expect(detectIntent('any warning signals or alerts?')).toBe('monitoring')
     expect(detectIntent('how is the disbursement going')).toBe('monitoring')

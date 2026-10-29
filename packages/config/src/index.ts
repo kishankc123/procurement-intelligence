@@ -89,6 +89,13 @@ export const ASSISTANT_BASE =
 /** CopilotKit runtime (the model-backed assistant). Same host as the assistant server; it answers only when OPENAI_API_KEY is set there. */
 export const COPILOT_URL = `${ASSISTANT_BASE.replace(/\/api$/, '')}/api/copilotkit`
 
+/**
+ * The stage names for a project that already exists. Its lifecycle is read back, so the stages are named for what happened: the plans executed, the tenders
+ * published, the evaluation and the feedback. A lifecycle the user is building for their own next project is planned ahead and keeps LIFECYCLE_STEPS names
+ * (Planning, Tender design, Monitoring, Learning). The ids are the same in both.
+ */
+export const PAST_STAGE_LABEL: Record<string, string> = { planning: 'Plans executed', 'tender-design': 'Tenders published', monitoring: 'Evaluation', learning: 'Feedback' }
+
 /** The four lifecycle steps of one project. Order, labels and copy shown on the Home donut and in the nav. */
 export const LIFECYCLE_STEPS = [
   { id: 'planning', to: '/planning', label: 'Planning',

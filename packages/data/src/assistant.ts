@@ -205,7 +205,7 @@ export function detectIntent(message: string): Intent | null {
   if (/\bsupplier|\bvendor|\bcontractor/.test(t)) return 'suppliers'
   if (/\bproject data|\bcontracts?\b|\bcontract awards|\bentered data|\btender facts|\bdata entry/.test(t)) return 'project-data'
   if (/\btender|\bdraft|\bclause|\bspecification|bid validity/.test(t)) return 'tender-design'
-  if (/\bmonitor|\balert|\bwarning|\bschedule|\bdisburs|\bexecution|\bsupervision/.test(t)) return 'monitoring'
+  if (/\bmonitor|\balert|\bwarning|\bschedule|\bdisburs|\bexecution|\bsupervision|\bevaluat/.test(t)) return 'monitoring'
   if (/\blearn|\bfeedback|\blesson/.test(t)) return 'learning'
   if (/\bplan|\btimeline|\bpackage/.test(t)) return 'planning'
   return null

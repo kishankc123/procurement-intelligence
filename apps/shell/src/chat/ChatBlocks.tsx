@@ -1,5 +1,5 @@
 import { lazy, useState } from 'react'
-import { LIFECYCLE_STEPS } from '@pi/config'
+import { LIFECYCLE_STEPS, PAST_STAGE_LABEL } from '@pi/config'
 import { usePlan, usePlanPackages, useProjects, type Block, type LifecycleStage } from '@pi/data'
 import { Badge, CircleCheck, DonutNav, ProvenanceChip } from '@pi/ui'
 import { FeedbackWidget } from '@pi/domain'
@@ -20,17 +20,18 @@ const PlanningCard = lazy(() => import('planning/PlanningCard'))
 const MonitoringCard = lazy(() => import('monitoring/MonitoringCard'))
 const LearningCard = lazy(() => import('learning/LearningCard'))
 
-const SEGMENTS = LIFECYCLE_STEPS.map((s) => ({ id: s.id, label: s.label, color: STEP_COLOR[s.id] ?? 'var(--primary)' }))
-const labelOf = (id: string) => LIFECYCLE_STEPS.find((s) => s.id === id)?.label ?? id
+// The stages of a project that exists are named for what happened (Plans executed, Tenders published, Evaluation, Feedback); the user's own lifecycle keeps the planning names.
+const labelOf = (id: string) => PAST_STAGE_LABEL[id] ?? LIFECYCLE_STEPS.find((s) => s.id === id)?.label ?? id
+const SEGMENTS = LIFECYCLE_STEPS.map((s) => ({ id: s.id, label: labelOf(s.id), color: STEP_COLOR[s.id] ?? 'var(--primary)' }))
 
 /** The lifecycle donut. A click asks the assistant for that stage, so the transcript stays the record of what the user did. */
-function Donut({ activeId, onSend, about, compact, size, centre }: { activeId: string | null; onSend: (text: string) => void; /** What the click is about, so the message names its project (" of Name (P123)") instead of leaving the assistant to guess. */ about: string; compact?: boolean; size?: string; centre?: React.ReactNode }) {
+function Donut({ activeId, onSend, about, compact, size, centre }: { activeId: string | null; onSend: (text: string) => void; /** What the click is about, so the message names its project ("for Name (P123)") instead of leaving the assistant to guess. */ about: string; compact?: boolean; size?: string; centre?: React.ReactNode }) {
   const [hoverId, setHoverId] = useState<string | null>(null)
   return (
     <DonutNav
       ariaLabel="Project lifecycle" compact={compact} size={size} segments={SEGMENTS}
       activeId={hoverId ?? activeId} onActiveChange={setHoverId}
-      onSelect={(id) => onSend(`Show ${labelOf(id)}${about}`)} centre={centre}
+      onSelect={(id) => onSend(`Show ${labelOf(id).toLowerCase()} ${about}`)} centre={centre}
     />
   )
 }
@@ -39,7 +40,7 @@ function Donut({ activeId, onSend, about, compact, size, centre }: { activeId: s
 function BigDonut({ projectId, onSend, heading }: { projectId: string; onSend: (text: string) => void; heading: React.ReactNode }) {
   const project = useProjects().data?.find((p) => p.project_id === projectId)
   const facts = useStageFacts(projectId)
-  const about = ` of ${project?.project_name ?? projectId} (${projectId})`
+  const about = `for ${project?.project_name ?? projectId} (${projectId})`
   return (
     <section className={styles.block} aria-label="Project lifecycle">
       {heading}
@@ -49,7 +50,7 @@ function BigDonut({ projectId, onSend, heading }: { projectId: string; onSend: (
       <ul className={styles.facts}>
         {LIFECYCLE_STEPS.map((s) => (
           <li key={s.id} style={{ borderTopColor: STEP_COLOR[s.id] }}>
-            <button type="button" onClick={() => onSend(`Show ${s.label}${about}`)}>{s.label}</button>
+            <button type="button" onClick={() => onSend(`Show ${labelOf(s.id).toLowerCase()} ${about}`)}>{labelOf(s.id)}</button>
             <span className={styles.sub}>{facts[s.id as LifecycleStage].text}</span>
             <ProvenanceChip kind={facts[s.id as LifecycleStage].kind} />
           </li>
@@ -80,7 +81,7 @@ function Stage({ step, projectId, onSend }: { step: LifecycleStage; projectId: s
   return (
     <section className={styles.block} aria-label={labelOf(step)}>
       <div className={styles.stageHead}>
-        <div className={styles.small}><Donut activeId={step} onSend={onSend} about={` of ${project?.project_name ?? projectId} (${projectId})`} compact /></div>
+        <div className={styles.small}><Donut activeId={step} onSend={onSend} about={`for ${project?.project_name ?? projectId} (${projectId})`} compact /></div>
         <div>
           <p className={styles.eyebrow}>Lifecycle step</p>
           <h3>{labelOf(step)}</h3>

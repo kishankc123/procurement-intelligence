@@ -16,9 +16,9 @@ export interface ViewEntry {
 }
 
 const STAGE_VIEWS: Record<LifecycleStage, Omit<ViewEntry, 'id' | 'show' | 'needsProject'>> = {
-  planning: { title: 'Planning', description: 'Planned dates, packages, method and category, compared with country reference data.', keywords: ['planning', 'plan', 'schedule', 'timeline', 'package', 'procurement plan', 'gantt', 'dates'] },
-  'tender-design': { title: 'Tender design', description: 'Tender clauses (duration, bid validity, security, qualification, evaluation method) with a draft to edit.', keywords: ['tender', 'tender design', 'draft', 'clause', 'bid validity', 'qualification', 'evaluation', 'evaluate', 'bidding document'] },
-  monitoring: { title: 'Monitoring', description: 'Early-warning alerts, ratings, disbursement against time, key dates and milestones.', keywords: ['monitoring', 'monitor', 'alert', 'early warning', 'risk', 'rating', 'disbursement', 'supervision', 'delay', 'progress'] },
+  planning: { title: 'Planning', description: 'Planned dates, packages, method and category, compared with country reference data.', keywords: ['planning', 'plan', 'plans executed', 'executed plans', 'schedule', 'timeline', 'package', 'procurement plan', 'gantt', 'dates'] },
+  'tender-design': { title: 'Tender design', description: 'Tender clauses (duration, bid validity, security, qualification, evaluation method) with a draft to edit.', keywords: ['tender', 'tender design', 'tenders published', 'published tenders', 'draft', 'clause', 'bid validity', 'qualification', 'evaluation method', 'bidding document'] },
+  monitoring: { title: 'Monitoring', description: 'Early-warning alerts, ratings, disbursement against time, key dates and milestones.', keywords: ['monitoring', 'monitor', 'evaluation', 'evaluate', 'stats', 'statistics', 'alert', 'early warning', 'risk', 'rating', 'disbursement', 'supervision', 'delay', 'progress'] },
   learning: { title: 'Learning', description: 'Feedback queue, accepted and rejected recommendations, lessons and the update log.', keywords: ['learning', 'learn', 'feedback', 'lesson', 'accepted', 'rejected', 'recommendation', 'update log'] },
 }
 

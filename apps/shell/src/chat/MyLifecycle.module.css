@@ -7,3 +7,12 @@
 .stage { margin-top: 14px; }
 .stage h4 { margin: 0 0 6px; }
 .actions { margin-top: 14px; }
+
+/* The donut and the stage tiles, the same as a stored project's lifecycle card (ChatBlocks.module.css). */
+.big { display: grid; justify-items: center; margin: 8px 0; }
+.centre { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.2; max-width: 11ch; overflow-wrap: anywhere; }
+.facts { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.facts li { display: grid; align-content: start; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.facts li[aria-current='true'] { background: var(--selected); }
+.facts button { all: unset; cursor: pointer; font-weight: 600; color: var(--link); text-decoration: underline; }
+.facts button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }

@@ -28,6 +28,12 @@ describe('the view registry', () => {
     expect(best('How can I evaluate and monitor my project?')).toBe('monitoring-options')
     expect(best('how should I add learning to my project')).toBe('learning-options')
     expect(best('what is still missing from my lifecycle')).toBe('my-lifecycle')
+    // The names a stored project's stages go by.
+    expect(best('show plans executed for the Lao project')).toBe('planning')
+    expect(best('show tenders published for the Lao project')).toBe('tender-design')
+    expect(best('show evaluation for the Lao project')).toBe('monitoring')
+    expect(best('show the evals and stats of the Lao project')).toBe('monitoring')
+    expect(best('show feedback for the Lao project')).toBe('learning')
   })
 
   it('returns nothing, not a guess, when no view fits', () => {

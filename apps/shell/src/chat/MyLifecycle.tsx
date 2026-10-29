@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { LIFECYCLE_STEPS } from '@pi/config'
 import { lifecycleStatus, useMyLifecycle, type FeatureOption, type LifecycleStage, type NewLifecycleItem } from '@pi/data'
-import { Badge, Button, Card, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, DonutNav, EmptyState, ProvenanceChip } from '@pi/ui'
+import { STEP_COLOR } from '../stepColors'
 import styles from './MyLifecycle.module.css'
 
 const labelOf = (stage: LifecycleStage) => LIFECYCLE_STEPS.find((s) => s.id === stage)?.label ?? stage
+const STAGE_IDS = LIFECYCLE_STEPS.map((s) => s.id as LifecycleStage)
 
 /** What to say to ask for the next piece of an empty stage. */
 const NEXT_PROMPT: Record<LifecycleStage, string> = {
@@ -43,38 +46,70 @@ export function FeatureOptions({ stage, title, options }: { stage: Extract<Lifec
   )
 }
 
-/** The user's own lifecycle: what they have added per stage, what is still empty, and a button to ask for the next piece. */
+/**
+ * The user's own lifecycle as the same donut a stored project has. A slice is in its full colour once something has been added to that stage and faded while
+ * it is empty, so the donut fills in as the lifecycle is built. Clicking a stage (on the donut or on its tile) shows what was added to it; an empty stage
+ * offers a button to ask for the next suggestion. The stages keep the planning names (Planning, Tender design, Monitoring, Learning).
+ */
 export function MyLifecycleCard({ onSend }: { onSend?: (text: string) => void }) {
   const { name, items, remove, rename, clear } = useMyLifecycle()
   const { byStage, missing, complete } = lifecycleStatus(items)
+  const [picked, setPicked] = useState<LifecycleStage | null>(null)
+  const [hover, setHover] = useState<string | null>(null)
+  const shown: LifecycleStage = picked ?? (STAGE_IDS.find((st) => byStage[st].length > 0) ?? 'planning')
+  const segments = LIFECYCLE_STEPS.map((step) => {
+    const filled = byStage[step.id as LifecycleStage].length > 0
+    const color = STEP_COLOR[step.id] ?? 'var(--primary)'
+    return { id: step.id, label: step.label, color: filled ? color : `color-mix(in srgb, ${color} 30%, var(--surface))` }
+  })
   return (
     <Card title="My lifecycle" aside={<Badge tone={complete ? 'low' : 'medium'}>{complete ? 'Complete' : `${missing.length} stage${missing.length === 1 ? '' : 's'} empty`}</Badge>}>
       <label className={styles.name}>Name
         <input value={name} onChange={(e) => rename(e.target.value)} maxLength={80} />
       </label>
-      <p className={styles.sub}>Kept for this browser session only. Everything here is a suggestion you chose to add, with the basis it came with.</p>
-      {(Object.keys(byStage) as LifecycleStage[]).map((stage) => (
-        <section key={stage} className={styles.stage} aria-label={labelOf(stage)}>
-          <h4>{labelOf(stage)}</h4>
-          {byStage[stage].length === 0 ? (
+      <p className={styles.sub}>Kept for this browser session only. Everything here is a suggestion you chose to add, with the basis it came with. Stages in full colour have something in them.</p>
+      <div className={styles.big}>
+        <DonutNav
+          ariaLabel="My lifecycle" size="min(340px, 100%)" segments={segments} activeId={hover ?? shown}
+          onActiveChange={setHover} onSelect={(id) => setPicked(id as LifecycleStage)}
+          centre={<span className={styles.centre}>{name}</span>}
+        />
+      </div>
+      <ul className={styles.facts}>
+        {LIFECYCLE_STEPS.map((step) => {
+          const id = step.id as LifecycleStage
+          const n = byStage[id].length
+          return (
+            <li key={id} style={{ borderTopColor: n > 0 ? STEP_COLOR[id] : undefined }} aria-current={id === shown ? 'true' : undefined}>
+              <button type="button" onClick={() => setPicked(id)}>{step.label}</button>
+              <span className={styles.sub}>{n > 0 ? `${n} ${n === 1 ? 'item' : 'items'} added` : 'Nothing added yet'}</span>
+              <ProvenanceChip kind={n > 0 ? 'derived' : 'missing'} detail={n > 0 ? 'suggested' : undefined} />
+            </li>
+          )
+        })}
+      </ul>
+      <section className={styles.stage} aria-label={labelOf(shown)} aria-live="polite">
+        <h4>{labelOf(shown)}</h4>
+        {byStage[shown].length === 0 ? (
+          <>
             <EmptyState title="Nothing added yet" text="Ask for a suggestion and press Add to my lifecycle." />
-          ) : (
-            <ul className={styles.list}>
-              {byStage[stage].map((i) => (
-                <li key={i.id}>
-                  <div>
-                    <strong>{i.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />
-                    <p className={styles.sub}>{i.summary}</p>
-                    <p className={styles.sub}>Basis: {i.basis}</p>
-                  </div>
-                  <Button onClick={() => remove(i.id)}>Remove</Button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {byStage[stage].length === 0 && onSend && <Button onClick={() => onSend(NEXT_PROMPT[stage])}>{NEXT_PROMPT[stage]}</Button>}
-        </section>
-      ))}
+            {onSend && <Button variant="primary" onClick={() => onSend(NEXT_PROMPT[shown])}>{NEXT_PROMPT[shown]}</Button>}
+          </>
+        ) : (
+          <ul className={styles.list}>
+            {byStage[shown].map((i) => (
+              <li key={i.id}>
+                <div>
+                  <strong>{i.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />
+                  <p className={styles.sub}>{i.summary}</p>
+                  <p className={styles.sub}>Basis: {i.basis}</p>
+                </div>
+                <Button onClick={() => remove(i.id)}>Remove</Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       {items.length > 0 && <div className={styles.actions}><Button onClick={clear}>Clear my lifecycle</Button></div>}
     </Card>
   )
