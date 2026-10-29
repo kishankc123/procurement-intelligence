@@ -1,6 +1,9 @@
 {
   "name": "procureintel",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "pnpm -r --parallel --no-bail --filter './apps/*' dev",
