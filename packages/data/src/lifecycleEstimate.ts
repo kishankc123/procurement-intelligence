@@ -2,7 +2,7 @@
 // projects (or plans, contracts, reports) it rests on. Real and mock projects are never averaged together: each kind is its own group, so a figure is
 // always either "real World Bank data" or "mock demonstration data". What a kind does not hold is reported as missing, with the reason, never filled in.
 import type { AssistantDb, LifecycleStage } from './assistant'
-import { projectScope, scopedDb, scopeLabel, type DataScope } from './scope'
+import { matchProjects, projectScope, scopedDb, scopeLabel, type DataScope } from './scope'
 import type { Project } from './schemas'
 
 /** Below this many samples an estimate is still given, but flagged as thin. */
@@ -49,12 +49,11 @@ const row = (stage: LifecycleStage, metric: string, values: number[], unit: stri
 }
 const gap = (stage: LifecycleStage, metric: string, why: string): EstimateRow => ({ stage, metric, value: null, unit: '', n: 0, counts: '', thin: false, basis: '', missing: why })
 
-const matches = (p: Project, k: string) => [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k))
 
 function estimateGroup(all: AssistantDb, scope: DataScope, keyword?: string): EstimateGroup {
   const db = scopedDb(all, scope)
   const k = keyword?.trim().toLowerCase()
-  let projects = db.projects.filter((p) => !k || matches(p, k))
+  let projects = k ? matchProjects(db.projects, k) : db.projects
   let note: string | undefined
   if (k && projects.length === 0 && db.projects.length > 0) {
     projects = db.projects

@@ -15,11 +15,14 @@ const PlanResult = z.object({
   plan: z.object({ name: z.string(), category: z.string(), method: z.string(), planned_advertisement: z.string(), planned_bid_opening: z.string(), planned_evaluation_complete: z.string(), planned_signing: z.string() }),
   basis: z.object({ sample_size: z.number(), projects: z.array(z.string()), median_total_days: z.number(), filtered_by: z.string() }),
   deadline_check: z.union([z.string(), z.object({ fits: z.boolean(), spare_days: z.number().optional(), days_over: z.number().optional() })]).optional(),
+  data_kind: z.string().optional(),
+  note: z.string().optional(),
 })
 const DraftResult = z.object({
-  clauses: z.array(z.object({ field: z.string(), label: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]), sample_size: z.number(), from: z.array(z.string()) })),
-  lessons: z.array(z.object({ report: z.string(), project: z.string(), lesson: z.string(), chunk_id: z.string() })),
+  clauses: z.array(z.object({ field: z.string(), label: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]), sample_size: z.number(), from: z.array(z.string()), source: z.enum(['real', 'mock']).optional(), basis: z.string().optional() })),
+  lessons: z.array(z.object({ report: z.string(), project: z.string(), lesson: z.string(), chunk_id: z.string(), source: z.enum(['real', 'mock']).optional() })),
   filtered_by: z.string(),
+  notes: z.array(z.string()).optional(),
 })
 
 const LifecycleResult = z.object({
@@ -56,11 +59,12 @@ const Gap = ({ title, text }: { title: string; text: string }) => (
 export function PlanProposal({ result }: { result: string | undefined }) {
   const r = parse(PlanResult, result)
   if (!r.ok) return <Gap title="Suggested plan" text={r.missing} />
-  const { plan, basis, deadline_check } = r.data
+  const { plan, basis, deadline_check, note } = r.data
   const deadline = typeof deadline_check === 'object' ? deadline_check : undefined
   return (
     <div className={styles.card}>
       <RemoteBoundary name="Planning"><PlanProposalCard proposal={{ plan, basis, deadline }} /></RemoteBoundary>
+      {note && <p className={styles.note}>{note}</p>}
       <div className={styles.add}>
         <AddToLifecycle item={{
           key: `plan:${plan.name}:${plan.planned_advertisement}`, stage: 'planning', kind: 'plan', title: plan.name || 'Suggested plan',
@@ -77,10 +81,10 @@ export function TenderProposal({ result }: { result: string | undefined }) {
   const [open, setOpen] = useState<Citation | null>(null)
   const r = parse(DraftResult, result)
   if (!r.ok) return <Gap title="Suggested tender draft" text={r.missing} />
-  const { clauses, lessons, filtered_by } = r.data
+  const { clauses, lessons, filtered_by, notes } = r.data
   return (
     <div className={styles.card}>
-      <p className={styles.lead}><strong>Suggested tender draft</strong> from the stored drafts ({filtered_by}). Review every clause before using it. <ProvenanceChip kind="derived" detail={`n=${clauses[0]?.sample_size ?? 0}`} /></p>
+      <p className={styles.lead}><strong>Suggested tender draft</strong> ({filtered_by}). Each clause says where it comes from. Review every clause before using it.</p>
       <Card title="Clauses">
         <table className={styles.table}>
           <thead><tr><th scope="col">Clause</th><th scope="col">Suggested</th><th scope="col">Worked out from</th></tr></thead>
@@ -89,14 +93,18 @@ export function TenderProposal({ result }: { result: string | undefined }) {
               <tr key={c.field}>
                 <th scope="row">{c.label}</th>
                 <td className={styles.value}>{typeof c.value === 'number' ? c.value.toLocaleString('en-US') : c.value}{c.unit ? ` ${c.unit}` : ''}</td>
-                <td className={styles.basis}>{c.field === 'evaluation_method' ? 'Most common' : 'Median'} of {c.sample_size} {c.sample_size === 1 ? 'draft' : 'drafts'}: <span className="mono">{c.from.join(', ')}</span></td>
+                <td className={styles.basis}>
+                  {c.source === 'mock' ? <Badge tone="medium">Demonstration</Badge> : c.source === 'real' ? <Badge tone="low">Real data</Badge> : null}{' '}
+                  {c.basis ?? <>{c.field === 'evaluation_method' ? 'Most common' : 'Median'} of {c.sample_size} {c.sample_size === 1 ? 'draft' : 'drafts'}: <span className="mono">{c.from.join(', ')}</span></>}
+                  <ProvenanceChip kind="derived" detail={`n=${c.sample_size}`} />
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </Card>
       {lessons.length > 0 && (
-        <Card title="Lessons to apply" aside={<ProvenanceChip kind="public" detail="completion reports" />}>
+        <Card title="Lessons to apply" aside={lessons.every((l) => l.source === 'mock') ? <Badge tone="medium">Demonstration completion reports</Badge> : <ProvenanceChip kind="public" detail="completion reports" />}>
           <ul className={styles.lessons}>
             {lessons.map((l) => (
               <li key={l.chunk_id}>
@@ -111,10 +119,11 @@ export function TenderProposal({ result }: { result: string | undefined }) {
         <AddToLifecycle item={{
           key: 'tender-clauses', stage: 'tender-design', kind: 'tender-clauses', title: 'Tender clauses',
           summary: clauses.map((c) => `${c.label}: ${typeof c.value === 'number' ? c.value.toLocaleString('en-US') : c.value}${c.unit ? ` ${c.unit}` : ''}`).join('; '),
-          basis: `Median of ${clauses[0]?.sample_size ?? 0} stored ${clauses[0]?.sample_size === 1 ? 'draft' : 'drafts'} (${filtered_by}). Mock projects are demonstration data.`, detail: { clauses, lessons },
+          basis: `${clauses.filter((c) => c.source === 'real').length} clauses from real data, ${clauses.filter((c) => c.source !== 'real').length} from stored demonstration drafts (${filtered_by}).`, detail: { clauses, lessons },
         }} />
       </div>
-      <p className={styles.note}>Mock projects are demonstration data, so these are reference values, not market benchmarks.</p>
+      {(notes ?? []).map((n) => <p key={n} className={styles.note}>{n}</p>)}
+      <p className={styles.note}>Demonstration figures are placeholders, not market benchmarks.</p>
       <SourceDrawer citation={open} onClose={() => setOpen(null)} />
     </div>
   )

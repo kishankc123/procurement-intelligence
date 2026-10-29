@@ -32,6 +32,13 @@ function scopedDb(db, scope) {
     sources: db.sources.filter((s) => s.id.startsWith("SRC-WB-") ? scope === "real" : scope === "mock")
   };
 }
+function matchProjects(projects, keyword) {
+  const words2 = (keyword ?? "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+  if (words2.length === 0) return projects;
+  const text = (p) => `${p.project_name} ${p.project_global_practice} ${p.borrower_country}`.toLowerCase();
+  const all = projects.filter((p) => words2.every((w) => text(p).includes(w)));
+  return all.length > 0 ? all : projects.filter((p) => words2.some((w) => text(p).includes(w)));
+}
 function scopeProblem(db, scope, projectId) {
   if (!projectId) return null;
   if (!db.projects.some((p) => p.project_id === projectId)) return `No project with id ${projectId}.`;
@@ -193,11 +200,10 @@ var row = (stage, metric, values, unit, counts, basis, places = 0) => {
   return value === null ? { stage, metric, value: null, unit, n: 0, counts, thin: false, basis, missing: `No ${counts} hold this.` } : { stage, metric, value, unit, n: values.length, counts, thin: values.length < THIN_SAMPLE_BELOW, basis };
 };
 var gap = (stage, metric, why) => ({ stage, metric, value: null, unit: "", n: 0, counts: "", thin: false, basis: "", missing: why });
-var matches = (p, k) => [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k));
 function estimateGroup(all, scope, keyword) {
   const db = scopedDb(all, scope);
   const k = keyword?.trim().toLowerCase();
-  let projects = db.projects.filter((p) => !k || matches(p, k));
+  let projects = k ? matchProjects(db.projects, k) : db.projects;
   let note;
   if (k && projects.length === 0 && db.projects.length > 0) {
     projects = db.projects;
@@ -272,17 +278,6 @@ function estimateLifecycle(db, keyword, scope = "auto") {
     how_to_read: `Each figure is a median of similar stored ${chosen} projects with the number it rests on. A row marked missing means the data holds nothing for it; it is not filled from the other kind of data.`
   };
 }
-
-// packages/data/src/lifecycleOptions.ts
-var MONITORING_OPTIONS = [
-  { id: "disbursement-chart", title: "Disbursement against time chart", what: "The share of money disbursed against the share of time used, from each supervision report, with the lag that raises an alert.", uses: "Supervision reports" },
-  { id: "project-schedule", title: "Project schedule", what: "The planned and actual progress of each activity on a timeline, with the ones running behind flagged.", uses: "Schedule items entered by the team" },
-  { id: "early-warning", title: "Early-warning board", what: "Alerts for a rating drop, a risk increase, a disbursement lag, a contract past its end date and many amendments, urgent ones first, each assignable.", uses: "Supervision reports, contracts, amendments" }
-];
-var LEARNING_OPTIONS = [
-  { id: "feedback-queue", title: "Feedback queue", what: "Every suggestion can be rated Helpful or Not helpful; reviewers accept, edit or reject each one, and every decision is logged.", uses: "Ratings from users, reviewers" },
-  { id: "learning-figures", title: "Learning figures", what: "How many pieces of feedback came in, how many were reviewed and how many accepted, worked out from the queue.", uses: "The feedback queue" }
-];
 
 // packages/data/src/assistantData.ts
 var kindOf = (p) => scopeLabel(projectScope(p.project_id));
@@ -424,27 +419,91 @@ function proposePlan(db, raw) {
     deadline_check: input.signing_by ? sign <= input.signing_by ? { fits: true, spare_days: daysBetween(sign, input.signing_by) } : { fits: false, days_over: daysBetween(input.signing_by, sign) } : "No signing deadline was given."
   };
 }
-var CLAUSES = [
-  { field: "duration_months", label: "Contract duration", unit: "months" },
-  { field: "bid_validity_days", label: "Bid validity", unit: "days" },
-  { field: "performance_security_pct", label: "Performance security", unit: "%" },
-  { field: "min_similar_contracts", label: "Minimum similar contracts", unit: "" },
-  { field: "min_similar_value_usd", label: "Minimum similar contract value", unit: "USD" }
+
+// packages/data/src/tenderSuggestion.ts
+var median3 = (xs) => {
+  const s = [...xs].sort((a, b) => a - b);
+  return s.length === 0 ? null : s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+};
+var days2 = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+var DRAFT_CLAUSES = [
+  { field: "duration_months", label: "Contract duration", unit: "months", places: 0 },
+  { field: "bid_validity_days", label: "Bid validity", unit: "days", places: 0 },
+  { field: "performance_security_pct", label: "Performance security", unit: "%", places: 1 },
+  { field: "min_similar_contracts", label: "Minimum similar contracts", unit: "", places: 0 }
 ];
-function proposeTenderDraft(db, keyword) {
-  const ids = new Set(db.projects.filter((p) => matchesKeyword(p, keyword)).map((p) => p.project_id));
-  const drafts = db.tender_drafts.filter((d) => ids.has(d.project_id));
-  if (drafts.length === 0) return { missing: "No stored tender draft matches this sector, so no clause values are suggested." };
-  const from = drafts.map((d) => d.project_id);
-  const clauses = CLAUSES.map((c) => {
-    const values = drafts.map((d) => d[c.field]);
-    return { field: c.field, label: c.label, unit: c.unit, value: medianInt(values), sample_size: values.length, from };
-  });
-  const methods = Object.entries(tally2(drafts, (d) => d.evaluation_method)).sort((a, b) => b[1] - a[1]);
-  clauses.push({ field: "evaluation_method", label: "Evaluation method", unit: "", value: methods[0][0], sample_size: drafts.length, from });
-  const lessons = db.completion_reports.flatMap((r) => r.lessons.map((l) => ({ report: r.id, project: r.project_name, lesson: l.text, chunk_id: l.chunk_id })));
-  return { clauses, lessons, filtered_by: keyword?.trim() || "all stored drafts" };
+function suggestTenderClauses(db, keyword, scope = "auto") {
+  const clauses = [];
+  const notes = [];
+  const round2 = (x, places) => Math.round(x * 10 ** places) / 10 ** places;
+  if (scope !== "mock") {
+    const real = scopedDb(db, "real");
+    const wanted = keyword?.trim() ? matchProjects(real.projects, keyword) : real.projects;
+    const projects = wanted.length > 0 ? wanted : real.projects;
+    if (keyword?.trim() && wanted.length === 0 && real.projects.length > 0) notes.push(`No real project matches "${keyword}", so all ${real.projects.length} real projects are used for the figures from real data.`);
+    const ids = new Set(projects.map((p) => p.project_id));
+    const periods = real.tender_notices.filter((t) => ids.has(t.project_id) && t.deadline).map((t) => days2(t.posted, t.deadline)).filter((d) => d >= 3 && d <= 365);
+    if (periods.length > 0) {
+      clauses.push({ field: "bid_submission_days", label: "Bid submission period", unit: "days", value: round2(median3(periods), 0), sample_size: periods.length, from: [`${periods.length} tender notices`], source: "real", basis: `Median days between a real tender notice being posted and its bids being due, across ${periods.length} notices of ${ids.size} real projects.` });
+    }
+    const works = real.contracts.filter((c) => ids.has(c.project_id) && /works/i.test(c.procurement_category) && c.supplier_contract_amount_usd > 0).map((c) => c.supplier_contract_amount_usd);
+    if (works.length > 0) {
+      clauses.push({ field: "reference_works_contract_usd", label: "Typical works contract size", unit: "USD", value: round2(median3(works), 0), sample_size: works.length, from: [`${works.length} contracts`], source: "real", basis: `Median amount of ${works.length} real works contracts. Set the minimum similar contract value near the size of your own contract; this is a reference, not a rule.` });
+    }
+  }
+  let lessons = [];
+  let draftIds = [];
+  if (scope !== "real") {
+    const mock = scopedDb(db, "mock");
+    const sector = (keyword?.trim() ? matchProjects(mock.projects, keyword) : mock.projects).map((p) => p.project_id);
+    const preferred = mock.tender_drafts.filter((d) => sector.includes(d.project_id));
+    const drafts = preferred.length > 0 ? preferred : mock.tender_drafts;
+    draftIds = drafts.map((d) => d.project_id);
+    if (drafts.length > 0) {
+      if (preferred.length === 0 && keyword?.trim()) notes.push(`No stored draft is for "${keyword}", so all ${drafts.length} stored demonstration drafts are used, whatever their sector.`);
+      for (const c of DRAFT_CLAUSES) {
+        const value2 = round2(median3(drafts.map((d) => d[c.field])), c.places);
+        clauses.push({ field: c.field, label: c.label, unit: c.unit, value: value2, sample_size: drafts.length, from: draftIds, source: "mock", basis: `Median of ${drafts.length} stored demonstration ${drafts.length === 1 ? "draft" : "drafts"} (illustrative, not real tender data).` });
+      }
+      const value = round2(median3(drafts.map((d) => d.min_similar_value_usd)), 0);
+      clauses.push({ field: "min_similar_value_usd", label: "Minimum similar contract value", unit: "USD", value, sample_size: drafts.length, from: draftIds, source: "mock", basis: `Median of ${drafts.length} stored demonstration ${drafts.length === 1 ? "draft" : "drafts"} (illustrative).` });
+      const [method, n] = Object.entries(drafts.reduce((acc, d) => ({ ...acc, [d.evaluation_method]: (acc[d.evaluation_method] ?? 0) + 1 }), {})).sort((a, b) => b[1] - a[1])[0];
+      clauses.push({ field: "evaluation_method", label: "Evaluation method", unit: "", value: method, sample_size: drafts.length, from: draftIds, source: "mock", basis: `Most common in ${drafts.length} stored demonstration drafts (${n} of ${drafts.length}; illustrative).` });
+    }
+    lessons = mock.completion_reports.flatMap((r) => r.lessons.map((l) => ({ report: r.id, project: r.project_name, lesson: l.text, chunk_id: l.chunk_id, source: "mock" })));
+  }
+  if (clauses.length === 0) return { missing: scope === "real" ? "The real projects hold no tender clauses and no tender notices or contracts to work from, so no clauses are suggested." : "No tender drafts are stored, so no clause values are suggested." };
+  if (scope === "real") notes.push("Only figures from real data are used, so the clauses the real data cannot support (bid validity, contract duration, security, qualification, evaluation method) are left out.");
+  else if (clauses.some((c) => c.source === "mock")) notes.push("Clauses marked as demonstration come from the stored demonstration drafts. They are placeholders to review, not benchmarks.");
+  return { clauses, lessons, filtered_by: keyword?.trim() || "all stored data", notes };
 }
+function suggestPlan(db, input, scope = "auto") {
+  if (scope !== "mock") {
+    const real = proposePlan(scopedDb(db, "real"), input);
+    if (!("missing" in real) || scope === "real") return { data_kind: scopeLabel("real"), ...real };
+  }
+  const mock = scopedDb(db, "mock");
+  const first = proposePlan(mock, input);
+  const result = "missing" in first ? proposePlan(mock, { ...input, keyword: void 0, category: void 0 }) : first;
+  if ("missing" in result) return { data_kind: scopeLabel("mock"), ...result };
+  const loose = "missing" in first;
+  return {
+    data_kind: scopeLabel("mock"),
+    ...result,
+    note: `${scope === "auto" ? "The real projects give only an expected bid opening, not the four stage dates a plan needs, so this plan comes from the stored demonstration plans (illustrative). " : ""}${loose ? `No stored plan matches ${[input.keyword, input.category].filter(Boolean).join(" / ") || "the request"}, so all stored plans are used, whatever their sector.` : ""}`.trim()
+  };
+}
+
+// packages/data/src/lifecycleOptions.ts
+var MONITORING_OPTIONS = [
+  { id: "disbursement-chart", title: "Disbursement against time chart", what: "The share of money disbursed against the share of time used, from each supervision report, with the lag that raises an alert.", uses: "Supervision reports" },
+  { id: "project-schedule", title: "Project schedule", what: "The planned and actual progress of each activity on a timeline, with the ones running behind flagged.", uses: "Schedule items entered by the team" },
+  { id: "early-warning", title: "Early-warning board", what: "Alerts for a rating drop, a risk increase, a disbursement lag, a contract past its end date and many amendments, urgent ones first, each assignable.", uses: "Supervision reports, contracts, amendments" }
+];
+var LEARNING_OPTIONS = [
+  { id: "feedback-queue", title: "Feedback queue", what: "Every suggestion can be rated Helpful or Not helpful; reviewers accept, edit or reject each one, and every decision is logged.", uses: "Ratings from users, reviewers" },
+  { id: "learning-figures", title: "Learning figures", what: "How many pieces of feedback came in, how many were reviewed and how many accepted, worked out from the queue.", uses: "The feedback queue" }
+];
 
 // server/copilot.ts
 var COPILOT_BASE_PATH = "/api/copilotkit";
@@ -452,9 +511,9 @@ var SYSTEM_PROMPT = `GUARDRAILS. These come first and override everything below.
 
 A. Show the view, do not retell it. For any request about suppliers, contracts, sources, documents or the knowledge base, conflicts or evidence, planning, tender design, monitoring, learning, a proposed plan or tender draft, or the whole lifecycle: call find_views with the user's own words, then call the tool it names (show_stage, show_tool, show_lifecycle, propose_plan or propose_tender_draft) with the project id. The app already has a view for these, so never answer them with a paragraph or a list of rows. Questions about where the data comes from or which sources exist are answered with the Knowledge base view. A request to show, list or see anything the app has a view for (for example "show the contracts" or "list the suppliers") is answered with find_views and then the view, not with find_contracts or another lookup. Use the lookup tools only to answer a specific question (a number, a name, a date), or to add a sentence after the view. Never say you showed, displayed or opened something unless a show_* or propose_* tool call did it. After a view is on screen, add one or two sentences and do not repeat the figures it shows. If find_views returns no view, say the app has no view for that and answer only from the lookup tools.
 
-B. Real or mock, never both. Projects with ids like P158504 are REAL World Bank projects, ingested as stored snapshots. Projects with ids like P-MOCK-001 are MOCK demonstration data made up for this demo. Always say which kind you are talking about. If the user asks about real or World Bank projects, use only real projects and real data and offer only real-world options. Use mock data only when the user says mock or demo, or names a P-MOCK id. Never put a mock figure beside a real one, never use a mock plan or tender draft as a benchmark for a real project, and never offer a mixture. If the user asks to compare, combine or total mock and real data, do not put their figures side by side: explain in one sentence that one is demonstration data and the other is real, and offer to show each on its own. When a project id or name is unknown or unclear, do NOT list projects of both kinds: say it was not found and ask whether they mean a real World Bank project or a mock one, and list only that kind once they answer. When the user has not said which kind and no project is selected, ask one short question: real World Bank projects or the mock ones? When a project is selected, its kind is the kind. Tools take a scope argument: pass the kind the user asked for. When the real data has nothing for the request (for example the real projects have no saved plans or tender drafts), say it is missing and offer, as a separate choice the user must accept, to use the mock projects clearly labelled as mock.
+B. Real or mock, never both. Projects with ids like P158504 are REAL World Bank projects, ingested as stored snapshots. Projects with ids like P-MOCK-001 are MOCK demonstration data made up for this demo. Always say which kind you are talking about. If the user asks about real or World Bank projects, use only real projects and real data and offer only real-world options. Use mock data only when the user says mock or demo, or names a P-MOCK id. Never put a mock figure beside a real one, never put a mock figure beside a real one without saying which is which, and never offer a mixture of the two as one number. The one exception is a plan or tender draft suggested for the user's own procurement: the real projects hold no tender clauses or stage dates, so the suggestion uses real figures where they exist and the stored demonstration drafts and plans for the rest, loosely matched, each clause or plan saying which it is. If the user asks to compare, combine or total mock and real data, do not put their figures side by side: explain in one sentence that one is demonstration data and the other is real, and offer to show each on its own. When a project id or name is unknown or unclear, do NOT list projects of both kinds: say it was not found and ask whether they mean a real World Bank project or a mock one, and list only that kind once they answer. When the user has not said which kind and no project is selected, ask one short question: real World Bank projects or the mock ones? When a project is selected, its kind is the kind. Tools that list, search or look up take a scope argument: pass the kind the user asked for. propose_plan and propose_tender_draft take no scope: they always use real figures where the real data has them and the stored demonstration drafts and plans for the rest, and label each. When the real data has nothing for the request (for example the real projects have no saved plans or tender drafts), say it is missing and offer, as a separate choice the user must accept, to use the mock projects clearly labelled as mock.
 
-C. Two modes, never mixed. REVIEW: the user asks about a project that exists (its planning, tender design, monitoring, learning, suppliers, contracts, documents). Show what that project HAS on record with find_views and the view, and describe only recorded facts. Do not propose, suggest, estimate or draft anything for it; if it holds nothing for a stage, say it is missing. SUGGEST: the user asks you to propose, plan, estimate or advise for THEIR OWN procurement (for example "propose a lifecycle for my road", "how long should bidding take", "how long should the contract be valid"). Do not ask for a reference project and do not refuse for lack of one. Call propose_lifecycle (whole lifecycle), propose_plan (dated timeline) or propose_tender_draft (clauses), and give the estimates: medians of similar stored projects, each with how many it rests on. When real projects exist, show and quote only real data: propose_lifecycle returns only the real group, and a figure the real data does not hold is reported missing, not filled from mock data. Do not bring in mock figures or mention mock projects unless the user asks for them; then call propose_lifecycle with scope 'mock' and say the figures are illustrative demonstration data. Where the real data is missing a figure, say so plainly instead of inventing one. A request for help with "a project like X", "similar to X" or "the same kind as X" is also SUGGEST: the user's own new procurement modelled on X (a project or a country). Call propose_lifecycle straight away, with a keyword for the sector or country, and do not show X's own views or make X the current project unless the user asks to see X. Do not ask clarifying questions before estimating: call the tool with what you have. After a proposal card is on screen, reply with at most two short sentences (what it rests on and what is missing, naming the group) and do not repeat the figures it shows. Estimates are suggestions for the user's team to review, never promises. When the real data is missing something the user asked about, say so; you may offer mock data as a separate choice but never show it unprompted.
+C. Two modes, never mixed. REVIEW: the user asks about a project that exists (its planning, tender design, monitoring, learning, suppliers, contracts, documents). Show what that project HAS on record with find_views and the view, and describe only recorded facts. Do not propose, suggest, estimate or draft anything for it; if it holds nothing for a stage, say it is missing. SUGGEST: the user asks you to propose, plan, estimate or advise for THEIR OWN procurement (for example "propose a lifecycle for my road", "how long should bidding take", "how long should the contract be valid"). Do not ask for a reference project and do not refuse for lack of one. Call propose_lifecycle (whole lifecycle), propose_plan (dated timeline) or propose_tender_draft (clauses), and give the estimates: medians of similar stored projects, each with how many it rests on. When real projects exist, show and quote only real data for estimates (propose_lifecycle); for a plan (propose_plan) or tender clauses (propose_tender_draft), never answer "no tender to suggest" or "no plan to suggest" because the real data lacks them: call the tool, which falls back to the stored demonstration drafts and plans, then tell the user which clauses or dates are real and which are demonstration. For estimates: propose_lifecycle returns only the real group, and a figure the real data does not hold is reported missing, not filled from mock data. Do not bring in mock figures or mention mock projects unless the user asks for them; then call propose_lifecycle with scope 'mock' and say the figures are illustrative demonstration data. Where the real data is missing a figure, say so plainly instead of inventing one. A request for help with "a project like X", "similar to X" or "the same kind as X" is also SUGGEST: the user's own new procurement modelled on X (a project or a country). Call propose_lifecycle straight away, with a keyword for the sector or country, and do not show X's own views or make X the current project unless the user asks to see X. Do not ask clarifying questions before estimating: call the tool with what you have. After a proposal card is on screen, reply with at most two short sentences (what it rests on and what is missing, naming the group) and do not repeat the figures it shows. Estimates are suggestions for the user's team to review, never promises. When the real data is missing something the user asked about, say so; you may offer mock data as a separate choice but never show it unprompted.
 
 D. The user's own lifecycle. The user can build one lifecycle of their own (one per session) by pressing "Add to my lifecycle" on a suggestion card: a plan, tender clauses, estimates, monitoring features, learning features. You cannot add anything yourself and must never say you did, or that something "was added for you": the user added it. Say "you added" or "your lifecycle has", and say the card has an Add button. The context holds their lifecycle (its items and which stages are still empty): use it when they ask what they have or what is missing, and offer the next suggestion for an empty stage (plan, then tender clauses, then monitoring with propose_monitoring, then learning with propose_learning). To show it, call show_my_lifecycle. When they ask how they can evaluate or monitor a project, call propose_monitoring; when they ask how to add learning, call propose_learning.
 
@@ -568,7 +627,6 @@ function buildTools(loadDb) {
       name: "propose_plan",
       description: `Suggest a plan (advertisement, bid opening, evaluation complete, signing dates) for the USER's own procurement, worked out from the stored plans. Give start_date (advertisement day) or signing_by (day the contract must be signed); either one alone is enough. The chat draws the timeline from the result, so call this instead of working out dates yourself. Dates are YYYY-MM-DD. start_date and signing_by are DIFFERENT dates: when the user gives only a deadline, pass only signing_by and leave start_date out. Pass ONLY what the user said: leave out signing_by, method and category unless the user gave them. Never fill a value with a guess or with "unknown".`,
       parameters: z2.object({
-        scope: scopeParam,
         start_date: z2.string().optional().describe("Advertisement date, YYYY-MM-DD"),
         signing_by: z2.string().optional().describe("Latest contract signing date, YYYY-MM-DD"),
         name: z2.string().optional().describe("What is being procured"),
@@ -576,13 +634,15 @@ function buildTools(loadDb) {
         method: z2.string().optional(),
         keyword: z2.string().optional().describe("Sector to take reference plans from, for example road, water, health")
       }),
-      execute: guard(({ scope, ...input }) => ({ data_kind: scopeLabel(scope), ...proposePlan(scopedDb(loadDb(), scope), input) }))
+      execute: guard((input) => suggestPlan(loadDb(), input))
     }),
     defineTool({
       name: "propose_tender_draft",
-      description: "Suggest tender clauses (duration, bid validity, performance security, similar-contract requirement, evaluation method) and lessons for the USER's own procurement, worked out from the stored tender drafts. The chat draws a table from the result, so call this instead of listing clause values yourself.",
-      parameters: z2.object({ scope: scopeParam, keyword: z2.string().optional().describe("Sector to take reference drafts from, for example road, water, health") }),
-      execute: guard(({ scope, keyword }) => ({ data_kind: scopeLabel(scope), ...proposeTenderDraft(scopedDb(loadDb(), scope), keyword) }))
+      description: "Suggest tender clauses for the USER's own procurement. Each clause comes from ONE source that it names: real data where the real projects support it (the bid submission period from real tender notices, a typical works contract size from real contracts), otherwise the stored demonstration drafts for bid validity, contract duration, security, similar contracts and evaluation method, matched loosely (sector is a preference, not a requirement). The chat draws the table from the result, so call this instead of listing clause values yourself. Always call it when the user asks to draft or suggest tender clauses, even when the request is about a real project or country: it does not need a matching draft.",
+      parameters: z2.object({
+        keyword: z2.string().optional().describe("Sector to prefer, for example road, water, health. It is a preference, not a requirement: with no match the other stored drafts are used.")
+      }),
+      execute: guard(({ keyword }) => suggestTenderClauses(loadDb(), keyword))
     }),
     defineTool({
       name: "search_documents",

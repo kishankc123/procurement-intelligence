@@ -36,6 +36,18 @@ export function scopedDb(db: AssistantDb, scope: DataScope): AssistantDb {
   }
 }
 
+/**
+ * The projects a keyword is about. The keyword is split into words: projects that have every word (in the name, sector or country) win; if none does,
+ * those that have any word; if none does either, nothing (the caller then says so and uses all). "road Liberia" finds the Liberia road project.
+ */
+export function matchProjects<T extends { project_name: string; project_global_practice: string; borrower_country: string }>(projects: T[], keyword?: string): T[] {
+  const words = (keyword ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3)
+  if (words.length === 0) return projects
+  const text = (p: T) => `${p.project_name} ${p.project_global_practice} ${p.borrower_country}`.toLowerCase()
+  const all = projects.filter((p) => words.every((w) => text(p).includes(w)))
+  return all.length > 0 ? all : projects.filter((p) => words.some((w) => text(p).includes(w)))
+}
+
 /** Null when the project may be used in this scope; otherwise a sentence the model can pass on, so a wrong mix is stopped and explained. */
 export function scopeProblem(db: AssistantDb, scope: DataScope, projectId?: string): string | null {
   if (!projectId) return null
