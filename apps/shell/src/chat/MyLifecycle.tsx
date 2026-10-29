@@ -1,7 +1,7 @@
 import { lazy, useRef, useState } from 'react'
 import { LIFECYCLE_STEPS } from '@pi/config'
 import { lifecycleStatus, useExampleProject, useMyLifecycle, type FeatureOption, type LifecycleItem, type LifecycleStage, type NewLifecycleItem } from '@pi/data'
-import { Badge, Button, Card, DonutNav, DownloadPng, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, Check, ConfirmDeleteDialog, DeleteButton, DonutNav, DownloadPng, EmptyState, Pencil, ProvenanceChip } from '@pi/ui'
 import { RemoteBoundary } from '../RemoteBoundary'
 import { STEP_COLOR } from '../stepColors'
 import { downloadLifecycleDocx } from './exportLifecycle'
@@ -99,6 +99,7 @@ function ItemRow({ item, onRemove, open, onToggle }: { item: LifecycleItem; onRe
   const update = useMyLifecycle((s) => s.update)
   const setFinal = useMyLifecycle((s) => s.setFinal)
   const [editing, setEditing] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const inList = open !== undefined
   const shown = !inList || open
   // The plan and the tender clauses are the application's suggestion until the user changes them; then they are the user's own, and can be saved as final.
@@ -112,22 +113,26 @@ function ItemRow({ item, onRemove, open, onToggle }: { item: LifecycleItem; onRe
           {item.final && <> <Badge tone="low">Final</Badge></>}{isSample(item) && <> <Badge tone="medium">Sample</Badge></>}
           <p className={styles.sub}>{inList && !open ? item.summary : `Basis: ${item.basis}${item.edited ? ' Edited by you.' : ''}`}</p>
         </div>
-        <div className={styles.row} data-export-ignore="">
+        <div className={styles.headActions} data-export-ignore="">
           {inList && <Button onClick={() => { if (open) setEditing(false); onToggle?.() }} aria-expanded={open}>{open ? 'Hide' : 'View'}</Button>}
           {editable && !editing && (
             <>
-              <Button variant="primary" onClick={() => { if (inList && !open) onToggle?.(); setEditing(true) }} disabledReason={item.final ? 'Saved as final. Reopen it to edit.' : undefined}>Edit</Button>
-              {item.final ? <Button onClick={() => setFinal(item.id, false)}>Reopen</Button> : <Button variant="success" onClick={() => setFinal(item.id, true)}>Save as final</Button>}
+              <Button variant="primary" onClick={() => { if (inList && !open) onToggle?.(); setEditing(true) }} disabledReason={item.final ? 'Saved as final. Reopen it to edit.' : undefined}><Pencil size={16} aria-hidden="true" />Edit</Button>
+              {item.final ? <Button onClick={() => setFinal(item.id, false)}>Reopen</Button> : <Button variant="success" onClick={() => setFinal(item.id, true)}><Check size={16} aria-hidden="true" />Save as final</Button>}
             </>
           )}
           {shown && <DownloadPng targetRef={ref} name={item.title} />}
-          <Button onClick={onRemove}>Remove</Button>
         </div>
       </div>
       {shown && editing && item.kind === 'plan' && <PlanEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
       {shown && editing && item.kind === 'tender-clauses' && <ClausesEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
       {shown && editing && item.kind === 'estimates' && <EstimatesEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
       {shown && !editing && <ItemView item={item} />}
+      {/* Remove sits under the data, on the right edge. It asks first, like deleting a plan. */}
+      <div className={styles.itemFoot} data-export-ignore="">
+        <DeleteButton label="Remove" onClick={() => setConfirming(true)} />
+      </div>
+      <ConfirmDeleteDialog open={confirming} onOpenChange={setConfirming} what="item from your lifecycle" detail={item.title} onConfirm={() => { setConfirming(false); onRemove() }} />
     </li>
   )
 }

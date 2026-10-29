@@ -40,3 +40,7 @@
 .error { margin: 0; color: var(--danger); font-size: 0.93em; }
 .formHead { margin: 4px 0 0; font-size: 0.93em; }
 .hint { margin: 0; color: var(--muted); font-size: 0.86em; }
+
+/* Edit, Save as final (and View, PNG) on the right edge of the heading; Remove under the data, also on the right edge. */
+.headActions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+.itemFoot { display: flex; justify-content: flex-end; }
