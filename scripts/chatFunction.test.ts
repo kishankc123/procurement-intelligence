@@ -18,7 +18,7 @@ describe('the Vercel chat function copy (api/_lib/assistant.js)', () => {
     }
   })
 
-  it('has an up to date CopilotKit runtime bundle (api/_lib/copilot.js)', () => {
+  it('has an up to date CopilotKit runtime bundle (api/_lib/copilot.mjs)', () => {
     expect(readFileSync(copilotTarget as string, 'utf8')).toBe((bundleCopilot as () => string)())
   })
 })

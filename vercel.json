@@ -9,7 +9,7 @@
     "api/chat.js": {
       "includeFiles": "mock/db.json"
     },
-    "api/copilotkit/[...path].js": {
+    "api/copilotkit/[...path].mjs": {
       "includeFiles": "mock/db.json"
     }
   },
