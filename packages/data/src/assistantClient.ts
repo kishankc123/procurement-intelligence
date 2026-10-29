@@ -9,7 +9,11 @@ export async function askAssistant(request: AssistantRequest): Promise<Assistant
   } catch {
     throw new Error('The assistant server did not answer. Start it with ./run.sh, or with pnpm assistant.')
   }
-  if (!res.ok) throw new Error(`The assistant server answered with an error (${res.status}).`)
+  if (!res.ok) {
+    // The server sends { error, detail } as JSON; show what it said so a failure explains itself.
+    const said = await res.json().then((b: { error?: string; detail?: string }) => [b.error, b.detail].filter(Boolean).join(' ')).catch(() => '')
+    throw new Error(`The assistant server answered with an error (${res.status}).${said ? ` ${said}` : ''}`)
+  }
   const parsed = AssistantReply.safeParse(await res.json())
   if (!parsed.success) throw new Error('The assistant server sent a reply this app does not understand.')
   return parsed.data
