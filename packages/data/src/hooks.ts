@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { get, send } from './api'
 import * as S from './schemas'
+import { pickExampleProject } from './exampleProject'
 import { emit } from '@pi/events'
 import { useCurrentUser } from './store'
 
@@ -24,6 +25,7 @@ export const useAllPlans = () => useQuery(list('plans', '/plans', S.Plan))
 export const usePlanPackages = (projectId: string) => useQuery(list('plan_packages', `/plan_packages?project_id=${q(projectId)}`, S.PlanPackage))
 export const useTenderNotices = (projectId: string) => useQuery(list('tender_notices', `/tender_notices?project_id=${q(projectId)}`, S.TenderNotice))
 export const useTenderDraft = (projectId: string) => useQuery(list('tender_drafts', `/tender_drafts?project_id=${q(projectId)}`, S.TenderDraft))
+export const useAllReports = () => useQuery(list('supervision_reports', '/supervision_reports', S.SupervisionReport))
 export const useReports = (projectId: string) => useQuery(list('supervision_reports', `/supervision_reports?project_id=${q(projectId)}`, S.SupervisionReport))
 export const useCompletionReports = () => useQuery(list('completion_reports', '/completion_reports', S.CompletionReport))
 export const useCountryYears = (country: string) => useQuery(list('country_years', `/country_years?country=${q(country)}`, S.CountryYear))
@@ -180,3 +182,10 @@ export const useRecordIngestionRun = () =>
     await send('POST', '/ingestion_runs', { ...r, id: `RUN-${Date.now()}`, ran_at: new Date().toISOString(), simulated: true })
     return { action: 'Ran ingestion (simulated)', target: r.link_id }
   })
+
+/** The stored project shown as an example wherever a user's own lifecycle needs data to draw (null while loading or when no project has reports). */
+export function useExampleProject(): S.Project | null {
+  const projects = useProjects().data
+  const reports = useAllReports().data
+  return projects && reports ? pickExampleProject(projects, reports) : null
+}

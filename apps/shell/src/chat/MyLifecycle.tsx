@@ -1,9 +1,82 @@
-import { useState } from 'react'
+import { lazy, useState } from 'react'
+import { z } from 'zod'
 import { LIFECYCLE_STEPS } from '@pi/config'
-import { lifecycleStatus, useMyLifecycle, type FeatureOption, type LifecycleStage, type NewLifecycleItem } from '@pi/data'
+import { lifecycleStatus, useExampleProject, useMyLifecycle, type FeatureOption, type LifecycleItem, type LifecycleStage, type NewLifecycleItem } from '@pi/data'
 import { Badge, Button, Card, DonutNav, EmptyState, ProvenanceChip } from '@pi/ui'
+import { RemoteBoundary } from '../RemoteBoundary'
 import { STEP_COLOR } from '../stepColors'
 import styles from './MyLifecycle.module.css'
+
+// The user's lifecycle is drawn with the micro front-ends' own components, the same ones a stored project's stages are made of.
+const PlanProposalCard = lazy(() => import('planning/PlanProposalCard'))
+const MonitoringFeature = lazy(() => import('monitoring/MonitoringFeature'))
+const LearningFeature = lazy(() => import('learning/LearningFeature'))
+
+const PlanDetail = z.object({
+  plan: z.object({ name: z.string(), category: z.string(), method: z.string(), planned_advertisement: z.string(), planned_bid_opening: z.string(), planned_evaluation_complete: z.string(), planned_signing: z.string() }),
+  basis: z.object({ sample_size: z.number(), projects: z.array(z.string()), median_total_days: z.number(), filtered_by: z.string() }),
+})
+const ClausesDetail = z.object({ clauses: z.array(z.object({ label: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]), source: z.enum(['real', 'mock']).optional() })) })
+const RowsDetail = z.object({ rows: z.array(z.object({ metric: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]).nullable(), n: z.number(), counts: z.string(), thin: z.boolean() })) })
+const FeatureDetail = z.object({ id: z.string() })
+
+/**
+ * One monitoring or learning feature, drawn by the monitoring or learning micro front-end. A user's own project has no data yet, so it is shown with a
+ * stored project's data as an example, and says so; their own data replaces it once they have it.
+ */
+export function FeatureView({ stage, featureId }: { stage: 'monitoring' | 'learning'; featureId: string }) {
+  const example = useExampleProject()
+  if (!example) return <EmptyState title="No example to draw" text="No stored project has the data this feature needs yet." />
+  return (
+    <div className={styles.feature}>
+      <p className={styles.sub}>Shown with the data of <strong>{example.project_name}</strong> <span className="mono">{example.project_id}</span> as an example. Your own project's data replaces it.</p>
+      {stage === 'monitoring'
+        ? <RemoteBoundary name="Monitoring"><MonitoringFeature feature={featureId as 'disbursement-chart' | 'project-schedule' | 'early-warning'} projectId={example.project_id} /></RemoteBoundary>
+        : <RemoteBoundary name="Learning"><LearningFeature feature={featureId as 'feedback-queue' | 'learning-figures'} projectId={example.project_id} /></RemoteBoundary>}
+    </div>
+  )
+}
+
+/** An item in the lifecycle, drawn the way its stage is drawn elsewhere: the plan on the planning calendar and timeline, clauses and figures as tables, features as the micro front-end's cards. */
+function ItemView({ item }: { item: LifecycleItem }) {
+  if (item.kind === 'plan') {
+    const d = PlanDetail.safeParse(item.detail)
+    if (d.success) return <RemoteBoundary name="Planning"><PlanProposalCard proposal={d.data} /></RemoteBoundary>
+  }
+  if (item.kind === 'tender-clauses') {
+    const d = ClausesDetail.safeParse(item.detail)
+    if (d.success) {
+      return (
+        <table className={styles.table}>
+          <tbody>
+            {d.data.clauses.map((c) => (
+              <tr key={c.label}><th scope="row">{c.label}</th><td>{typeof c.value === 'number' ? c.value.toLocaleString('en-US') : c.value}{c.unit ? ` ${c.unit}` : ''}</td><td>{c.source === 'mock' ? <Badge tone="medium">Demonstration</Badge> : c.source === 'real' ? <Badge tone="low">Real data</Badge> : null}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  }
+  if (item.kind === 'estimates') {
+    const d = RowsDetail.safeParse(item.detail)
+    if (d.success) {
+      return (
+        <table className={styles.table}>
+          <tbody>
+            {d.data.rows.filter((r) => r.value !== null).map((r) => (
+              <tr key={r.metric}><th scope="row">{r.metric}</th><td>{typeof r.value === 'number' ? r.value.toLocaleString('en-US') : r.value}{r.unit ? ` ${r.unit}` : ''}</td><td><ProvenanceChip kind="derived" detail={`n=${r.n} ${r.counts}`} />{r.thin && <> <Badge tone="medium">Thin sample</Badge></>}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  }
+  if (item.kind === 'monitoring-feature' || item.kind === 'learning-feature') {
+    const d = FeatureDetail.safeParse(item.detail)
+    if (d.success) return <FeatureView stage={item.kind === 'monitoring-feature' ? 'monitoring' : 'learning'} featureId={d.data.id} />
+  }
+  return null
+}
 
 const labelOf = (stage: LifecycleStage) => LIFECYCLE_STEPS.find((s) => s.id === stage)?.label ?? stage
 const STAGE_IDS = LIFECYCLE_STEPS.map((s) => s.id as LifecycleStage)
@@ -28,6 +101,7 @@ export function AddToLifecycle({ item, label = 'Add to my lifecycle' }: { item: 
 
 /** The monitoring or learning features the user can pick from, each with what it needs and an Add button. */
 export function FeatureOptions({ stage, title, options }: { stage: Extract<LifecycleStage, 'monitoring' | 'learning'>; title: string; options: FeatureOption[] }) {
+  const [preview, setPreview] = useState<string | null>(null)
   return (
     <Card title={title} aside={<ProvenanceChip kind="derived" detail="features of this app" />}>
       <ul className={styles.list}>
@@ -37,6 +111,8 @@ export function FeatureOptions({ stage, title, options }: { stage: Extract<Lifec
               <strong>{o.title}</strong>
               <p className={styles.sub}>{o.what}</p>
               <p className={styles.sub}>Uses: {o.uses}</p>
+              <Button onClick={() => setPreview(preview === o.id ? null : o.id)} aria-expanded={preview === o.id}>{preview === o.id ? 'Hide preview' : 'Preview'}</Button>
+              {preview === o.id && <FeatureView stage={stage} featureId={o.id} />}
             </div>
             <AddToLifecycle item={{ key: `${stage}:${o.id}`, stage, kind: stage === 'monitoring' ? 'monitoring-feature' : 'learning-feature', title: o.title, summary: o.what, basis: `A feature of this app. Uses: ${o.uses}.`, detail: o }} />
           </li>
@@ -98,13 +174,15 @@ export function MyLifecycleCard({ onSend }: { onSend?: (text: string) => void })
         ) : (
           <ul className={styles.list}>
             {byStage[shown].map((i) => (
-              <li key={i.id}>
-                <div>
-                  <strong>{i.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />
-                  <p className={styles.sub}>{i.summary}</p>
-                  <p className={styles.sub}>Basis: {i.basis}</p>
+              <li key={i.id} className={styles.item}>
+                <div className={styles.itemHead}>
+                  <div>
+                    <strong>{i.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />
+                    <p className={styles.sub}>Basis: {i.basis}</p>
+                  </div>
+                  <Button onClick={() => remove(i.id)}>Remove</Button>
                 </div>
-                <Button onClick={() => remove(i.id)}>Remove</Button>
+                <ItemView item={i} />
               </li>
             ))}
           </ul>

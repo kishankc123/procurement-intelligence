@@ -19,7 +19,7 @@ export default defineConfig({
     federation({
       name: 'learning',
       filename: 'remoteEntry.js',
-      exposes: { './Learning': './src/Learning.tsx', './LearningCard': './src/LearningCard.tsx' },
+      exposes: { './Learning': './src/Learning.tsx', './LearningCard': './src/LearningCard.tsx', './LearningFeature': './src/LearningFeature.tsx' },
       shared,
     }),
   ],

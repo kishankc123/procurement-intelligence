@@ -35,3 +35,11 @@ declare module 'learning/LearningCard' {
   const LearningCard: React.ComponentType<{ projectId: string }>
   export default LearningCard
 }
+declare module 'monitoring/MonitoringFeature' {
+  const MonitoringFeature: React.ComponentType<{ feature: 'disbursement-chart' | 'project-schedule' | 'early-warning'; projectId: string }>
+  export default MonitoringFeature
+}
+declare module 'learning/LearningFeature' {
+  const LearningFeature: React.ComponentType<{ feature: 'feedback-queue' | 'learning-figures'; projectId: string }>
+  export default LearningFeature
+}
