@@ -1,4 +1,4 @@
-.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
 .list li:last-child { border-bottom: 0; padding-bottom: 0; }
 .sub { margin: 2px 0 0; color: var(--muted); font-size: 0.93em; line-height: 1.45; }
@@ -18,9 +18,9 @@
 .facts button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 
 /* A lifecycle item with its own view under the heading, instead of a text summary. */
-.item { display: grid !important; gap: 8px; }
+.item { display: grid !important; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .itemHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.feature { display: grid; gap: 6px; margin-top: 8px; min-width: 0; }
+.feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-top: 8px; min-width: 0; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 6px 6px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; vertical-align: top; }
 .table th { color: var(--muted); width: 50%; }

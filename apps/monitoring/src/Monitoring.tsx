@@ -60,6 +60,7 @@ function DisbursementChart({ points }: { points: ChartPoint[] }) {
 
   return (
     <div className={styles.chart} ref={wrap}>
+      <div className={styles.chartScroll}>
       <svg
         ref={svgRef} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Disbursement versus time elapsed, one point per supervision report" width="100%"
         onMouseMove={(e) => nearest(e.clientX, e.clientY, e.currentTarget.getBoundingClientRect())}
@@ -100,6 +101,7 @@ function DisbursementChart({ points }: { points: ChartPoint[] }) {
         ))}
         {last >= 0 && points[last] && <text x={px(points[last].x) + 10} y={py(points[last].y) + 4} className={styles.alertText}>Latest report</text>}
       </svg>
+      </div>
 
       {current && pos && (
         <div

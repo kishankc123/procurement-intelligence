@@ -30,17 +30,17 @@ export function SuppliersCard({ projectId }: { projectId: string }) {
     <div className={styles.card}>
       <Card title="Suppliers on this project" aside={<ProvenanceChip kind="derived" detail={`n=${profiles.length}`} />}>
         <Paged items={profiles} label="suppliers" maxHeight="420px">{(rows) =>
-          <table className={styles.table}>
+          <table className={`${styles.table} ${styles.stack}`}>
             <thead><tr><th>Supplier</th><th>Contracts here</th><th>All projects</th><th>Committed here (USD)</th><th>Price change</th><th>Flags</th></tr></thead>
             <tbody>
               {rows.map((p) => (
                 <tr key={p.supplierId} className={p.supplierId === selected?.supplierId ? styles.selected : undefined}>
                   <td><button type="button" className={styles.pick} aria-pressed={p.supplierId === pickedId} onClick={() => setPickedId(p.supplierId === pickedId ? null : p.supplierId)}><SupplierName name={p.name} /><span className={`${styles.mono} ${styles.sub}`}>{p.supplierId}</span></button></td>
-                  <td className={styles.mono}>{here(p).length}</td>
-                  <td className={styles.mono}>{p.contracts.length} on {p.projects.length}</td>
-                  <td className={styles.mono}>{usd(here(p).reduce((n, r) => n + r.contract.supplier_contract_amount_usd, 0))}</td>
-                  <td className={styles.mono}>{p.gate.ok ? signed(p.priceChangePct, '%') : <span className={styles.sub}>{signed(p.priceChangePct, '%')}</span>}</td>
-                  <td>{p.gate.ok ? (p.flags.length > 0 ? <Badge tone="high">{p.flags.length} flag{p.flags.length === 1 ? '' : 's'}</Badge> : <Badge tone="low">None</Badge>) : <Badge>Needs {p.gate.required} contracts ({p.gate.n} so far)</Badge>}</td>
+                  <td className={styles.mono} data-label="Contracts here">{here(p).length}</td>
+                  <td className={styles.mono} data-label="All projects">{p.contracts.length} on {p.projects.length}</td>
+                  <td className={styles.mono} data-label="Committed here (USD)">{usd(here(p).reduce((n, r) => n + r.contract.supplier_contract_amount_usd, 0))}</td>
+                  <td className={styles.mono} data-label="Price change">{p.gate.ok ? signed(p.priceChangePct, '%') : <span className={styles.sub}>{signed(p.priceChangePct, '%')}</span>}</td>
+                  <td data-label="Flags">{p.gate.ok ? (p.flags.length > 0 ? <Badge tone="high">{p.flags.length} flag{p.flags.length === 1 ? '' : 's'}</Badge> : <Badge tone="low">None</Badge>) : <Badge>Needs {p.gate.required} contracts ({p.gate.n} so far)</Badge>}</td>
                 </tr>
               ))}
             </tbody>

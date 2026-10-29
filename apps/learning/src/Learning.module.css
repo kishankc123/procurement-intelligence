@@ -21,3 +21,13 @@
 .chatCard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .chatSummary { line-height: 1.5; }
 .chatFigures { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+
+/* On a phone the feedback queue stacks: each item is a block with its rating, sender and status labelled and the Accept, Reject and Edit buttons under it,
+   so the buttons are not off the right edge of a sideways-scrolling table. */
+@media (max-width: 640px) {
+  .queue thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .queue, .queue tbody, .queue tr, .queue td { display: block; width: 100%; box-sizing: border-box; }
+  .queue tr { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .queue td { border: 0; padding: 2px 4px; }
+  .queue td[data-label]::before { content: attr(data-label) ': '; color: var(--muted); font-size: 12px; }
+}

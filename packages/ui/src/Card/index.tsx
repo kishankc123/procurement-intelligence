@@ -8,9 +8,9 @@ interface Props { title?: string; aside?: ReactNode; children: ReactNode; state?
 export function Card({ title, aside, children, state = 'ready' }: Props) {
   return (
     // overflow-visible: tooltips (the Monitoring chart) may extend past the card edge.
-    <ShadcnCard className="gap-3 overflow-visible py-4 ring-border [--card-spacing:--spacing(5)]">
+    <ShadcnCard className="gap-3 overflow-visible py-3 ring-border [--card-spacing:--spacing(3)] sm:py-4 sm:[--card-spacing:--spacing(5)]">
       {(title || aside) && (
-        <CardHeader className="flex items-baseline justify-between gap-3">
+        <CardHeader className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
           <CardTitle className="font-semibold">{title}</CardTitle>
           <div>{aside}</div>
         </CardHeader>

@@ -53,3 +53,11 @@
   color: #7a4a06;
   font-size: 13px;
 }
+
+/* Hover does not exist on a touch screen: the hover hint and the hover box give way to a plain "tap". */
+.touchOnly { display: none; }
+@media (hover: none) {
+  .hoverOnly { display: none; }
+  .touchOnly { display: inline; }
+  .info { display: none; }
+}

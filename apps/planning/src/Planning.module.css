@@ -38,3 +38,15 @@
 
 .chatCard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .chatSummary { line-height: 1.5; }
+
+/* On a phone the plans list stacks: each plan is a block with its dates labelled, instead of a 720px table to scroll sideways. */
+@media (max-width: 640px) {
+  .plans { min-width: 0; }
+  .plans thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .plans, .plans tbody, .plans tr, .plans td { display: block; width: 100%; box-sizing: border-box; }
+  .plans tr { padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .plans td { border: 0; padding: 2px 4px; }
+  .plans th:first-child, .plans td:first-child { min-width: 0; }
+  .plans td[data-label]::before { content: attr(data-label) ': '; color: var(--muted); font-size: 12px; font-family: var(--font, inherit); }
+  .plans td.expandedCell { padding: 0; }
+}

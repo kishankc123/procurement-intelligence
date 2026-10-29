@@ -57,15 +57,15 @@ export function FeedbackQueueCard({ projectId }: { projectId: string }) {
     <>
       <Card title="Feedback queue" aside={<span className={styles.sub}>Reviewer decides</span>}>
         {rows.length === 0 ? <EmptyState title="Queue is empty" /> : (
-          <Paged items={rows} label="feedback items" maxHeight="520px">{(pageRows) =><table className={styles.table}>
+          <Paged items={rows} label="feedback items" maxHeight="520px">{(pageRows) =><table className={`${styles.table} ${styles.queue}`}>
             <thead><tr><th>Recommendation</th><th>Rating</th><th>From</th><th>Status</th><th>Decision</th><th>Edit</th></tr></thead>
             <tbody>
               {pageRows.map((f) => (
                 <tr key={f.id}>
                   <td>{titleOf(f.target_id)}<br /><span className="mono">{f.target_id}</span>{f.reason && <p className={styles.sub}>Note: {f.reason}</p>}</td>
-                  <td>{f.rating === 'helpful' ? 'Helpful' : 'Not helpful'}</td>
-                  <td>{f.role.replace('_', ' ')}</td>
-                  <td><Badge tone={STATUS_TONE[f.status]}>{f.status}</Badge></td>
+                  <td data-label="Rating">{f.rating === 'helpful' ? 'Helpful' : 'Not helpful'}</td>
+                  <td data-label="From">{f.role.replace('_', ' ')}</td>
+                  <td data-label="Status"><Badge tone={STATUS_TONE[f.status]}>{f.status}</Badge></td>
                   <td>
                     <div className={styles.actions}><Button variant="success" onClick={() => review.mutate({ id: f.id, status: 'accepted' })} disabledReason={reason_}><Check size={16} aria-hidden="true" />Accept</Button>
                     <Button variant="danger" onClick={() => review.mutate({ id: f.id, status: 'rejected' })} disabledReason={reason_}><X size={16} aria-hidden="true" />Reject</Button></div>

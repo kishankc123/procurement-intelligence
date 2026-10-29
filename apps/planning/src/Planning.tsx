@@ -153,10 +153,10 @@ export function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(p.id === selectedId ? null : p.id) } }}
               >
                 <td>{p.name}<br /><span className={`mono ${styles.nowrap}`}>{p.id}</span></td>
-                {!compact && <><td>{p.category}</td><td>{p.method}</td></>}
-                <td className={`mono ${styles.nowrap}`}>{p.planned_advertisement}</td>
-                <td className={`mono ${styles.nowrap}`}>{p.planned_signing}</td>
-                <td className={`mono ${styles.nowrap}`}>{plannedDurations(p).advertisementToSigning}</td>
+                {!compact && <><td data-label="Category">{p.category}</td><td data-label="Method">{p.method}</td></>}
+                <td className={`mono ${styles.nowrap}`} data-label="Advertisement">{p.planned_advertisement}</td>
+                <td className={`mono ${styles.nowrap}`} data-label="Signing">{p.planned_signing}</td>
+                <td className={`mono ${styles.nowrap}`} data-label="Days to sign">{plannedDurations(p).advertisementToSigning}</td>
                 <td onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                   <DeleteButton onClick={() => onDelete(p.id)} disabledReason={allowed ? undefined : whyDisabled('edit_plan')} />
                 </td>

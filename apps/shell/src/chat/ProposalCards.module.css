@@ -1,11 +1,11 @@
-.card { display: grid; gap: 10px; }
+.card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .lead { margin: 0; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--border); vertical-align: top; }
 .table th { color: var(--muted); font-weight: 500; font-size: 12px; border-top: 0; }
 .value { font-family: var(--mono); white-space: nowrap; }
 .basis { color: var(--muted); font-size: 12px; }
-.lessons { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.lessons { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .lessons li { display: grid; gap: 4px; }
 .note { margin: 0; color: var(--muted); }
 
@@ -15,3 +15,14 @@
 .scrollBox { overflow: auto; max-height: 22rem; }
 .scrollBox:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .scrollBox thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+
+/* On a phone the estimate and clause tables stack: figure, then estimate, then what it rests on, one under the other. */
+@media (max-width: 640px) {
+  .table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .table, .table tbody, .table tr, .table th, .table td { display: block; width: 100%; box-sizing: border-box; }
+  .table tr { border-top: 1px solid var(--border); padding: 8px 0; }
+  .table tr:first-child { border-top: 0; }
+  .table th, .table td { border: 0; padding: 2px 4px; text-align: left; }
+  .value { white-space: normal; }
+  .scrollBox { max-height: 28rem; }
+}

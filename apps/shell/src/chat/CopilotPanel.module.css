@@ -101,3 +101,7 @@
 .ctx { color: var(--muted); font-size: 0.93em; }
 .ctx strong { color: var(--text); }
 .ctx button { background: none; border: 0; color: var(--primary); font: inherit; cursor: pointer; padding: 2px 4px; }
+
+/* Assistant text is left aligned and not hyphenated: justified text with hyphens leaves wide gaps and split words on a narrow screen. */
+.panel :global([class~="cpk:prose"]) { text-align: left; hyphens: manual; -webkit-hyphens: manual; }
+.panel :global([class~="cpk:prose"]) p { text-align: left; }

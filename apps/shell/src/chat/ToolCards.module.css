@@ -7,7 +7,7 @@
 .pick { all: unset; cursor: pointer; display: grid; gap: 2px; }
 .pick:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 .selected { background: var(--selected); }
-.detail { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.detail { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
 .docRow { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 6px; margin: -4px -6px; border-radius: var(--radius-ctl); }
 .docRow:hover { background: var(--selected); }
 .docRow:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -16,3 +16,15 @@
 .docText strong { color: var(--link); font-weight: 600; }
 .sides { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
 .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* On a phone the suppliers, sources and documents tables stack with labelled values. The contracts table has ten or more columns, so it stays a sideways
+   scroller with its reference column pinned; reading it as stacked blocks would be a hundred lines a page. */
+@media (max-width: 640px) {
+  .stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .stack, .stack tbody, .stack tr, .stack td { display: block; width: 100%; box-sizing: border-box; }
+  .stack tr { padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .stack td { border: 0; padding: 2px 4px; }
+  .stack td[data-label]::before { content: attr(data-label) ': '; color: var(--muted); font-size: 12px; }
+  .stack td:empty { display: none; }
+  .wide th:first-child, .wide td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+}

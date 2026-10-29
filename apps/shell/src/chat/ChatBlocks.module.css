@@ -1,4 +1,4 @@
-.block { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); min-width: 0; }
+.block { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); min-width: 0; }
 .block h3 { font-size: 16px; }
 .ready { display: flex; align-items: center; gap: 8px; color: var(--prov-derived-fg); }
 .big { display: grid; justify-items: center; }
@@ -12,5 +12,9 @@
 .stageHead { display: flex; align-items: center; gap: 14px; }
 .small { width: clamp(100px, 24vw, 120px); flex-shrink: 0; }
 .fact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.blockWrap { display: grid; gap: 6px; min-width: 0; }
+.blockWrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; min-width: 0; }
 .rate { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+@media (max-width: 640px) {
+  .block { padding: 8px; }
+}

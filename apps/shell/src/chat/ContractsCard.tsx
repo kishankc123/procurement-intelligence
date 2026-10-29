@@ -30,7 +30,7 @@ export function ContractsCard({ projectId }: { projectId: string }) {
     <Card title="Contracts" aside={<ProvenanceChip kind="public" detail={`n=${rows.length}`} />}>
       <p className={styles.sub}>Public contract awards are locked. Tender facts are entered per contract and approved by a reviewer: {covered} of {total} contracts have approved entries so far.</p>
       <Paged items={rows} label="contracts" maxHeight="420px">{(page) =>
-        <table className={styles.table}>
+        <table className={`${styles.table} ${styles.wide}`}>
           <thead><tr><th>Reference</th><th>Supplier</th><th>Category</th><th>Amount (USD)</th><th>Signed</th>{ENRICHMENT_FIELDS.map((f) => <th key={f}>{FIELD_LABEL[f]}</th>)}</tr></thead>
           <tbody>
             {page.map((c) => {

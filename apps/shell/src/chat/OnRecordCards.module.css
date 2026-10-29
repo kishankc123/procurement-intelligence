@@ -21,7 +21,7 @@
 .clickable:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 .selected { background: var(--selected); }
 .table td.expandedCell { padding: 0; background: var(--bg); border-bottom: 1px solid var(--border); }
-.expanded { margin: 0 0 0 16px; padding: 10px 12px 12px; border-left: 3px solid var(--primary); display: grid; gap: 8px; font-size: 13px; }
+.expanded { margin: 0 0 0 16px; padding: 10px 12px 12px; border-left: 3px solid var(--primary); display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; font-size: 13px; }
 .expandedHead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 16px; margin: 0; }
 .facts div { min-width: 0; }
@@ -34,3 +34,18 @@
 .form label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
 .form input { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); color: var(--text); font: inherit; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+
+/* On a phone the tables stack: each row becomes a block with its figures labelled, instead of a wide table that has to be scrolled sideways. */
+@media (max-width: 640px) {
+  .rows { min-width: 0; }
+  .rows thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .rows, .rows tbody, .rows tr, .rows td { display: block; width: 100%; box-sizing: border-box; }
+  .rows tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+  .rows td { border: 0; padding: 2px 4px; }
+  .rows td.num { text-align: left; }
+  .rows td[data-label]::before { content: attr(data-label) ': '; color: var(--muted); font-size: 12px; }
+  .rows td.expandedCell { padding: 0; }
+  .rows td:empty { display: none; }
+  .rows td:first-child { min-width: 0; font-weight: 500; }
+  .scroll { max-height: 26rem; }
+}

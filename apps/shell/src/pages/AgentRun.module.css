@@ -1,11 +1,11 @@
-.run { display: grid; gap: 12px; min-width: 0; }
+.run { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .sub { color: var(--muted); font-size: 12.5px; }
-.log { display: grid; gap: 8px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: var(--radius-ctl); background: var(--surface); }
+.log { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px; border: 1px dashed var(--border); border-radius: var(--radius-ctl); background: var(--surface); }
 .logHead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .log ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .log li { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; animation: appear .25s ease; }
 .log li svg { color: var(--prov-derived-fg); flex-shrink: 0; margin-top: 2px; }
-.ready { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--prov-derived-fg); border-radius: var(--radius-ctl); background: var(--surface); }
+.ready { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 12px; border: 1px solid var(--prov-derived-fg); border-radius: var(--radius-ctl); background: var(--surface); }
 .ready h3 { display: flex; align-items: center; gap: 8px; font-size: 16px; color: var(--prov-derived-fg); }
 .stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .stage { display: grid; align-content: start; gap: 6px; padding: 10px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }

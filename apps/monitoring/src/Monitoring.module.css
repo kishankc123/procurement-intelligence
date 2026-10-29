@@ -30,3 +30,10 @@
 
 .chatCard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .chatSummary { line-height: 1.5; }
+
+/* On a phone the chart keeps a readable size (its labels would shrink to about 5px at the card's width), so the chart alone scrolls sideways inside its card. */
+@media (max-width: 640px) {
+  .chartScroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .chartScroll svg { min-width: 520px; }
+  .chart::after { content: 'Swipe sideways to see the whole chart.'; color: var(--muted); font-size: 12px; }
+}

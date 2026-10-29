@@ -26,13 +26,13 @@ export function KnowledgeCard({ projectId }: { projectId: string | null }) {
         : (
           <Card title="Source registry" aside={<Badge>Simulated fetch</Badge>}>
             <Paged items={list} label="sources" maxHeight="320px">{(rows) =>
-              <table className={styles.table}>
+              <table className={`${styles.table} ${styles.stack}`}>
                 <thead><tr><th>Source</th><th>Publisher</th><th>Kind</th><th>Status</th><th>Last fetched</th><th /></tr></thead>
                 <tbody>{rows.map((s) => (
                   <tr key={s.id}>
-                    <td>{s.name}<br /><span className={`${styles.mono} ${styles.sub}`}>{s.id}</span></td><td>{s.publisher}</td><td>{s.kind}</td>
-                    <td>{s.status === 'fetched' ? <Badge tone="low">Fetched (simulated)</Badge> : <Badge>Registered</Badge>}</td>
-                    <td className={styles.mono}>{s.last_fetched ?? <ProvenanceChip kind="missing" detail="never" />}</td>
+                    <td>{s.name}<br /><span className={`${styles.mono} ${styles.sub}`}>{s.id}</span></td><td data-label="Publisher">{s.publisher}</td><td data-label="Kind">{s.kind}</td>
+                    <td data-label="Status">{s.status === 'fetched' ? <Badge tone="low">Fetched (simulated)</Badge> : <Badge>Registered</Badge>}</td>
+                    <td className={styles.mono} data-label="Last fetched">{s.last_fetched ?? <ProvenanceChip kind="missing" detail="never" />}</td>
                     <td><Button onClick={() => fetchSource.mutate({ id: s.id })} disabled={fetchSource.isPending}>Fetch</Button></td>
                   </tr>
                 ))}</tbody>
@@ -46,7 +46,7 @@ export function KnowledgeCard({ projectId }: { projectId: string | null }) {
         : (
           <Card title="Documents" aside={<ProvenanceChip kind="public" detail={`n=${documents.length}`} />}>
             <Paged items={documents} label="documents" maxHeight="360px">{(rows) =>
-              <table className={styles.table}>
+              <table className={`${styles.table} ${styles.stack}`}>
                 <thead><tr><th>Document</th><th>Type</th><th>Date</th><th>Pages</th><th>Parse</th></tr></thead>
                 <tbody>{rows.map((d) => (
                   <tr key={d.doc_id}>
@@ -56,8 +56,8 @@ export function KnowledgeCard({ projectId }: { projectId: string | null }) {
                         <span className={styles.docText}><strong>{d.title}</strong><span className={`${styles.mono} ${styles.sub}`}>{d.doc_id}</span></span>
                       </button>
                     </td>
-                    <td>{d.type}</td><td className={styles.mono}>{d.date}</td><td className={styles.mono}>{d.pages > 0 ? d.pages : '—'}</td>
-                    <td><Badge tone={d.parse_status === 'parsed' ? 'low' : d.parse_status === 'failed' ? 'high' : 'medium'}>{d.parse_status}</Badge></td>
+                    <td data-label="Type">{d.type}</td><td className={styles.mono} data-label="Date">{d.date}</td><td className={styles.mono} data-label="Pages">{d.pages > 0 ? d.pages : '—'}</td>
+                    <td data-label="Parse"><Badge tone={d.parse_status === 'parsed' ? 'low' : d.parse_status === 'failed' ? 'high' : 'medium'}>{d.parse_status}</Badge></td>
                   </tr>
                 ))}</tbody>
               </table>}

@@ -10,7 +10,7 @@
 .use:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .sub { color: var(--muted); font-size: 12.5px; }
-.checks { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.checks { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
 .checks h4 { font-size: 14px; }
 .counts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 

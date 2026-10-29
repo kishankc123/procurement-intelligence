@@ -57,9 +57,9 @@ export function PlanOnRecord({ projectId }: { projectId: string }) {
                     <Fragment key={r.id}>
                       <tr {...rowProps(open, toggle)}>
                         <td>{r.description}<br /><span className={`mono ${styles.nowrap}`}>{r.ref_no ?? r.id}</span></td>
-                        <td className={styles.num}>{text(r.estimated_cost)}</td>
-                        <td>{text(r.method)}</td>
-                        <td className={styles.nowrap}>{text(r.expected_bid_opening)}</td>
+                        <td className={styles.num} data-label="Estimated cost">{text(r.estimated_cost)}</td>
+                        <td data-label="Method">{text(r.method)}</td>
+                        <td className={styles.nowrap} data-label="Expected bid opening">{text(r.expected_bid_opening)}</td>
                         <td>{r.edited && <Badge>Edited</Badge>}</td>
                       </tr>
                       {open && (
@@ -130,9 +130,9 @@ export function TenderNoticesOnRecord({ projectId }: { projectId: string }) {
                     <Fragment key={n.id}>
                       <tr {...rowProps(open, toggle)}>
                         <td>{text(n.description)}<br /><span className={`mono ${styles.nowrap}`}>{n.reference || n.id}</span></td>
-                        <td className={`mono ${styles.nowrap}`}>{n.posted}</td>
-                        <td className={`mono ${styles.nowrap}`}>{text(n.deadline)}</td>
-                        <td>{n.method}</td>
+                        <td className={`mono ${styles.nowrap}`} data-label="Posted">{n.posted}</td>
+                        <td className={`mono ${styles.nowrap}`} data-label="Bids due">{text(n.deadline)}</td>
+                        <td data-label="Method">{n.method}</td>
                         <td>{n.edited && <Badge>Edited</Badge>}</td>
                       </tr>
                       {open && (

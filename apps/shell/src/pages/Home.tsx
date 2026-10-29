@@ -39,7 +39,7 @@ export function Home() {
       {!engaged && (
         <section className={styles.hero} aria-labelledby="hero-title">
           <h1 id="hero-title" className={styles.heroTitle}>What the assistant sets up</h1>
-          <p className={styles.sub}>Four lifecycle steps on one traceable record. Hover a step to see what it does, or click one to ask the assistant about it.</p>
+          <p className={styles.sub}>Four lifecycle steps on one traceable record. <span className={styles.hoverOnly}>Hover a step to see what it does, or click one</span><span className={styles.touchOnly}>Tap a step</span> to ask the assistant about it.</p>
           <DonutNav
             ariaLabel="Project lifecycle"
             size="var(--donut)"
