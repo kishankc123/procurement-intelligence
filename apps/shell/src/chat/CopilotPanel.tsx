@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
-import { CopilotChat, CopilotKitProvider, useAgent, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool } from '@copilotkit/react-core/v2'
+import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool } from '@copilotkit/react-core/v2'
 import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, Block } from '@pi/data'
 import { BlockView } from './ChatBlocks'
@@ -11,9 +11,21 @@ const TOOL = z.enum(['suppliers', 'project-data', 'knowledge', 'evidence'])
 
 /** Draws one of our cards in the chat. A card is only drawn once the model has sent a block that passes the same schema the rule-based chat uses. */
 function Card({ block }: { block: unknown }) {
+  const send = useSendToChat()
   const parsed = Block.safeParse(block)
   if (!parsed.success) return null
-  return <BlockView block={parsed.data} onSend={() => undefined} />
+  return <BlockView block={parsed.data} onSend={send} />
+}
+
+/** What a click inside a card does: it says the same thing in the chat, as if the user had typed it, and the model answers. */
+function useSendToChat() {
+  const { agent } = useAgent()
+  const { copilotkit } = useCopilotKit()
+  return (text: string) => {
+    if (agent.isRunning) return
+    agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: text })
+    void copilotkit.runAgent({ agent })
+  }
 }
 
 /** The cards the model can show. Each is a frontend tool: the model chooses it, the shell draws it with live data. */

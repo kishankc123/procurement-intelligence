@@ -17,3 +17,45 @@
   background: #fde7e5;
   color: #8a1c14;
 }
+
+/* Theme only: CopilotKit's own colour variables, pointed at our tokens so the chat follows the app's palette (dark by default, light with data-theme="light").
+   CopilotKit uses names that clash with ours (--primary, --border, --muted), so our values are copied to --app-* on the panel first; a variable that points at its own name would be invalid.
+   They are set on the same element CopilotKit sets them on, so the selector has to be at least as specific as its own. */
+.panel {
+  --app-surface: var(--surface); --app-text: var(--text); --app-muted-text: var(--muted); --app-bg: var(--bg);
+  --app-border: var(--border); --app-primary: var(--primary); --app-selected: var(--selected); --app-danger: var(--danger);
+  --app-on-solid: var(--on-solid); --app-radius: var(--radius-ctl);
+}
+.panel :global([data-copilotkit]) {
+  --background: var(--app-surface);
+  --foreground: var(--app-text);
+  --card: var(--app-surface);
+  --card-foreground: var(--app-text);
+  --popover: var(--app-surface);
+  --popover-foreground: var(--app-text);
+  --primary: var(--app-primary);
+  --primary-foreground: var(--app-on-solid);
+  --secondary: var(--app-selected);
+  --secondary-foreground: var(--app-text);
+  --muted: var(--app-bg);
+  --muted-foreground: var(--app-muted-text);
+  --accent: var(--app-selected);
+  --accent-foreground: var(--app-text);
+  --destructive: var(--app-danger);
+  --destructive-foreground: var(--app-on-solid);
+  --border: var(--app-border);
+  --input: var(--app-border);
+  --ring: var(--app-primary);
+  --radius: var(--app-radius);
+  --cpk-default-font-family: var(--font);
+  --cpk-default-mono-font-family: var(--mono);
+  font-family: var(--font);
+}
+/* The input pill and suggestion chips carry their own light colours (CopilotKit only darkens them under a .dark ancestor), so set them from our tokens. */
+.panel :global(.copilotKitInput) {
+  background: var(--app-bg);
+  border: 1px solid var(--app-border);
+  color: var(--app-text);
+}
+.panel :global(.copilotKitInput textarea) { color: var(--app-text); }
+.panel :global(.copilotKitInput textarea::placeholder) { color: var(--app-muted-text); }
