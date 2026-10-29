@@ -24,13 +24,13 @@ const SEGMENTS = LIFECYCLE_STEPS.map((s) => ({ id: s.id, label: s.label, color: 
 const labelOf = (id: string) => LIFECYCLE_STEPS.find((s) => s.id === id)?.label ?? id
 
 /** The lifecycle donut. A click asks the assistant for that stage, so the transcript stays the record of what the user did. */
-function Donut({ activeId, onSend, compact, size, centre }: { activeId: string | null; onSend: (text: string) => void; compact?: boolean; size?: string; centre?: React.ReactNode }) {
+function Donut({ activeId, onSend, about, compact, size, centre }: { activeId: string | null; onSend: (text: string) => void; /** What the click is about, so the message names its project (" of Name (P123)") instead of leaving the assistant to guess. */ about: string; compact?: boolean; size?: string; centre?: React.ReactNode }) {
   const [hoverId, setHoverId] = useState<string | null>(null)
   return (
     <DonutNav
       ariaLabel="Project lifecycle" compact={compact} size={size} segments={SEGMENTS}
       activeId={hoverId ?? activeId} onActiveChange={setHoverId}
-      onSelect={(id) => onSend(`Show ${labelOf(id)}`)} centre={centre}
+      onSelect={(id) => onSend(`Show ${labelOf(id)}${about}`)} centre={centre}
     />
   )
 }
@@ -39,16 +39,17 @@ function Donut({ activeId, onSend, compact, size, centre }: { activeId: string |
 function BigDonut({ projectId, onSend, heading }: { projectId: string; onSend: (text: string) => void; heading: React.ReactNode }) {
   const project = useProjects().data?.find((p) => p.project_id === projectId)
   const facts = useStageFacts(projectId)
+  const about = ` of ${project?.project_name ?? projectId} (${projectId})`
   return (
     <section className={styles.block} aria-label="Project lifecycle">
       {heading}
       <div className={styles.big}>
-        <Donut activeId={null} onSend={onSend} size="min(380px, 100%)" centre={<span className={styles.centre}>{project?.project_name ?? projectId}</span>} />
+        <Donut activeId={null} onSend={onSend} about={about} size="min(380px, 100%)" centre={<span className={styles.centre}>{project?.project_name ?? projectId}</span>} />
       </div>
       <ul className={styles.facts}>
         {LIFECYCLE_STEPS.map((s) => (
           <li key={s.id} style={{ borderTopColor: STEP_COLOR[s.id] }}>
-            <button type="button" onClick={() => onSend(`Show ${s.label}`)}>{s.label}</button>
+            <button type="button" onClick={() => onSend(`Show ${s.label}${about}`)}>{s.label}</button>
             <span className={styles.sub}>{facts[s.id as LifecycleStage].text}</span>
             <ProvenanceChip kind={facts[s.id as LifecycleStage].kind} />
           </li>
@@ -79,7 +80,7 @@ function Stage({ step, projectId, onSend }: { step: LifecycleStage; projectId: s
   return (
     <section className={styles.block} aria-label={labelOf(step)}>
       <div className={styles.stageHead}>
-        <div className={styles.small}><Donut activeId={step} onSend={onSend} compact /></div>
+        <div className={styles.small}><Donut activeId={step} onSend={onSend} about={` of ${project?.project_name ?? projectId} (${projectId})`} compact /></div>
         <div>
           <p className={styles.eyebrow}>Lifecycle step</p>
           <h3>{labelOf(step)}</h3>

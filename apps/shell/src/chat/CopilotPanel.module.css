@@ -94,6 +94,10 @@
 }
 .panel :global(.copilotKitUserMessage) :global([class~="cpk:prose"]) p { margin: 0; text-align: left; }
 
-.lcBar { display: flex; justify-content: flex-end; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.lcBar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--border); }
 .lcBar button { background: none; border: 0; color: var(--primary); font: inherit; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
 .lcBar button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.ctx { color: var(--muted); font-size: 0.93em; }
+.ctx strong { color: var(--text); }
+.ctx button { background: none; border: 0; color: var(--primary); font: inherit; cursor: pointer; padding: 2px 4px; }
