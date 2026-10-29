@@ -5,7 +5,13 @@ import { Badge, CircleCheck, DonutNav, ProvenanceChip } from '@pi/ui'
 import { FeedbackWidget } from '@pi/domain'
 import { RemoteBoundary } from '../RemoteBoundary'
 import { STEP_COLOR } from '../stepColors'
+import { CardBoundary, MissingInfo } from './CardBoundary'
+import { ContractsCard } from './ContractsCard'
+import { KnowledgeCard } from './KnowledgeCard'
+import { SuppliersCard } from './SuppliersCard'
 import { TenderDraftCard } from './TenderDraftCard'
+import { EvidenceCard } from '../pages/Evidence'
+import tool from './ToolCards.module.css'
 import { useStageFacts } from './useStageFacts'
 import styles from './ChatBlocks.module.css'
 
@@ -88,8 +94,31 @@ function Stage({ step, projectId, onSend }: { step: LifecycleStage; projectId: s
  * (AI-LAYER-<layer>-<project>), so each kind of card has one layer name without a hyphen.
  */
 export function feedbackTarget(block: Block): string {
-  const layer = block.type === 'stage' ? (block.step === 'tender-design' ? 'tender' : block.step) : block.type
-  return `AI-LAYER-chat${layer}-${block.projectId}`
+  const layer = block.type === 'stage' ? (block.step === 'tender-design' ? 'tender' : block.step) : block.type === 'tool' ? block.tool.replace('-', '') : block.type
+  return `AI-LAYER-chat${layer}-${block.projectId ?? 'all'}`
+}
+
+const TOOL_TITLE: Record<Extract<Block, { type: 'tool' }>['tool'], string> = { suppliers: 'Suppliers', 'project-data': 'Project data', knowledge: 'Knowledge base', evidence: 'Evidence workbench' }
+
+/** One tool as a card. Tools that need a project say so (as missing information) when none is known; the knowledge base and evidence do not. */
+function ToolView({ block }: { block: Extract<Block, { type: 'tool' }> }) {
+  const project = useProjects().data?.find((p) => p.project_id === block.projectId)
+  const pid = block.projectId
+  return (
+    <section className={styles.block} aria-label={TOOL_TITLE[block.tool]}>
+      <div>
+        <p className={styles.eyebrow}>Tool</p>
+        <h3>{TOOL_TITLE[block.tool]}</h3>
+        <p className={styles.sub}>{pid ? <>{project?.project_name ?? pid} · <span className="mono">{pid}</span></> : 'All projects'}</p>
+      </div>
+      <div className={tool.card}>
+        {block.tool === 'suppliers' && (pid ? <SuppliersCard projectId={pid} /> : <MissingInfo title="Suppliers" text="Choose a project first: suppliers are listed per project." />)}
+        {block.tool === 'project-data' && (pid ? <ContractsCard projectId={pid} /> : <MissingInfo title="Contracts" text="Choose a project first: contracts are listed per project." />)}
+        {block.tool === 'knowledge' && <KnowledgeCard projectId={pid} />}
+        {block.tool === 'evidence' && <EvidenceCard projectId={pid} />}
+      </div>
+    </section>
+  )
 }
 
 function BlockBody({ block, onSend }: { block: Block; onSend: (text: string) => void }) {
@@ -100,6 +129,8 @@ function BlockBody({ block, onSend }: { block: Block; onSend: (text: string) => 
       return <BigDonut projectId={block.projectId} onSend={onSend} heading={<h3>The whole lifecycle</h3>} />
     case 'stage':
       return <Stage step={block.step} projectId={block.projectId} onSend={onSend} />
+    case 'tool':
+      return <ToolView block={block} />
   }
 }
 
@@ -107,7 +138,9 @@ function BlockBody({ block, onSend }: { block: Block; onSend: (text: string) => 
 export function BlockView({ block, onSend }: { block: Block; onSend: (text: string) => void }) {
   return (
     <div className={styles.blockWrap}>
-      <BlockBody block={block} onSend={onSend} />
+      <CardBoundary name={block.type === 'stage' ? labelOf(block.step) : block.type === 'tool' ? TOOL_TITLE[block.tool] : 'Lifecycle'}>
+        <BlockBody block={block} onSend={onSend} />
+      </CardBoundary>
       <div className={styles.rate}>
         <span className={styles.sub}>Was this useful?</span>
         <FeedbackWidget targetId={feedbackTarget(block)} />

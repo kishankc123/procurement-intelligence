@@ -19,7 +19,7 @@ const ROADMAP = [
 /** What a feedback target is, in words: a recommendation's title, or the layer or chat card the feedback was given on. */
 function useFeedbackTitles(projectId: string) {
   const recs = useRecommendations(projectId).data ?? []
-  const LAYER = { link: 'Work with AI · source link', ingestion: 'Work with AI · ingestion', records: 'Work with AI · record linking', schedule: 'Schedule', retender: 'Work with AI · retender check', spec: 'Tender design · specification checks', supplier: 'Suppliers · profile', chatready: 'Chat · ready summary', chatlifecycle: 'Chat · lifecycle', chatplanning: 'Chat · Planning card', chattender: 'Chat · tender draft', chatmonitoring: 'Chat · Monitoring cards', chatlearning: 'Chat · Learning card' } as const
+  const LAYER = { link: 'Work with AI · source link', ingestion: 'Work with AI · ingestion', records: 'Work with AI · record linking', schedule: 'Schedule', retender: 'Work with AI · retender check', spec: 'Tender design · specification checks', supplier: 'Suppliers · profile', chatready: 'Chat · ready summary', chatlifecycle: 'Chat · lifecycle', chatplanning: 'Chat · Planning card', chattender: 'Chat · tender draft', chatmonitoring: 'Chat · Monitoring cards', chatlearning: 'Chat · Learning card', chatsuppliers: 'Chat · Suppliers card', chatprojectdata: 'Chat · Contracts card', chatknowledge: 'Chat · Knowledge base card', chatevidence: 'Chat · Evidence workbench card' } as const
   return (id: string) => recs.find((r) => r.id === id)?.title ?? LAYER[id.split('-')[2] as keyof typeof LAYER] ?? id
 }
 

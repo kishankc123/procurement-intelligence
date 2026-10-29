@@ -25,7 +25,9 @@ export function Home() {
       ? { id: e.id, role: 'assistant', text: '', extra: <AgentRun entry={{ ...e, reply: e.reply }} onSend={send} /> }
       : { id: e.id, role: e.role, text: e.text })),
   ]
-  const suggestions = ['Help me with one of the mock projects', ...(projects.data ?? []).map((p) => `Help me with ${p.project_name}`)]
+  // Follow-ups come from the latest answer (they depend on the project and on what was just shown); before the first answer, a starter list.
+  const latest = [...chat].reverse().find((e) => e.reply)?.reply
+  const suggestions = latest?.suggestions ?? ['Help me with one of the mock projects', ...(projects.data ?? []).map((p) => `Help me with ${p.project_name}`), 'What is the data source?']
 
   return (
     <div className={styles.landing}>

@@ -262,6 +262,14 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Behaviour unchanged: POST only, 400 for a bad message, 405 otherwise, and any failure answers `{ error, detail }` which the chat shows. Preview deployments are protected by Vercel Authentication, so `curl` gets 401; use the browser while logged in, or turn the protection off for the demo.
 - Checked here: the function called directly under plain Node (POST, string body, GET 405, bad 400), 102 tests, `pnpm build:vercel`. Not checked here: the real Vercel deploy.
 
+## Block 52: tool cards, follow-up suggestions and missing-data fallbacks (chat step 6, nothing committed)
+- New things the assistant understands (`detectIntent`, rule-based, tested): the suppliers ("list the suppliers"), the project data / contracts, where the data comes from ("what is the data source?", "knowledge base", "documents"), and the evidence workbench (only when asked). A tool block is `{ type: 'tool', tool, projectId }`; the knowledge base and the evidence workbench work without a project (`projectId` null), suppliers and project data ask which project when none is known.
+- Cards in the chat (`apps/shell/src/chat/`): `SuppliersCard` (the project's suppliers with history across projects, paged, click for contracts), `ContractsCard` (the project's contracts, public columns locked, tender facts Missing / Pending review / Entered), `KnowledgeCard` (source registry and documents, no search box or type filter, a document opens full screen), `EvidenceCard` (the evidence workbench page split into a card that works with or without a project).
+- Every reply carries `suggestions`: follow-up prompts shown as the chat's chips (everything except what was just shown; before a project is chosen, the starter list including "What is the data source?").
+- Missing data: `withDefaults` treats missing collections as empty so the assistant never throws on a half-filled data file; each card shows a "Missing information" note (`MissingInfo`) instead of a blank; every card sits inside `CardBoundary`, which replaces a crashing card with that note and a Try again button while the rest of the chat keeps working (2 tests).
+- Learning labels the new feedback targets ("Chat · Suppliers card", "Chat · Contracts card", "Chat · Knowledge base card", "Chat · Evidence workbench card").
+- The Vercel copy `api/_lib/assistant.js` was regenerated (`pnpm build:chat`); its sync test passes. 114 tests pass; `pnpm build:vercel` assembles. Checked in the browser: the data-source answer with the registry and 18 documents, the suppliers list (20 suppliers, paged), the contracts table with Missing chips, and the evidence workbench for a project with no conflicts (Missing note).
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |
