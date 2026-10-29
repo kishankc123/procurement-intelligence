@@ -19,7 +19,9 @@ const db = withDefaults({
 
 describe('data tools', () => {
   it('lists projects and says which are real and which are mock', () => {
-    expect(listProjects(db).map((p) => p.kind)).toEqual(['real World Bank data (ingested snapshot)', 'mock'])
+    expect(listProjects(db).map((p) => p.kind)).toEqual(['real World Bank data (ingested snapshot)', 'mock demonstration data'])
+    expect(listProjects(db, 'real').map((p) => p.project_id)).toEqual(['P1'])
+    expect(listProjects(db, 'mock').map((p) => p.project_id)).toEqual(['P-MOCK-001'])
   })
   it('gives an overview with counts and the latest report, or says what is missing', () => {
     const o = projectOverview(db, 'P1') as { counts: { contracts: number }; latest_supervision_report: { sequence: number; disbursed_pct: number } }

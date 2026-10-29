@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool, useRenderTool } from '@copilotkit/react-core/v2'
 import { COPILOT_URL } from '@pi/config'
-import { useProjects, useUiStore, Block } from '@pi/data'
+import { useProjects, useUiStore, Block, projectScope, scopeLabel } from '@pi/data'
 import { BlockView } from './ChatBlocks'
 import { PlanProposal, TenderProposal } from './ProposalCards'
 import styles from './CopilotPanel.module.css'
@@ -13,8 +13,12 @@ const TOOL = z.enum(['suppliers', 'project-data', 'knowledge', 'evidence'])
 /** Draws one of our cards in the chat. A card is only drawn once the model has sent a block that passes the same schema the rule-based chat uses. */
 function Card({ block }: { block: unknown }) {
   const send = useSendToChat()
+  const projects = useProjects()
   const parsed = Block.safeParse(block)
   if (!parsed.success) return null
+  // A card for a project that does not exist says so, instead of drawing empty tables the model then talks about.
+  const id = parsed.data.projectId
+  if (id && projects.data && !projects.data.some((p) => p.project_id === id)) return <p role="status" className={styles.problem}>There is no project with id {id}.</p>
   return <div className={styles.cards}><BlockView block={parsed.data} onSend={send} /></div>
 }
 
@@ -32,25 +36,34 @@ function useSendToChat() {
 /** The cards the model can show. Each is a frontend tool: the model chooses it, the shell draws it with live data. */
 function useCardTools() {
   const setProject = useUiStore((s) => s.setProject)
+  const projects = useProjects()
+  const known = new Set((projects.data ?? []).map((p) => p.project_id))
+  /** Selects the project when it exists; otherwise the model gets a sentence it has to pass on, and the card says so too. */
+  const open = (projectId: string | null | undefined, shown: string) => {
+    if (!projectId) return shown
+    if (!known.has(projectId)) return `There is no project with id ${projectId}. Tell the user, and ask which project they mean.`
+    setProject(projectId)
+    return `${shown} (${scopeLabel(projectScope(projectId))}).`
+  }
   useFrontendTool({
     name: 'show_lifecycle',
     description: 'Show the whole lifecycle (planning, tender design, monitoring, learning) for a project as a card in the chat.',
     parameters: z.object({ projectId: z.string() }),
-    handler: async ({ projectId }) => { setProject(projectId); return `Showed the lifecycle for ${projectId}.` },
+    handler: async ({ projectId }) => open(projectId, `Showed the lifecycle for ${projectId}`),
     render: ({ args }) => <Card block={{ type: 'lifecycle', projectId: args.projectId }} />,
   })
   useFrontendTool({
     name: 'show_stage',
     description: 'Show one lifecycle stage (planning, tender-design, monitoring or learning) for a project as a card in the chat.',
     parameters: z.object({ step: STAGE, projectId: z.string() }),
-    handler: async ({ step, projectId }) => { setProject(projectId); return `Showed ${step} for ${projectId}.` },
+    handler: async ({ step, projectId }) => open(projectId, `Showed ${step} for ${projectId}`),
     render: ({ args }) => <Card block={{ type: 'stage', step: args.step, projectId: args.projectId }} />,
   })
   useFrontendTool({
     name: 'show_tool',
     description: 'Show a tool as a card: suppliers, project-data (contracts), knowledge (sources and documents) or evidence (conflicts). projectId may be omitted for knowledge and evidence.',
     parameters: z.object({ tool: TOOL, projectId: z.string().nullable().optional() }),
-    handler: async ({ tool, projectId }) => { if (projectId) setProject(projectId); return `Showed ${tool}.` },
+    handler: async ({ tool, projectId }) => open(projectId, `Showed ${tool}`),
     render: ({ args }) => <Card block={{ type: 'tool', tool: args.tool, projectId: args.projectId ?? null }} />,
   })
 }
@@ -76,16 +89,26 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
   const spoken = agent.messages.length > 0
   useEffect(() => { if (spoken) onEngage() }, [spoken, onEngage])
-  useAgentContext({ description: 'The project currently selected in the app, and the projects that exist (mock ones have ids like P-MOCK-001).', value: { selectedProjectId: projectId, projects: (projects.data ?? []).map((p) => ({ id: p.project_id, name: p.project_name })) } })
+  const firstReal = (projects.data ?? []).find((p) => projectScope(p.project_id) === 'real')
+  const selected = (projects.data ?? []).find((p) => p.project_id === projectId)
+  useAgentContext({
+    description: 'The project selected in the app and the projects that exist. kind says whether each is real World Bank data or mock demo data. Never mix the two kinds in one answer.',
+    value: {
+      selectedProject: selected ? { id: selected.project_id, name: selected.project_name, kind: scopeLabel(projectScope(selected.project_id)) } : null,
+      projects: (projects.data ?? []).map((p) => ({ id: p.project_id, name: p.project_name, kind: projectScope(p.project_id) })),
+    },
+  })
   useConfigureSuggestions({
     suggestions: [
       { title: 'Plan my procurement', message: 'I want to procure a new road rehabilitation project. Using the mock projects as reference, help me plan it: which stages, how long each takes, and which procurement methods to use.' },
       { title: 'Draft a tender', message: 'Help me draft a tender for works on a rural water supply scheme. Use the mock projects as sources for bid validity, duration, performance security and evaluation method, and tell me what the data cannot answer.' },
       { title: 'Lessons learned', message: 'What lessons from the completion reports should I apply when I design tenders for a new project?' },
       { title: 'Compare the projects', message: 'Compare the three mock projects: how long their plans take, their methods and their tender clauses.' },
-      { title: 'Data source', message: 'What is the data source?' },
+      { title: 'Real projects', message: 'Which real World Bank projects do you have?' },
+      ...(firstReal ? [{ title: 'Real suppliers', message: `Show the suppliers of the real project ${firstReal.project_name}.` }] : []),
+      { title: 'Data source', message: 'What are the data sources?' },
     ],
-    available: 'before-first-message' })
+    available: 'before-first-message' }, [firstReal?.project_id])
   return (
     <div className={styles.panel} onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) onEngage() }}>
       <CopilotChat />

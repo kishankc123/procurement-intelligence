@@ -2,13 +2,15 @@
 // so they are tested here and the server only wraps them. Every result is short and carries ids the model can cite.
 import { buildDossier, type AssistantDb } from './assistant'
 import type { Project } from './schemas'
+import { projectScope, scopeLabel, type DataScope } from './scope'
 
-const isReal = (p: Project) => !/^P-MOCK/i.test(p.project_id)
+const kindOf = (p: Project) => scopeLabel(projectScope(p.project_id))
 
-export function listProjects(db: AssistantDb) {
-  return db.projects.map((p) => ({
+/** Every project, or only the real or only the mock ones when a scope is given. */
+export function listProjects(db: AssistantDb, scope?: DataScope) {
+  return db.projects.filter((p) => !scope || projectScope(p.project_id) === scope).map((p) => ({
     project_id: p.project_id, name: p.project_name, country: p.borrower_country, sector: p.project_global_practice,
-    kind: isReal(p) ? 'real World Bank data (ingested snapshot)' : 'mock',
+    kind: kindOf(p),
   }))
 }
 
@@ -19,7 +21,7 @@ export function projectOverview(db: AssistantDb, projectId: string) {
   const latest = [...db.supervision_reports.filter((r) => r.project_id === projectId)].sort((a, b) => b.sequence - a.sequence)[0]
   return {
     project_id: project.project_id, name: project.project_name, country: project.borrower_country, region: project.region, sector: project.project_global_practice,
-    kind: isReal(project) ? 'real World Bank data (ingested snapshot)' : 'mock',
+    kind: kindOf(project),
     dates: { approval: project.approval_date, effectiveness: project.effectiveness_actual ?? project.effectiveness_planned, closing_planned: project.closing_date_planned, closing_revised: project.closing_date_revised },
     counts: dossier.counts,
     latest_supervision_report: latest
@@ -120,7 +122,7 @@ export function referencePractice(db: AssistantDb, keyword?: string) {
       const contracts = db.contracts.filter((c) => c.project_id === p.project_id)
       return {
         project_id: p.project_id, name: p.project_name, country: p.borrower_country, sector: p.project_global_practice,
-        kind: isReal(p) ? 'real World Bank data (ingested snapshot)' : 'mock',
+        kind: kindOf(p),
         tender_draft: draft
           ? { id: draft.id, duration_months: draft.duration_months, bid_validity_days: draft.bid_validity_days, performance_security_pct: draft.performance_security_pct, min_similar_contracts: draft.min_similar_contracts, min_similar_value_usd: draft.min_similar_value_usd, evaluation_method: draft.evaluation_method }
           : 'missing: no tender draft saved for this project',

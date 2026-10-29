@@ -4,6 +4,39 @@ import { z as z2 } from "zod";
 import { BuiltInAgent, CopilotRuntime, defineTool } from "@copilotkit/runtime/v2";
 import { createCopilotNodeListener } from "@copilotkit/runtime/v2/node";
 
+// packages/data/src/scope.ts
+var projectScope = (projectId) => /^P-MOCK/i.test(projectId) || projectId === "GENERAL" ? "mock" : "real";
+var scopeLabel = (scope) => scope === "real" ? "real World Bank data (ingested snapshot)" : "mock demonstration data";
+function scopedDb(db, scope) {
+  const inScope = (projectId) => projectScope(projectId) === scope;
+  const contracts = db.contracts.filter((c) => inScope(c.project_id));
+  const refs = new Set(contracts.map((c) => c.borrower_contract_reference_number));
+  const documents = db.documents.filter((d) => inScope(d.project_id));
+  const docIds = new Set(documents.map((d) => d.doc_id));
+  return {
+    ...db,
+    projects: db.projects.filter((p) => inScope(p.project_id)),
+    contracts,
+    plans: db.plans.filter((p) => inScope(p.project_id)),
+    tender_drafts: db.tender_drafts.filter((d) => inScope(d.project_id)),
+    supervision_reports: db.supervision_reports.filter((r) => inScope(r.project_id)),
+    completion_reports: db.completion_reports.filter((r) => inScope(r.project_id)),
+    documents,
+    chunks: db.chunks.filter((c) => docIds.has(c.doc_id)),
+    amendments: db.amendments.filter((a) => refs.has(a.contract_ref)),
+    enrichments: db.enrichments.filter((e) => refs.has(e.contract_ref)),
+    contract_milestones: db.contract_milestones.filter((m) => refs.has(m.contract_ref)),
+    conflicts: db.conflicts.filter((c) => inScope(c.project_id)),
+    sources: db.sources.filter((s) => s.id.startsWith("SRC-WB-") ? scope === "real" : scope === "mock")
+  };
+}
+function scopeProblem(db, scope, projectId) {
+  if (!projectId) return null;
+  if (!db.projects.some((p) => p.project_id === projectId)) return `No project with id ${projectId}.`;
+  const actual = projectScope(projectId);
+  return actual === scope ? null : `${projectId} is ${scopeLabel(actual)}, but this request is about ${scopeLabel(scope)}. Do not mix them: ask the user which they mean.`;
+}
+
 // packages/data/src/assistant.ts
 import { z } from "zod";
 var AssistantRequest = z.object({
@@ -106,15 +139,46 @@ function buildDossier(db, project) {
   return { dossier, steps };
 }
 
+// packages/data/src/viewRegistry.ts
+var STAGE_VIEWS = {
+  planning: { title: "Planning", description: "Planned dates, packages, method and category, compared with country reference data.", keywords: ["planning", "plan", "schedule", "timeline", "package", "procurement plan", "gantt", "dates"] },
+  "tender-design": { title: "Tender design", description: "Tender clauses (duration, bid validity, security, qualification, evaluation method) with a draft to edit.", keywords: ["tender", "tender design", "draft", "clause", "bid validity", "qualification", "evaluation", "evaluate", "bidding document"] },
+  monitoring: { title: "Monitoring", description: "Early-warning alerts, ratings, disbursement against time, key dates and milestones.", keywords: ["monitoring", "monitor", "alert", "early warning", "risk", "rating", "disbursement", "supervision", "delay", "progress"] },
+  learning: { title: "Learning", description: "Feedback queue, accepted and rejected recommendations, lessons and the update log.", keywords: ["learning", "learn", "feedback", "lesson", "accepted", "rejected", "recommendation", "update log"] }
+};
+var TOOL_VIEWS = {
+  suppliers: { title: "Suppliers", description: "Who won contracts, how much, how often, and from which countries.", keywords: ["supplier", "vendor", "contractor", "awardee", "winner", "who won", "firm", "company", "consultant"] },
+  "project-data": { title: "Project data (contracts)", description: "The contracts of a project with amount, method, category and signing date, and what is entered versus public.", keywords: ["contract", "award", "amount", "signed", "procurement method", "category", "project data", "amendment", "works", "goods"] },
+  knowledge: { title: "Knowledge base", description: "The data sources and the documents ingested from them, with what each holds.", keywords: ["source", "knowledge base", "knowledge", "document", "report", "where does", "data source", "registry", "ingest", "citation", "evidence base", "chunk"] },
+  evidence: { title: "Evidence workbench", description: "Conflicts between sources and how each was resolved, with the evidence for each side.", keywords: ["conflict", "conflict between", "conflicting", "evidence", "workbench", "contradict", "disagree", "provenance", "validation", "resolve"] }
+};
+var VIEWS = [
+  { id: "lifecycle", title: "Whole lifecycle", description: "All four stages for one project with what was found in each.", show: { tool: "show_lifecycle", args: {} }, needsProject: true, keywords: ["lifecycle", "overview", "everything", "all stages", "summary of the project", "whole project"] },
+  ...STAGES.map((step) => ({ id: step, ...STAGE_VIEWS[step], show: { tool: "show_stage", args: { step } }, needsProject: true })),
+  ...TOOLS.map((tool) => ({ id: tool, ...TOOL_VIEWS[tool], show: { tool: "show_tool", args: { tool } }, needsProject: tool !== "knowledge" && tool !== "evidence" })),
+  { id: "plan-proposal", title: "Proposed plan", description: "A timeline for the user's own procurement, worked out from stored plans.", show: { tool: "propose_plan", args: {} }, needsProject: false, keywords: ["propose a plan", "plan my", "my procurement", "when should", "deadline", "start date", "sign by"] },
+  { id: "tender-draft-proposal", title: "Proposed tender draft", description: "Suggested clause values and lessons for the user's own tender.", show: { tool: "propose_tender_draft", args: {} }, needsProject: false, keywords: ["draft a tender", "tender draft", "my tender", "clauses for", "write a tender"] }
+];
+var stem = (w) => w.replace(/(ing|es|s)$/, "");
+var tokens = (s) => (s.toLowerCase().match(/[a-z0-9]+/g) ?? []).map(stem);
+function findViews(query, limit = 3) {
+  const q = tokens(query);
+  const has = (w) => q.includes(w) || q.some((t) => t.length >= 4 && w.length >= 4 && (t.startsWith(w) || w.startsWith(t)));
+  return VIEWS.map((view) => ({ view, score: view.keywords.reduce((n, k) => {
+    const ws = tokens(k);
+    return n + (ws.length > 0 && ws.every(has) ? ws.length + 1 : 0);
+  }, 0) })).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
 // packages/data/src/assistantData.ts
-var isReal = (p) => !/^P-MOCK/i.test(p.project_id);
-function listProjects(db) {
-  return db.projects.map((p) => ({
+var kindOf = (p) => scopeLabel(projectScope(p.project_id));
+function listProjects(db, scope) {
+  return db.projects.filter((p) => !scope || projectScope(p.project_id) === scope).map((p) => ({
     project_id: p.project_id,
     name: p.project_name,
     country: p.borrower_country,
     sector: p.project_global_practice,
-    kind: isReal(p) ? "real World Bank data (ingested snapshot)" : "mock"
+    kind: kindOf(p)
   }));
 }
 function projectOverview(db, projectId) {
@@ -128,7 +192,7 @@ function projectOverview(db, projectId) {
     country: project.borrower_country,
     region: project.region,
     sector: project.project_global_practice,
-    kind: isReal(project) ? "real World Bank data (ingested snapshot)" : "mock",
+    kind: kindOf(project),
     dates: { approval: project.approval_date, effectiveness: project.effectiveness_actual ?? project.effectiveness_planned, closing_planned: project.closing_date_planned, closing_revised: project.closing_date_revised },
     counts: dossier.counts,
     latest_supervision_report: latest ? { date: latest.date, sequence: latest.sequence, progress_rating: latest.progress_rating, progress_rating_previous: latest.progress_rating_prev, implementation_rating: latest.implementation_rating, overall_risk: latest.overall_risk, fiduciary_risk: latest.fiduciary_risk, disbursed_pct: latest.disbursed_pct } : "missing: no supervision reports"
@@ -200,7 +264,7 @@ function referencePractice(db, keyword) {
         name: p.project_name,
         country: p.borrower_country,
         sector: p.project_global_practice,
-        kind: isReal(p) ? "real World Bank data (ingested snapshot)" : "mock",
+        kind: kindOf(p),
         tender_draft: draft ? { id: draft.id, duration_months: draft.duration_months, bid_validity_days: draft.bid_validity_days, performance_security_pct: draft.performance_security_pct, min_similar_contracts: draft.min_similar_contracts, min_similar_value_usd: draft.min_similar_value_usd, evaluation_method: draft.evaluation_method } : "missing: no tender draft saved for this project",
         plans: plans.length ? { count: plans.length, median_days_advertisement_to_signing: median(plans.map((x) => daysBetween(x.planned_advertisement, x.planned_signing))), by_method: tally(plans, (x) => x.method) } : "missing: no procurement plans",
         contracts: contracts.length ? { count: contracts.length, total_amount_usd: Math.round(contracts.reduce((n, c) => n + c.supplier_contract_amount_usd, 0)), by_category: tally(contracts, (c) => c.procurement_category), by_method: tally(contracts, (c) => c.procurement_method) } : "missing: no contracts"
@@ -270,7 +334,15 @@ function proposeTenderDraft(db, keyword) {
 
 // server/copilot.ts
 var COPILOT_BASE_PATH = "/api/copilotkit";
-var SYSTEM_PROMPT = `You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
+var SYSTEM_PROMPT = `GUARDRAILS. These come first and override everything below.
+
+A. Show the view, do not retell it. For any request about suppliers, contracts, sources, documents or the knowledge base, conflicts or evidence, planning, tender design, monitoring, learning, a proposed plan or tender draft, or the whole lifecycle: call find_views with the user's own words, then call the tool it names (show_stage, show_tool, show_lifecycle, propose_plan or propose_tender_draft) with the project id. The app already has a view for these, so never answer them with a paragraph or a list of rows. Questions about where the data comes from or which sources exist are answered with the Knowledge base view. A request to show, list or see anything the app has a view for (for example "show the contracts" or "list the suppliers") is answered with find_views and then the view, not with find_contracts or another lookup. Use the lookup tools only to answer a specific question (a number, a name, a date), or to add a sentence after the view. Never say you showed, displayed or opened something unless a show_* or propose_* tool call did it. After a view is on screen, add one or two sentences and do not repeat the figures it shows. If find_views returns no view, say the app has no view for that and answer only from the lookup tools.
+
+B. Real or mock, never both. Projects with ids like P158504 are REAL World Bank projects, ingested as stored snapshots. Projects with ids like P-MOCK-001 are MOCK demonstration data made up for this demo. Always say which kind you are talking about. If the user asks about real or World Bank projects, use only real projects and real data and offer only real-world options. Use mock data only when the user says mock or demo, or names a P-MOCK id. Never put a mock figure beside a real one, never use a mock plan or tender draft as a benchmark for a real project, and never offer a mixture. If the user asks to compare, combine or total mock and real data, do not put their figures side by side: explain in one sentence that one is demonstration data and the other is real, and offer to show each on its own. When a project id or name is unknown or unclear, do NOT list projects of both kinds: say it was not found and ask whether they mean a real World Bank project or a mock one, and list only that kind once they answer. When the user has not said which kind and no project is selected, ask one short question: real World Bank projects or the mock ones? When a project is selected, its kind is the kind. Tools take a scope argument: pass the kind the user asked for. When the real data has nothing for the request (for example the real projects have no saved plans or tender drafts), say it is missing and offer, as a separate choice the user must accept, to use the mock projects clearly labelled as mock.
+
+C. Be honest. If you do not know, say "I don't know" or "The data does not say". If a question is unclear or could mean two things, ask one short clarifying question and wait; do not guess. If a tool returns an error, a "missing" value or nothing, say so plainly and do not fill the gap. Never invent a figure, name, id, date, chunk id or citation. Say so when something is outside what this app does.
+
+You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
 Rules you always follow:
 1. Ground every figure, name, date and rating in a tool result or in the context you were given. Never invent numbers. Never estimate. If a tool returns nothing or a field says "missing", tell the user it is missing.
@@ -291,19 +363,37 @@ You are also a procurement strategy ADVISOR. The user often brings their OWN pro
 - When the stored projects do not cover the user's sector, say so plainly and use the closest one, naming the difference. Never present a mock figure as a real benchmark: mock projects are demonstration data.
 - Never give legal advice or promise outcomes. A draft is a starting point for the user's procurement team.`;
 var jsonSchemaId = z2.string().describe("Project id, for example P-MOCK-001 or P158504");
+var scopeParam = z2.enum(["real", "mock"]).describe("'real' = real World Bank projects (ids like P158504); 'mock' = the mock demonstration projects (ids P-MOCK-...). Take it from what the user said or from the selected project. Never mix the two.");
+var guard = (run) => async (args) => {
+  try {
+    return await run(args);
+  } catch (e) {
+    return { error: `The tool failed (${e instanceof Error ? e.message : "unknown error"}). Tell the user it failed and do not guess the answer.` };
+  }
+};
+var withKind = (projectId, result) => ({ data_kind: scopeLabel(projectScope(projectId)), ...result });
 function buildTools(loadDb) {
   return [
     defineTool({
+      name: "find_views",
+      description: "FIRST STEP for any request about data the app can show: suppliers, contracts, sources or documents (knowledge base), conflicts and evidence, planning, tender design, monitoring, learning, the whole lifecycle, a proposed plan or tender draft. Pass the user's own words. It returns the matching views and the tool and arguments that draw each. An empty result means the app has NO view for that request.",
+      parameters: z2.object({ request: z2.string().describe("The user's words") }),
+      execute: guard(({ request }) => {
+        const found = findViews(request);
+        return found.length ? { views: found.map(({ view, score }) => ({ id: view.id, title: view.title, shows: view.description, call: view.show.tool, with_args: view.show.args, needs_project_id: view.needsProject, score })) } : { views: [], note: "No view matches this request. Say so, and answer only from the lookup tools or ask the user what they want to see." };
+      })
+    }),
+    defineTool({
       name: "list_projects",
-      description: "List every project with its id, name, country, sector and whether it is mock or real data.",
-      parameters: z2.object({}),
-      execute: async () => listProjects(loadDb())
+      description: "List the projects of ONE kind with id, name, country and sector. Pick scope from what the user asked: real World Bank projects or the mock demo projects. Never list both together.",
+      parameters: z2.object({ scope: scopeParam }),
+      execute: guard(({ scope }) => listProjects(loadDb(), scope))
     }),
     defineTool({
       name: "get_project_overview",
       description: "Counts of what exists for one project (contracts, plans, tender drafts, supervision reports, documents), its key dates and its latest supervision ratings.",
       parameters: z2.object({ project_id: jsonSchemaId }),
-      execute: async ({ project_id }) => projectOverview(loadDb(), project_id)
+      execute: guard(({ project_id }) => withKind(project_id, projectOverview(loadDb(), project_id)))
     }),
     defineTool({
       name: "find_contracts",
@@ -319,24 +409,25 @@ function buildTools(loadDb) {
         sort_by: z2.enum(["amount", "date"]).optional().describe("amount (largest first, default) or date (newest first)"),
         limit: z2.number().optional().describe("How many rows to return, default 10")
       }),
-      execute: async (args) => queryContracts(loadDb(), args)
+      execute: guard((args) => withKind(args.project_id, queryContracts(loadDb(), args)))
     }),
     defineTool({
       name: "get_supervision_reports",
       description: "The supervision reports of a project in order: ratings, risk, disbursement and restructurings.",
       parameters: z2.object({ project_id: jsonSchemaId }),
-      execute: async ({ project_id }) => supervisionSeries(loadDb(), project_id)
+      execute: guard(({ project_id }) => withKind(project_id, supervisionSeries(loadDb(), project_id)))
     }),
     defineTool({
       name: "get_reference_practice",
       description: "What the stored projects did that a NEW procurement can learn from: each project's tender draft clauses (duration, bid validity, performance security, similar-contract requirement, evaluation method), how many days its plans take from advertisement to signing, the mix of contract categories and methods, and the lessons from completion reports (with chunk ids). Optional keyword narrows by sector, name or country, for example road, water, health.",
-      parameters: z2.object({ keyword: z2.string().optional().describe("Sector, name or country to narrow by") }),
-      execute: async ({ keyword }) => referencePractice(loadDb(), keyword)
+      parameters: z2.object({ scope: scopeParam, keyword: z2.string().optional().describe("Sector, name or country to narrow by") }),
+      execute: guard(({ scope, keyword }) => ({ data_kind: scopeLabel(scope), ...referencePractice(scopedDb(loadDb(), scope), keyword) }))
     }),
     defineTool({
       name: "propose_plan",
       description: `Suggest a plan (advertisement, bid opening, evaluation complete, signing dates) for the USER's own procurement, worked out from the stored plans. Give start_date (advertisement day) or signing_by (day the contract must be signed); either one alone is enough. The chat draws the timeline from the result, so call this instead of working out dates yourself. Dates are YYYY-MM-DD. start_date and signing_by are DIFFERENT dates: when the user gives only a deadline, pass only signing_by and leave start_date out. Pass ONLY what the user said: leave out signing_by, method and category unless the user gave them. Never fill a value with a guess or with "unknown".`,
       parameters: z2.object({
+        scope: scopeParam,
         start_date: z2.string().optional().describe("Advertisement date, YYYY-MM-DD"),
         signing_by: z2.string().optional().describe("Latest contract signing date, YYYY-MM-DD"),
         name: z2.string().optional().describe("What is being procured"),
@@ -344,19 +435,22 @@ function buildTools(loadDb) {
         method: z2.string().optional(),
         keyword: z2.string().optional().describe("Sector to take reference plans from, for example road, water, health")
       }),
-      execute: async (args) => proposePlan(loadDb(), args)
+      execute: guard(({ scope, ...input }) => ({ data_kind: scopeLabel(scope), ...proposePlan(scopedDb(loadDb(), scope), input) }))
     }),
     defineTool({
       name: "propose_tender_draft",
       description: "Suggest tender clauses (duration, bid validity, performance security, similar-contract requirement, evaluation method) and lessons for the USER's own procurement, worked out from the stored tender drafts. The chat draws a table from the result, so call this instead of listing clause values yourself.",
-      parameters: z2.object({ keyword: z2.string().optional().describe("Sector to take reference drafts from, for example road, water, health") }),
-      execute: async ({ keyword }) => proposeTenderDraft(loadDb(), keyword)
+      parameters: z2.object({ scope: scopeParam, keyword: z2.string().optional().describe("Sector to take reference drafts from, for example road, water, health") }),
+      execute: guard(({ scope, keyword }) => ({ data_kind: scopeLabel(scope), ...proposeTenderDraft(scopedDb(loadDb(), scope), keyword) }))
     }),
     defineTool({
       name: "search_documents",
       description: "Keyword search over the ingested document text. Returns the best matching passages with chunk ids, document, page and section.",
-      parameters: z2.object({ query: z2.string().describe("Words to look for"), project_id: z2.string().optional(), limit: z2.number().optional() }),
-      execute: async ({ query, project_id, limit }) => searchDocuments(loadDb(), query, project_id, limit)
+      parameters: z2.object({ scope: scopeParam, query: z2.string().describe("Words to look for"), project_id: z2.string().optional(), limit: z2.number().optional() }),
+      execute: guard(({ scope, query, project_id, limit }) => {
+        const problem = scopeProblem(loadDb(), scope, project_id);
+        return problem ? { error: problem } : { data_kind: scopeLabel(scope), ...searchDocuments(scopedDb(loadDb(), scope), query, project_id, limit) };
+      })
     })
   ];
 }
