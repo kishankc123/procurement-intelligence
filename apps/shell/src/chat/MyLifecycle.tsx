@@ -36,7 +36,7 @@ export function FeatureView({ stage, featureId }: { stage: 'monitoring' | 'learn
         <Badge tone="medium">Sample</Badge> You have not entered values for this indicator yet, so it is drawn with the data of <strong>{example.project_name}</strong> <span className="mono">{example.project_id}</span>.
         You can use this indicator for your own project; it shows your values once you add them.
       </p>
-      <RemoteBoundary name="Monitoring"><MonitoringFeature feature={featureId as 'disbursement-chart' | 'project-schedule' | 'early-warning'} projectId={example.project_id} /></RemoteBoundary>
+      <RemoteBoundary name="Monitoring"><MonitoringFeature feature={featureId as 'disbursement-chart' | 'project-schedule' | 'early-warning'} projectId={example.project_id} sample /></RemoteBoundary>
     </div>
   )
 }

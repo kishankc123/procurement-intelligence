@@ -494,4 +494,9 @@ This is the light version of the "user's own lifecycle" step noted above (K aske
 - My lifecycle: a stage with more than one item (several plans, several tender drafts) is now a list, one row per item with its summary and View / Hide, Remove; the opened row shows its full view and PNG button. A stage with one item still shows it in full.
 - Monitoring features added from the chat carry a Sample badge and a note: no values entered yet, drawn with a stored project's data, and the user can use the indicator for their own project.
 - Learning features use a lifecycle queue (`useLifecycleFeedback` in `@pi/data`, sessionStorage, not the shared queue): three labelled samples (accepted, rejected, pending). Pending rows have only Accept and Reject (no Edit); decided rows show status only. "Add your feedback" adds a pending row; Reset to samples restores the start. Learning figures read the same queue (`lifecycleFeedbackKpis`).
-- `LearningFeature` gained a `sample` prop. 3 new tests (203 total).
+- `LearningFeature` gained a `sample` prop. 3 new tests.
+
+## Block 27: monitoring samples (nothing committed)
+- A monitoring feature added to a lifecycle now shows enough rows to use every part of it. `MonitoringFeature`, `ScheduleCard` and `EarlyWarningCard` take `sample`: the schedule adds three labelled items (on track, behind, overdue) and the early-warning board adds one alert per severity, so urgent-first, Show all, See evidence and Assign all work. Samples are built by `sampleScheduleItems` and `sampleAlerts` (`packages/data/src/monitoringSamples.ts`) from the as-of date, so their statuses do not drift; titles start with "Sample:" and ids with `SAMPLE-`.
+- A sample alert cites the project's latest supervision report so the evidence drawer has a real record; with no report there is no sample. Assigning a sample alert stays on the screen and is not written to the shared `alerts` collection. 3 new tests.
+- Dev note: after adding an export to `@pi/data`, restart the remote dev servers, or they keep a stale shared module and fail with "does not provide an export named".

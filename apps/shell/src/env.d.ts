@@ -16,7 +16,7 @@ declare module 'ai/WorkWithAI' {
   export default WorkWithAI
 }
 declare module 'monitoring/ScheduleCard' {
-  const ScheduleCard: React.ComponentType<{ project: import('@pi/data').Project; badge?: React.ReactNode; footer?: React.ReactNode }>
+  const ScheduleCard: React.ComponentType<{ project: import('@pi/data').Project; badge?: React.ReactNode; footer?: React.ReactNode; sample?: boolean }>
   export default ScheduleCard
 }
 declare module 'planning/PlanningCard' {
@@ -40,7 +40,7 @@ declare module 'learning/LearningCard' {
   export default LearningCard
 }
 declare module 'monitoring/MonitoringFeature' {
-  const MonitoringFeature: React.ComponentType<{ feature: 'disbursement-chart' | 'project-schedule' | 'early-warning'; projectId: string }>
+  const MonitoringFeature: React.ComponentType<{ feature: 'disbursement-chart' | 'project-schedule' | 'early-warning'; projectId: string; sample?: boolean }>
   export default MonitoringFeature
 }
 declare module 'learning/LearningFeature' {

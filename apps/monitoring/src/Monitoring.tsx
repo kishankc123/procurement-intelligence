@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { ROLES, THRESHOLDS, can, whyDisabled } from '@pi/config'
 import {
-  deriveAlerts, timeElapsedPct, useAlertStates, useAmendments, useAssignAlert, useContracts, useCurrentUser,
+  deriveAlerts, isSampleId, sampleAlerts, timeElapsedPct, useAlertStates, useAmendments, useAssignAlert, useContracts, useCurrentUser,
   useEnrichments, useGovernance, useMeta, useProject, useReports, useUiStore, type Citation,
 } from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip, Select, TableScroll, Carousel } from '@pi/ui'
@@ -9,7 +9,8 @@ import { CitationChip, SourceDrawer } from '@pi/domain'
 import { ScheduleCard } from './ScheduleCard'
 import styles from './Monitoring.module.css'
 
-function AssignControl({ alertId, current }: { alertId: string; current: string | null }) {
+/** Assign to a role. A sample alert is not in the shared alert list, so it passes `onAssign` and the choice stays on the screen. */
+function AssignControl({ alertId, current, onAssign }: { alertId: string; current: string | null; onAssign?: (who: string) => void }) {
   const { role } = useCurrentUser()
   const assign = useAssignAlert()
   const [who, setWho] = useState<string>(ROLES[0]?.label ?? '')
@@ -17,7 +18,7 @@ function AssignControl({ alertId, current }: { alertId: string; current: string 
   return (
     <span className={styles.assign}>
       <Select aria-label="Assign to" className="w-44" value={who} onValueChange={setWho} disabled={!allowed} options={ROLES.map((r) => ({ value: r.label, label: r.label }))} />{' '}
-      <Button onClick={() => assign.mutate({ id: alertId, assignee: who })} disabledReason={allowed ? undefined : whyDisabled('assign_alerts')}>{current ? 'Reassign' : 'Assign'}</Button>
+      <Button onClick={() => (onAssign ? onAssign(who) : assign.mutate({ id: alertId, assignee: who }))} disabledReason={allowed ? undefined : whyDisabled('assign_alerts')}>{current ? 'Reassign' : 'Assign'}</Button>
     </span>
   )
 }
@@ -154,11 +155,18 @@ export function DisbursementCard({ projectId }: { projectId: string }) {
 }
 
 /** Early-warning board: urgent alerts first, "Show all" for the rest, every flag with its evidence and an assignee. */
-export function EarlyWarningCard({ projectId }: { projectId: string }) {
-  const { project, alerts } = useMonitoringData(projectId)
+export function EarlyWarningCard({ projectId, sample = false }: { projectId: string; sample?: boolean }) {
+  const { project, reports, alerts: stored } = useMonitoringData(projectId)
+  const [sampleAssignees, setSampleAssignees] = useState<Record<string, string>>({})
   const [open, setOpen] = useState<Citation | null>(null)
   const [showAllAlerts, setShowAllAlerts] = useState(false)
   if (!project) return <Card state="loading">{null}</Card>
+  // With `sample`, one alert of each severity is added (labelled Sample) so the board shows urgent first, Show all, evidence and Assign.
+  const rank = { high: 0, medium: 1, low: 2 }
+  const latest = [...reports].sort((a, b) => b.sequence - a.sequence)[0]
+  const alerts = sample
+    ? [...stored, ...sampleAlerts(projectId, latest).map((a) => ({ ...a, assignee: sampleAssignees[a.id] ?? null }))].sort((a, b) => rank[a.severity] - rank[b.severity])
+    : stored
   // Urgent (high) alerts first; the rest on request. With no urgent alert there is nothing to hide the others behind.
   const urgent = alerts.filter((a) => a.severity === 'high')
   const listAll = showAllAlerts || urgent.length === 0
@@ -179,13 +187,13 @@ export function EarlyWarningCard({ projectId }: { projectId: string }) {
             <div className={listAll ? styles.alertScroll : undefined} role={listAll ? 'region' : undefined} tabIndex={listAll ? 0 : undefined} aria-label={listAll ? 'Alerts. Scroll to see all of them.' : undefined}>
               {shown.map((a) => (
                 <div key={a.id} className={`${styles.alert} ${styles[a.severity]}`}>
-                  <div className={styles.row}><Badge tone={a.severity}>{a.severity[0]?.toUpperCase() + a.severity.slice(1)}</Badge><strong>{a.title}</strong><span className="mono">{a.id}</span>{a.assignee && <Badge>Assigned to {a.assignee}</Badge>}</div>
+                  <div className={styles.row}><Badge tone={a.severity}>{a.severity[0]?.toUpperCase() + a.severity.slice(1)}</Badge><strong>{a.title}</strong>{isSampleId(a.id) && <Badge tone="medium">Sample</Badge>}<span className="mono">{a.id}</span>{a.assignee && <Badge>Assigned to {a.assignee}</Badge>}</div>
                   <p className={styles.sub}>{a.text}</p>
                   <div className={styles.row}>
                     <ProvenanceChip kind={a.provenance} />
                     {a.citations.map((c) => <CitationChip key={c.ref_id} citation={c} onOpen={setOpen} />)}
                     <Button onClick={() => { const c = a.citations[0]; if (c) setOpen(c) }}>See evidence</Button>
-                    <AssignControl alertId={a.id} current={a.assignee} />
+                    <AssignControl alertId={a.id} current={a.assignee} onAssign={isSampleId(a.id) ? (who) => setSampleAssignees((m) => ({ ...m, [a.id]: who })) : undefined} />
                   </div>
                 </div>
               ))}
