@@ -11,7 +11,7 @@ const toIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSta
  * The planning estimates once they are anchored to a project completion date: a calendar with every milestone marked, next to the list of milestones with
  * where each date comes from. Dates are worked out in `datePlanningEstimates`; this card only shows them. A date the user did not give is labelled assumed.
  */
-export default function EstimateTimelineCard({ timeline }: { timeline: DatedPlanning }) {
+export default function EstimateTimelineCard({ timeline, edited = false }: { timeline: DatedPlanning; edited?: boolean }) {
   const asOf = useMeta().data?.as_of_date
   const [active, setActive] = useState<string | null>(null)
   const first = timeline.milestones[0]
@@ -21,7 +21,7 @@ export default function EstimateTimelineCard({ timeline }: { timeline: DatedPlan
   const marks = timeline.milestones.filter((m) => m.id !== 'completion').map((m) => toDate(m.date))
   const end = toDate(timeline.completion)
   return (
-    <Card title="Planning timeline" downloadName="Planning timeline" aside={<ProvenanceChip kind="derived" detail={timeline.assumed ? 'completion date assumed' : 'from your completion date'} />}>
+    <Card title="Planning timeline" downloadName="Planning timeline" aside={edited ? <ProvenanceChip kind="entered" detail="edited by you" /> : <ProvenanceChip kind="derived" detail={timeline.assumed ? 'completion date assumed' : 'from your completion date'} />}>
       <div className={styles.stack}>
         <p className={styles.sub}>
           Project completion <strong className="mono">{timeline.completion}</strong>

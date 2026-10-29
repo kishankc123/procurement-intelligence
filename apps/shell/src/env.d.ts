@@ -24,11 +24,11 @@ declare module 'planning/PlanningCard' {
   export default PlanningCard
 }
 declare module 'planning/PlanProposalCard' {
-  const PlanProposalCard: React.ComponentType<{ proposal: { plan: Omit<import('@pi/data').Plan, 'id' | 'project_id'>; basis: { sample_size: number; projects: string[]; median_total_days: number; filtered_by: string }; deadline?: { fits: boolean; spare_days?: number; days_over?: number } } }>
+  const PlanProposalCard: React.ComponentType<{ proposal: { plan: Omit<import('@pi/data').Plan, 'id' | 'project_id'>; basis: { sample_size: number; projects: string[]; median_total_days: number; filtered_by: string }; deadline?: { fits: boolean; spare_days?: number; days_over?: number } }; status?: 'suggested' | 'edited' | 'final' }>
   export default PlanProposalCard
 }
 declare module 'planning/EstimateTimelineCard' {
-  const EstimateTimelineCard: React.ComponentType<{ timeline: import('@pi/data').DatedPlanning }>
+  const EstimateTimelineCard: React.ComponentType<{ timeline: import('@pi/data').DatedPlanning; edited?: boolean }>
   export default EstimateTimelineCard
 }
 declare module 'monitoring/MonitoringCard' {

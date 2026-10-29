@@ -44,7 +44,23 @@ describe('my lifecycle', () => {
     useMyLifecycle.getState().add(item('plan:1', 'planning', 'Road plan'))
     const d = describeLifecycle('Mine', useMyLifecycle.getState().items)
     expect(d.stagesStillEmpty).toEqual(['tender-design', 'monitoring', 'learning'])
-    expect(d.items).toEqual([{ stage: 'planning', kind: 'plan', title: 'Road plan', summary: 'Road plan summary' }])
+    expect(d.items).toEqual([{ stage: 'planning', kind: 'plan', title: 'Road plan', summary: 'Road plan summary', status: 'suggested' }])
+  })
+
+  it('lets the user edit a suggestion, which makes it theirs, and save it as final', () => {
+    const { add, update, setFinal } = useMyLifecycle.getState()
+    add(item('plan:1', 'planning', 'Road plan'))
+    const id = useMyLifecycle.getState().items[0]!.id
+    expect(useMyLifecycle.getState().items[0]).toMatchObject({ edited: false, final: false, provenance: 'derived' })
+    update(id, { detail: { a: 2 }, summary: 'changed' })
+    expect(useMyLifecycle.getState().items[0]).toMatchObject({ edited: true, provenance: 'entered', summary: 'changed', detail: { a: 2 }, basis: 'n=3 plans, mock' })
+    setFinal(id, true)
+    update(id, { detail: { a: 3 }, summary: 'ignored' })
+    expect(useMyLifecycle.getState().items[0]).toMatchObject({ final: true, summary: 'changed' })
+    expect(describeLifecycle('Mine', useMyLifecycle.getState().items).items[0]!.status).toBe('final')
+    setFinal(id, false)
+    update(id, { detail: { a: 3 }, summary: 'again' })
+    expect(useMyLifecycle.getState().items[0]).toMatchObject({ final: false, summary: 'again' })
   })
 
   it('offers the monitoring and learning features the app already has', () => {

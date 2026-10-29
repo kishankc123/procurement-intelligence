@@ -5,6 +5,7 @@ import { Badge, Button, Card, DonutNav, DownloadPng, EmptyState, ProvenanceChip 
 import { RemoteBoundary } from '../RemoteBoundary'
 import { STEP_COLOR } from '../stepColors'
 import { downloadLifecycleDocx } from './exportLifecycle'
+import { ClausesEditForm, EstimatesEditForm, PlanEditForm } from './ItemEdit'
 import { ClausesDetail, FeatureDetail, PlanDetail, RowsDetail, TimelineDetail } from './lifecycleDetail'
 import styles from './MyLifecycle.module.css'
 
@@ -45,7 +46,7 @@ export function FeatureView({ stage, featureId }: { stage: 'monitoring' | 'learn
 function ItemView({ item }: { item: LifecycleItem }) {
   if (item.kind === 'plan') {
     const d = PlanDetail.safeParse(item.detail)
-    if (d.success) return <RemoteBoundary name="Planning"><PlanProposalCard proposal={d.data} /></RemoteBoundary>
+    if (d.success) return <RemoteBoundary name="Planning"><PlanProposalCard proposal={d.data} status={item.final ? 'final' : item.edited ? 'edited' : 'suggested'} /></RemoteBoundary>
   }
   if (item.kind === 'tender-clauses') {
     const d = ClausesDetail.safeParse(item.detail)
@@ -54,7 +55,7 @@ function ItemView({ item }: { item: LifecycleItem }) {
         <table className={styles.table}>
           <tbody>
             {d.data.clauses.map((c) => (
-              <tr key={c.label}><th scope="row">{c.label}</th><td>{typeof c.value === 'number' ? c.value.toLocaleString('en-US') : c.value}{c.unit ? ` ${c.unit}` : ''}</td><td>{c.source === 'mock' ? <Badge tone="medium">Demonstration</Badge> : c.source === 'real' ? <Badge tone="low">Real data</Badge> : null}</td></tr>
+              <tr key={c.label}><th scope="row">{c.label}</th><td>{typeof c.value === 'number' ? c.value.toLocaleString('en-US') : c.value}{c.unit ? ` ${c.unit}` : ''}</td><td>{c.edited ? <Badge>Edited by you</Badge> : c.source === 'mock' ? <Badge tone="medium">Demonstration</Badge> : c.source === 'real' ? <Badge tone="low">Real data</Badge> : null}</td></tr>
             ))}
           </tbody>
         </table>
@@ -67,11 +68,11 @@ function ItemView({ item }: { item: LifecycleItem }) {
     if (d.success) {
       return (
         <>
-        {timeline.success && <RemoteBoundary name="Planning"><EstimateTimelineCard timeline={timeline.data} /></RemoteBoundary>}
+        {timeline.success && <RemoteBoundary name="Planning"><EstimateTimelineCard timeline={timeline.data} edited={item.edited} /></RemoteBoundary>}
         <table className={styles.table}>
           <tbody>
             {d.data.rows.filter((r) => r.value !== null).map((r) => (
-              <tr key={r.metric}><th scope="row">{r.metric}</th><td>{typeof r.value === 'number' ? r.value.toLocaleString('en-US') : r.value}{r.unit ? ` ${r.unit}` : ''}</td><td><ProvenanceChip kind="derived" detail={`n=${r.n} ${r.counts}`} />{r.thin && <> <Badge tone="medium">Thin sample</Badge></>}</td></tr>
+              <tr key={r.metric}><th scope="row">{r.metric}</th><td>{typeof r.value === 'number' ? r.value.toLocaleString('en-US') : r.value}{r.unit ? ` ${r.unit}` : ''}</td><td>{r.edited ? <ProvenanceChip kind="entered" detail="edited by you" /> : <><ProvenanceChip kind="derived" detail={`n=${r.n} ${r.counts}`} />{r.thin && <> <Badge tone="medium">Thin sample</Badge></>}</>}</td></tr>
             ))}
           </tbody>
         </table>
@@ -91,25 +92,42 @@ const isSample = (item: LifecycleItem) => item.kind === 'monitoring-feature' || 
 
 /**
  * One item with its heading, basis and view. Remove and the PNG button are left out of the picture the PNG button saves. In a list (`open` given), only the
- * heading shows until the row is opened.
+ * heading shows until the row is opened; Edit and Save as final are on the row either way, and Edit opens the row.
  */
 function ItemRow({ item, onRemove, open, onToggle }: { item: LifecycleItem; onRemove: () => void; open?: boolean; onToggle?: () => void }) {
   const ref = useRef<HTMLLIElement>(null)
+  const update = useMyLifecycle((s) => s.update)
+  const setFinal = useMyLifecycle((s) => s.setFinal)
+  const [editing, setEditing] = useState(false)
   const inList = open !== undefined
+  const shown = !inList || open
+  // The plan and the tender clauses are the application's suggestion until the user changes them; then they are the user's own, and can be saved as final.
+  const editable = item.kind === 'plan' || item.kind === 'tender-clauses' || item.kind === 'estimates'
   return (
     <li ref={ref} className={styles.item}>
       <div className={styles.itemHead}>
         <div>
-          <strong>{item.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />{isSample(item) && <> <Badge tone="medium">Sample</Badge></>}
-          <p className={styles.sub}>{inList && !open ? item.summary : `Basis: ${item.basis}`}</p>
+          <strong>{item.title}</strong>{' '}
+          {item.provenance === 'entered' ? <ProvenanceChip kind="entered" detail={item.final ? 'final' : 'edited by you'} /> : <ProvenanceChip kind="derived" detail="suggested" />}
+          {item.final && <> <Badge tone="low">Final</Badge></>}{isSample(item) && <> <Badge tone="medium">Sample</Badge></>}
+          <p className={styles.sub}>{inList && !open ? item.summary : `Basis: ${item.basis}${item.edited ? ' Edited by you.' : ''}`}</p>
         </div>
         <div className={styles.row} data-export-ignore="">
-          {inList && <Button onClick={onToggle} aria-expanded={open}>{open ? 'Hide' : 'View'}</Button>}
-          {(!inList || open) && <DownloadPng targetRef={ref} name={item.title} />}
+          {inList && <Button onClick={() => { if (open) setEditing(false); onToggle?.() }} aria-expanded={open}>{open ? 'Hide' : 'View'}</Button>}
+          {editable && !editing && (
+            <>
+              <Button variant="primary" onClick={() => { if (inList && !open) onToggle?.(); setEditing(true) }} disabledReason={item.final ? 'Saved as final. Reopen it to edit.' : undefined}>Edit</Button>
+              {item.final ? <Button onClick={() => setFinal(item.id, false)}>Reopen</Button> : <Button variant="success" onClick={() => setFinal(item.id, true)}>Save as final</Button>}
+            </>
+          )}
+          {shown && <DownloadPng targetRef={ref} name={item.title} />}
           <Button onClick={onRemove}>Remove</Button>
         </div>
       </div>
-      {(!inList || open) && <ItemView item={item} />}
+      {shown && editing && item.kind === 'plan' && <PlanEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
+      {shown && editing && item.kind === 'tender-clauses' && <ClausesEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
+      {shown && editing && item.kind === 'estimates' && <EstimatesEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
+      {shown && !editing && <ItemView item={item} />}
     </li>
   )
 }

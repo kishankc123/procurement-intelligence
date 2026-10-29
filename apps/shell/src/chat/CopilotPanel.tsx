@@ -6,6 +6,7 @@ import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLa
 import { BlockView } from './ChatBlocks'
 import { MapBlock } from './MapBlock'
 import { CompareProjectsCard } from './CompareCard'
+import { planEditCommand } from './lifecycleEdit'
 import { LifecycleProposal, PlanProposal, PotentialSuppliers, TenderProposal } from './ProposalCards'
 import { FeatureOptions, MyLifecycleCard } from './MyLifecycle'
 import { LifecycleBubble } from './LifecycleBubble'
@@ -129,6 +130,38 @@ function useCompareTool() {
   })
 }
 
+/**
+ * Edit the plan or the tender clauses in the user's own lifecycle by command ("move bid opening to 5 March", "make bid validity 90 days", "save the plan as final").
+ * The handler runs in the browser against the same store the edit forms use, with the same checks, and tells the model exactly what changed or why nothing did.
+ */
+function useEditLifecycleTool() {
+  useFrontendTool({
+    name: 'edit_my_lifecycle',
+    description: "Edit the PLAN or the TENDER CLAUSES in the user's own lifecycle, or save one as final. Use it when the user asks to change, move, set, make or adjust a date, the plan name, category or method, or a tender clause value (for example \"move bid opening to 5 March 2027\", \"make bid validity 90 days\", \"sign a month later\"), and when they ask to save, finalise or reopen their plan or tender draft. what is plan or tender. changes is a list of { field, value }: for a plan the field is name, category, method, advertisement, bid opening, evaluation complete or signing and a date value MUST be YYYY-MM-DD (work the date out from the current dates in the lifecycle context and the user's words; change the later dates too when the user wants the whole plan shifted); for planning estimates (the plan when the user added the estimated lifecycle) the field is a date name (approval, effectiveness, advertisement, bid opening, evaluation complete, contract signing, project completion) with a YYYY-MM-DD value, or a figure name (for example Bidding period) with a number; for tender clauses the field is the clause label (for example Bid validity) and the value a number or text. finalize true saves it as the final version, false reopens it. title says which item when the lifecycle holds several. Pass on exactly what the result says. If the lifecycle has no plan or clauses, say so: you cannot add them, the user adds a suggestion with the Add button.",
+    parameters: z.object({
+      what: z.enum(['plan', 'tender']),
+      title: z.string().nullable().optional(),
+      changes: z.array(z.object({ field: z.string(), value: z.union([z.string(), z.number()]) })).optional(),
+      finalize: z.boolean().nullable().optional(),
+    }),
+    handler: async (cmd) => {
+      const { items, update, setFinal } = useMyLifecycle.getState()
+      const outcome = planEditCommand(items, cmd)
+      if (!outcome.ok) return outcome.text
+      if (outcome.edit) update(outcome.id, outcome.edit)
+      if (outcome.final !== undefined) setFinal(outcome.id, outcome.final)
+      return `${outcome.text} The change is already on screen in the user's lifecycle; do not repeat every figure.`
+    },
+    render: (p) => (p.status === 'complete' && p.result ? <div className={styles.cards}><EditedNote result={p.result} /></div> : <p>Updating your lifecycle…</p>),
+  })
+}
+
+/** What an edit command did, in the model's own result text (the lifecycle itself holds the new figures). */
+function EditedNote({ result }: { result: string }) {
+  const done = /^(Changed|Saved|Reopened|")/.test(result)
+  return <p role="status" style={{ margin: 0 }}><strong>{done ? 'Lifecycle updated.' : 'Not changed.'}</strong> {result.replace(/ The change is already on screen.*$/, '')}</p>
+}
+
 /** The user's own lifecycle drawn in the chat. A click on a missing stage asks the model for the next suggestion, as if the user had typed it. */
 function MyLifecycleInChat() {
   const send = useSendToChat()
@@ -207,6 +240,7 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   useCardTools()
   useMapTool()
   useCompareTool()
+  useEditLifecycleTool()
   useProposalTools()
   // Once anyone has said anything, the page gives the chat the room (same as the rule-based chat).
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })

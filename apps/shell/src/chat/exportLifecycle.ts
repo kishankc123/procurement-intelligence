@@ -25,7 +25,7 @@ export async function downloadLifecycleDocx(name: string, items: LifecycleItem[]
     }
     const clauses = i.kind === 'tender-clauses' ? ClausesDetail.safeParse(i.detail) : null
     if (clauses?.success) {
-      out.push(table(['Clause', 'Value', 'Source'], clauses.data.clauses.map((c) => [c.label, `${fmt(c.value)}${c.unit ? ` ${c.unit}` : ''}`, c.source === 'mock' ? 'Demonstration' : c.source === 'real' ? 'Real data' : ''])))
+      out.push(table(['Clause', 'Value', 'Source'], clauses.data.clauses.map((c) => [c.label, `${fmt(c.value)}${c.unit ? ` ${c.unit}` : ''}`, c.edited ? 'Edited by you' : c.source === 'mock' ? 'Demonstration' : c.source === 'real' ? 'Real data' : ''])))
       return out
     }
     const rows = i.kind === 'estimates' ? RowsDetail.safeParse(i.detail) : null
@@ -47,14 +47,14 @@ export async function downloadLifecycleDocx(name: string, items: LifecycleItem[]
   const { byStage } = lifecycleStatus(items)
   const children: DocxPart[] = [
     heading(name, 'title'),
-    para(`Made ${new Date().toISOString().slice(0, 10)}. Everything here is a suggestion the user chose to add, with the basis it came with. Estimates are reference medians, not forecasts.`, { italics: true }),
+    para(`Made ${new Date().toISOString().slice(0, 10)}. Items marked Final were saved by the user; the rest are suggestions the user chose to add, with the basis they came with. Estimates are reference medians, not forecasts.`, { italics: true }),
   ]
   for (const step of LIFECYCLE_STEPS) {
     const stageItems = byStage[step.id as LifecycleStage]
     children.push(heading(step.label, 1))
     if (stageItems.length === 0) children.push(para('Nothing added yet.', { italics: true }))
     for (const i of stageItems) {
-      children.push(heading(i.title, 2), para(`Basis: ${i.basis}`, { italics: true }), ...itemBody(i))
+      children.push(heading(i.final ? `${i.title} (final)` : i.title, 2), para(`Status: ${i.final ? 'Final, saved by the user' : i.edited ? 'Edited by the user' : 'Suggestion'}. Basis: ${i.basis}`, { italics: true }), ...itemBody(i))
     }
   }
   await save(name, children)

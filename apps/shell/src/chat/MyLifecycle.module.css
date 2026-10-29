@@ -31,3 +31,12 @@
 .sample { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 1px dashed var(--border); border-radius: var(--radius-ctl); background: var(--bg); color: var(--muted); font-size: 0.93em; line-height: 1.45; }
 .itemList > li { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
 .itemList > li:last-child { padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+/* Editing a suggested plan or tender clauses in place. */
+.editForm { display: grid; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px; }
+.field { display: grid; gap: 4px; color: var(--muted); font-size: 0.93em; }
+.field input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.error { margin: 0; color: var(--danger); font-size: 0.93em; }
+.formHead { margin: 4px 0 0; font-size: 0.93em; }
+.hint { margin: 0; color: var(--muted); font-size: 0.86em; }
