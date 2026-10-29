@@ -70,6 +70,13 @@ export const useSaveTenderDraft = () =>
     return { action: 'Saved tender draft', target: d.project_id }
   })
 
+/** Saves a first draft for a project that has none yet (PUT only updates). */
+export const useCreateTenderDraft = () =>
+  useWrite<S.TenderDraft>(async (d) => {
+    await send('POST', '/tender_drafts', d)
+    return { action: 'Created tender draft', target: d.project_id }
+  })
+
 export const useDeleteTenderDraft = () =>
   useWrite<S.TenderDraft>(async (d) => {
     await send('DELETE', `/tender_drafts/${d.id}`)

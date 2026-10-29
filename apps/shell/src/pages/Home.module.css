@@ -1,7 +1,7 @@
 /* Full-bleed, centred hero: breaks out of the page padding so the donut is not boxed in.
    --chrome is the height of everything except the donut: top bar, heading, text, info box and spacing.
    The donut takes the rest of the screen height (so the whole hero fits one laptop screen) and the info box takes the donut's width. */
-.hero { --chrome: 368px; --donut: max(280px, min(640px, calc(100vh - var(--chrome)), 92vw));
+.hero { --chrome: 300px; --donut: max(280px, min(640px, calc(100vh - var(--chrome)), 92vw));
   margin: -24px -24px 0; padding: 20px 24px 16px; display: grid; justify-items: center; text-align: center; gap: 8px;
   background: radial-gradient(ellipse 60% 70% at 50% 55%, #17305A 0%, rgba(10, 19, 34, 0) 70%); }
 @supports (height: 100dvh) { .hero { --donut: max(280px, min(640px, calc(100dvh - var(--chrome)), 92vw)); } }
@@ -34,3 +34,13 @@
   .hero { margin: -16px -16px 0; padding: 16px 16px 24px; }
   .info { min-height: 120px; }
 }
+
+/* Chat landing: the conversation is the first thing on the page; the donut below previews what it builds. */
+.landing { display: grid; justify-items: center; text-align: center; gap: 8px; padding: 8px 0 8px; }
+.previewTitle { font-size: 20px; font-weight: 600; margin: 0; }
+.preview { --donut: min(420px, 86vw); margin-top: 8px; }
+
+/* Landing: the donut section, then the chat. Once the chat is used the donut section is gone and the chat is the page. */
+.landing { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; justify-items: center; }
+.heroTitle { font-size: clamp(24px, 5vw, 36px); line-height: 1.15; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+.chatWrap { width: 100%; display: grid; justify-items: center; }

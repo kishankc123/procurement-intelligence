@@ -26,15 +26,15 @@ function useWide(query = '(min-width: 1000px)') {
 }
 
 /**
- * Plan timeline at the top of Planning: a calendar with the four tender stages marked, next to an agenda that lists
+ * Plan timeline at the top of Planning (`compact` stacks it and shows one month, for the chat): a calendar with the four tender stages marked, next to an agenda that lists
  * them with the days between. Click a stage in either place to highlight it in the other. Dates come from the saved plan.
  */
-export function PlanAgenda({ plans, asOf }: { plans: Plan[]; asOf: string }) {
+export function PlanAgenda({ plans, asOf, compact }: { plans: Plan[]; asOf: string; compact?: boolean }) {
   const [planId, setPlanId] = useState<string | null>(null)
   const [active, setActive] = useState<StageId | null>(null)
   const plan = plans.find((p) => p.id === planId) ?? plans[0]
   const [month, setMonth] = useState<Date>(() => toDate(plan?.planned_advertisement ?? asOf))
-  const wide = useWide()
+  const wide = useWide() && !compact
 
   // Show the first stage's month whenever another plan is chosen.
   useEffect(() => { if (plan) { setMonth(toDate(plan.planned_advertisement)); setActive(null) } }, [plan?.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -61,7 +61,7 @@ export function PlanAgenda({ plans, asOf }: { plans: Plan[]; asOf: string }) {
           <strong>{plan.name}</strong> · {plan.category} · {plan.method}. Click a stage in the list or on the calendar. The data date is <span className="mono">{asOf}</span>.
         </p>
 
-        <div className={styles.layout}>
+        <div className={`${styles.layout} ${compact ? styles.stacked : ''}`}>
           <div className={styles.calendar}>
             <Calendar
               numberOfMonths={wide ? 2 : 1}

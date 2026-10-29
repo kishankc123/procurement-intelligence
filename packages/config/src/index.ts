@@ -82,6 +82,10 @@ export const WB_TO_ISO: Record<string, string> = { ROM: 'RO', EST: 'EE' }
 export const API_BASE =
   typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api' : 'http://localhost:3001'
 
+// The assistant server. Locally it is a Node process on :3002; a deployed build would put it behind the same /api prefix.
+export const ASSISTANT_BASE =
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api' : 'http://localhost:3002'
+
 /** The four lifecycle steps of one project. Order, labels and copy shown on the Home donut and in the nav. */
 export const LIFECYCLE_STEPS = [
   { id: 'planning', to: '/planning', label: 'Planning',
@@ -118,6 +122,12 @@ export const KNOWN_SOURCE_HOSTS = [
  * (document DOC-MOCK-GUIDE-1: "between five and ten percent of the contract price" for works),
  * so the check cites that note. Change a number here and the checks follow.
  */
+/** Numbers behind the tender draft the assistant suggests. Change one here and the suggestion follows. */
+export const DRAFT_SUGGESTION = {
+  /** Days added on top of the plan's bid opening to signing period, so bids stay valid through approvals. */
+  bidValidityMarginDays: 30,
+} as const
+
 export const SPEC_RULES = {
   performanceSecurityPct: { min: 5, max: 10, category: 'Works' },
 } as const

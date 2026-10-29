@@ -35,3 +35,6 @@
 .dialogDates { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .dialogActions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 4px; }
 .problem { color: var(--prov-missing-fg); }
+
+.chatCard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.chatSummary { line-height: 1.5; }

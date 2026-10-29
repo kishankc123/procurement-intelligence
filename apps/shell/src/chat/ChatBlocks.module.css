@@ -1,0 +1,16 @@
+.block { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); min-width: 0; }
+.block h3 { font-size: 16px; }
+.ready { display: flex; align-items: center; gap: 8px; color: var(--prov-derived-fg); }
+.big { display: grid; justify-items: center; }
+.centre { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.2; max-width: 11ch; overflow-wrap: anywhere; }
+.facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.facts li { display: grid; align-content: start; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.facts button { all: unset; cursor: pointer; font-weight: 600; color: var(--link); text-decoration: underline; }
+.facts button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+.sub { color: var(--muted); font-size: 12.5px; }
+.eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.stageHead { display: flex; align-items: center; gap: 14px; }
+.small { width: clamp(100px, 24vw, 120px); flex-shrink: 0; }
+.fact { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.blockWrap { display: grid; gap: 6px; min-width: 0; }
+.rate { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

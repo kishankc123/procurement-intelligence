@@ -27,3 +27,6 @@
 .alertBar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .alertScroll { max-height: 420px; overflow-y: auto; padding-right: 8px; }
 .alertScroll:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+
+.chatCard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.chatSummary { line-height: 1.5; }

@@ -19,7 +19,7 @@ export default defineConfig({
     federation({
       name: 'monitoring',
       filename: 'remoteEntry.js',
-      exposes: { './Monitoring': './src/Monitoring.tsx', './ScheduleCard': './src/ScheduleCard.tsx' },
+      exposes: { './Monitoring': './src/Monitoring.tsx', './ScheduleCard': './src/ScheduleCard.tsx', './MonitoringCard': './src/MonitoringCard.tsx' },
       shared,
     }),
   ],

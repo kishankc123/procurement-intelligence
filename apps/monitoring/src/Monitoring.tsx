@@ -117,8 +117,9 @@ function DisbursementChart({ points }: { points: ChartPoint[] }) {
   )
 }
 
-export default function Monitoring() {
-  const { projectId, fiscalYear } = useUiStore()
+/** Everything the monitoring cards read for one project. The alerts are worked out from the reports and the entered contract data. */
+function useMonitoringData(projectId: string) {
+  const fiscalYear = useUiStore((s) => s.fiscalYear)
   const project = useProject(projectId).data?.[0]
   const reports = useReports(projectId).data ?? []
   const contracts = useContracts(projectId, fiscalYear).data ?? []
@@ -126,55 +127,42 @@ export default function Monitoring() {
   const amendments = useAmendments().data ?? []
   const states = useAlertStates().data ?? []
   const asOf = useMeta().data?.as_of_date
-  const gov = useGovernance(project?.borrower_country_code ?? '').data ?? []
+  const refs = new Set(contracts.map((c) => c.borrower_contract_reference_number))
+  const alerts = project && asOf
+    ? deriveAlerts({
+      project, reports, contracts,
+      enrichments: enrichments.filter((e) => refs.has(e.contract_ref)),
+      amendments: amendments.filter((a) => refs.has(a.contract_ref)),
+      states, asOf,
+    })
+    : []
+  return { project, reports, contracts, asOf, alerts }
+}
+
+/** Disbursement against time elapsed, one point per supervision report. */
+export function DisbursementCard({ projectId }: { projectId: string }) {
+  const { project, reports } = useMonitoringData(projectId)
+  if (!project) return <Card state="loading">{null}</Card>
+  const points = [...reports].sort((a, b) => a.sequence - b.sequence).map((r) => ({ x: timeElapsedPct(project, r.date), y: r.disbursed_pct, label: `ISR ${r.sequence}`, date: r.date }))
+  return (
+    <Card title="Disbursement vs. time elapsed" aside={<ProvenanceChip kind="public" detail="one point per report" />}>
+      {points.length < 2 ? <EmptyState title="Needs at least 2 supervision reports" text={`${points.length} available.`} /> : <DisbursementChart points={points} />}
+    </Card>
+  )
+}
+
+/** Early-warning board: urgent alerts first, "Show all" for the rest, every flag with its evidence and an assignee. */
+export function EarlyWarningCard({ projectId }: { projectId: string }) {
+  const { project, alerts } = useMonitoringData(projectId)
   const [open, setOpen] = useState<Citation | null>(null)
   const [showAllAlerts, setShowAllAlerts] = useState(false)
-
-  if (!project || !asOf) return <Card state="loading">{null}</Card>
-
-  const refs = new Set(contracts.map((c) => c.borrower_contract_reference_number))
-  const alerts = deriveAlerts({
-    project, reports, contracts,
-    enrichments: enrichments.filter((e) => refs.has(e.contract_ref)),
-    amendments: amendments.filter((a) => refs.has(a.contract_ref)),
-    states, asOf,
-  })
-  const latest = [...reports].sort((a, b) => b.sequence - a.sequence)[0]
-  const elapsed = latest ? timeElapsedPct(project, latest.date) : null
-  const points = [...reports].sort((a, b) => a.sequence - b.sequence).map((r) => ({ x: timeElapsedPct(project, r.date), y: r.disbursed_pct, label: `ISR ${r.sequence}`, date: r.date }))
-  const count = (signal: string) => alerts.filter((a) => a.signal === signal).length
+  if (!project) return <Card state="loading">{null}</Card>
   // Urgent (high) alerts first; the rest on request. With no urgent alert there is nothing to hide the others behind.
   const urgent = alerts.filter((a) => a.severity === 'high')
   const listAll = showAllAlerts || urgent.length === 0
   const shown = listAll ? alerts : urgent
-  const govLatest = [...gov].sort((a, b) => b.year - a.year)[0]
-
   return (
-    <div className={styles.page}>
-      <div className={styles.head}>
-        <h1>Execution and monitoring</h1>
-        <p>Warning signals from supervision reports and from the contract data your team enters, ranked by severity. Latest data as of {asOf}.</p>
-      </div>
-
-      <Carousel ariaLabel="Key figures">
-        <Card title="Rating drops"><p><span className={styles.big}>{count('rating_drop')}</span></p><ProvenanceChip kind="public" detail="supervision reports" /></Card>
-        <Card title="Disbursed vs. time elapsed">
-          {latest && elapsed !== null ? (<>
-            <p><span className={styles.big}>{latest.disbursed_pct - elapsed}</span> <span className={styles.unit}>points</span></p>
-            <p className={styles.sub}>Latest report: {latest.disbursed_pct}% disbursed, {elapsed}% of time elapsed. Alert above {THRESHOLDS.disbursementLagPoints} points.</p>
-            <ProvenanceChip kind="derived" detail={`n=${reports.length} reports`} />
-          </>) : <EmptyState title="No supervision reports" />}
-        </Card>
-        <Card title="Contracts past entered end date"><p><span className={styles.big}>{count('contract_past_end')}</span> <span className={styles.unit}>of {contracts.length}</span></p><ProvenanceChip kind="entered" /></Card>
-        <Card title="Approved amendments"><p><span className={styles.big}>{count('amendment')}</span></p><ProvenanceChip kind="entered" /></Card>
-      </Carousel>
-
-      <Card title="Disbursement vs. time elapsed" aside={<ProvenanceChip kind="public" detail="one point per report" />}>
-        {points.length < 2 ? <EmptyState title="Needs at least 2 supervision reports" text={`${points.length} available.`} /> : <DisbursementChart points={points} />}
-      </Card>
-
-      <ScheduleCard project={project} />
-
+    <>
       <Card title="Early-warning board" aside={<span className={styles.sub}>every flag shows where it comes from</span>}>
         {alerts.length === 0 ? <EmptyState title="No alerts for this selection" text="Signals appear when supervision ratings change or approved entered data crosses a rule." /> : (
           <>
@@ -203,6 +191,48 @@ export default function Monitoring() {
           </>
         )}
       </Card>
+      <SourceDrawer citation={open} onClose={() => setOpen(null)} />
+    </>
+  )
+}
+
+export default function Monitoring() {
+  const projectId = useUiStore((s) => s.projectId)
+  const { project, reports, contracts, asOf, alerts } = useMonitoringData(projectId)
+  const gov = useGovernance(project?.borrower_country_code ?? '').data ?? []
+
+  if (!project || !asOf) return <Card state="loading">{null}</Card>
+
+  const latest = [...reports].sort((a, b) => b.sequence - a.sequence)[0]
+  const elapsed = latest ? timeElapsedPct(project, latest.date) : null
+  const count = (signal: string) => alerts.filter((a) => a.signal === signal).length
+  const govLatest = [...gov].sort((a, b) => b.year - a.year)[0]
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.head}>
+        <h1>Execution and monitoring</h1>
+        <p>Warning signals from supervision reports and from the contract data your team enters, ranked by severity. Latest data as of {asOf}.</p>
+      </div>
+
+      <Carousel ariaLabel="Key figures">
+        <Card title="Rating drops"><p><span className={styles.big}>{count('rating_drop')}</span></p><ProvenanceChip kind="public" detail="supervision reports" /></Card>
+        <Card title="Disbursed vs. time elapsed">
+          {latest && elapsed !== null ? (<>
+            <p><span className={styles.big}>{latest.disbursed_pct - elapsed}</span> <span className={styles.unit}>points</span></p>
+            <p className={styles.sub}>Latest report: {latest.disbursed_pct}% disbursed, {elapsed}% of time elapsed. Alert above {THRESHOLDS.disbursementLagPoints} points.</p>
+            <ProvenanceChip kind="derived" detail={`n=${reports.length} reports`} />
+          </>) : <EmptyState title="No supervision reports" />}
+        </Card>
+        <Card title="Contracts past entered end date"><p><span className={styles.big}>{count('contract_past_end')}</span> <span className={styles.unit}>of {contracts.length}</span></p><ProvenanceChip kind="entered" /></Card>
+        <Card title="Approved amendments"><p><span className={styles.big}>{count('amendment')}</span></p><ProvenanceChip kind="entered" /></Card>
+      </Carousel>
+
+      <DisbursementCard projectId={projectId} />
+
+      <ScheduleCard project={project} />
+
+      <EarlyWarningCard projectId={projectId} />
 
       <div className={styles.two}>
         <Card title="Project key dates" aside={<ProvenanceChip kind="public" />}>
@@ -224,7 +254,6 @@ export default function Monitoring() {
           ) : <EmptyState title="No governance data for this country" />}
         </Card>
       </div>
-      <SourceDrawer citation={open} onClose={() => setOpen(null)} />
     </div>
   )
 }

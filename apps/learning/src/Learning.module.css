@@ -17,3 +17,7 @@
 .editForm { display: grid; gap: 12px; }
 .editForm label { display: grid; gap: 6px; }
 .editForm textarea { font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); color: var(--text); resize: vertical; }
+
+.chatCard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.chatSummary { line-height: 1.5; }
+.chatFigures { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }

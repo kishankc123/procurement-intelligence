@@ -69,7 +69,7 @@ function StageTable({ plan }: { plan: Plan }) {
 }
 
 /** The dropdown under a plan row: read-only stage timeline, with Edit plan, Full details and Close at the bottom. */
-function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: () => void; onFull: () => void; onClose: () => void }) {
+function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: () => void; onFull?: () => void; onClose: () => void }) {
   const { role } = useCurrentUser()
   const allowed = can(role, 'edit_plan')
   return (
@@ -81,7 +81,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
       <StageTable plan={plan} />
       <div className={styles.row}>
         <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>
-        <Button onClick={onFull}>Full details</Button>
+        {onFull && <Button onClick={onFull}>Full details</Button>}
         <Button variant="danger" onClick={onClose}>Close</Button>
       </div>
     </div>
@@ -89,7 +89,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
 }
 
 /** Edit a plan in a modal: change the category, method or dates, then Save plan, Cancel or Delete plan. No page change. */
-function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; open: boolean; onOpenChange: (open: boolean) => void; onDeleted: () => void }) {
+export function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; open: boolean; onOpenChange: (open: boolean) => void; onDeleted: () => void }) {
   const save = useSavePlan()
   const remove = useDeletePlan()
   const [draft, setDraft] = useState(plan)
@@ -133,14 +133,15 @@ function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; o
   )
 }
 
-function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string) => void }) {
+/** The plans table. `onFull` is optional (the chat has no full-details page); `compact` drops the category and method columns for narrow places. */
+export function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete, compact }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull?: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string) => void; compact?: boolean }) {
   const { role } = useCurrentUser()
   const allowed = can(role, 'edit_plan')
   return (
     <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
         <Paged items={plans} label="plans">{(pageRows) =><table className={`${styles.table} ${styles.plans}`}>
-          <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th><th aria-label="Actions" /></tr></thead>
+          <thead><tr><th>Plan</th>{!compact && <><th>Category</th><th>Method</th></>}<th>Advertisement</th><th>Signing</th><th>Days to sign</th><th aria-label="Actions" /></tr></thead>
           <tbody>
             {pageRows.map((p) => (
               <Fragment key={p.id}>
@@ -152,8 +153,7 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete }: { p
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(p.id === selectedId ? null : p.id) } }}
               >
                 <td>{p.name}<br /><span className={`mono ${styles.nowrap}`}>{p.id}</span></td>
-                <td>{p.category}</td>
-                <td>{p.method}</td>
+                {!compact && <><td>{p.category}</td><td>{p.method}</td></>}
                 <td className={`mono ${styles.nowrap}`}>{p.planned_advertisement}</td>
                 <td className={`mono ${styles.nowrap}`}>{p.planned_signing}</td>
                 <td className={`mono ${styles.nowrap}`}>{plannedDurations(p).advertisementToSigning}</td>
@@ -163,8 +163,8 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete }: { p
               </tr>
               {p.id === selectedId && (
                 <tr>
-                  <td colSpan={7} className={styles.expandedCell}>
-                    <PlanTimeline plan={p} onEdit={() => onEdit(p.id)} onFull={() => onFull(p.id)} onClose={() => onSelect(null)} />
+                  <td colSpan={compact ? 5 : 7} className={styles.expandedCell}>
+                    <PlanTimeline plan={p} onEdit={() => onEdit(p.id)} onFull={onFull ? () => onFull(p.id) : undefined} onClose={() => onSelect(null)} />
                   </td>
                 </tr>
               )}

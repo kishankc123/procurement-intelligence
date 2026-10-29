@@ -19,3 +19,15 @@ declare module 'monitoring/ScheduleCard' {
   const ScheduleCard: React.ComponentType<{ project: import('@pi/data').Project; badge?: React.ReactNode; footer?: React.ReactNode }>
   export default ScheduleCard
 }
+declare module 'planning/PlanningCard' {
+  const PlanningCard: React.ComponentType<{ projectId: string }>
+  export default PlanningCard
+}
+declare module 'monitoring/MonitoringCard' {
+  const MonitoringCard: React.ComponentType<{ projectId: string }>
+  export default MonitoringCard
+}
+declare module 'learning/LearningCard' {
+  const LearningCard: React.ComponentType<{ projectId: string }>
+  export default LearningCard
+}

@@ -11,6 +11,9 @@ Rebuild (`pnpm demo`) after any code change; `pnpm reset-db` only needs the API 
 Open http://localhost:5173. Role is stored in localStorage; the role switcher is in the top bar.
 If you restart the API after reset-db, refresh the browser.
 
+## Start with the assistant
+Open the landing page and type "help me with one of the mock projects" (or click a suggestion). The Node assistant server (`pnpm assistant`, started by `./run.sh`) answers: watch the agent run log (simulated services), then the "Your procurement solution is ready" card, and open any of the four stages. Replies are rule-based over the mock data and say so.
+
 ## The six-step script (project P-MOCK-001, FY2026)
 1. **Select** project and fiscal year in the top bar. Every screen follows them. Point at the Mock data banner and the coverage meter (15 of 28 contracts have approved entered data).
 2. **Planning** (role Planner): change a planned date, Save plan; the "advertisement to signing" KPI recomputes. Note the gated restructuring and duration cards (3 of 30), the GPPD country reference (Public chip), and the Withheld recommendation. Click a citation chip to open the SourceDrawer. Click **Not helpful** on the first recommendation.

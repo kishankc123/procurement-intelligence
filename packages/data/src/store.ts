@@ -1,12 +1,28 @@
 import { create } from 'zustand'
 import { DEFAULT_FISCAL_YEAR, DEFAULT_PROJECT_ID, type Role } from '@pi/config'
 import { emit } from '@pi/events'
+import type { AssistantReply } from './assistant'
+
+/** One line of the landing-page chat. Plain data, so the conversation survives moving between pages. */
+export interface ChatEntry {
+  id: string
+  role: 'user' | 'assistant' | 'error'
+  text: string
+  reply?: AssistantReply
+  /** True until the reply has been played once (steps, then text, then the ready card). */
+  animate?: boolean
+}
 
 interface UiState {
+  chat: ChatEntry[]
+  chatPending: boolean
   projectId: string
   fiscalYear: number
   role: Role
   setProject: (projectId: string) => void
+  addChat: (entry: ChatEntry) => void
+  setChatPending: (pending: boolean) => void
+  finishChat: (id: string) => void
   setFiscalYear: (fiscalYear: number) => void
   setRole: (role: Role) => void
 }
@@ -22,6 +38,11 @@ function readRole(): Role {
 
 // Shared singleton: the shell and every remote import this same module instance.
 export const useUiStore = create<UiState>((set) => ({
+  chat: [],
+  chatPending: false,
+  addChat: (entry) => set((s) => ({ chat: [...s.chat, entry] })),
+  setChatPending: (chatPending) => set({ chatPending }),
+  finishChat: (id) => set((s) => ({ chat: s.chat.map((e) => (e.id === id ? { ...e, animate: false } : e)) })),
   projectId: DEFAULT_PROJECT_ID,
   fiscalYear: DEFAULT_FISCAL_YEAR,
   role: readRole(),
