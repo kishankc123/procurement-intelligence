@@ -249,6 +249,12 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Feedback on the chat's own cards: under every block (ready, lifecycle, each stage) there is "Was this useful?" with Helpful and Not helpful. It writes to the `feedback` collection with target `AI-LAYER-chat<card>-<project>` (for example `chatplanning`, `chattender`, `chatmonitoring`, `chatlearning`, `chatready`, `chatlifecycle`), which Learning labels "Chat · Planning card" and so on. Checked end to end: a Not helpful on the Learning card appeared in the queue as "Chat · Learning card".
 - 100 tests pass. The learning remote, shell and assistant were restarted; data reset after testing.
 
+## Block 50: the assistant on Vercel (nothing committed)
+- Problem: the deployed site had no `/api/chat` (only json-server answers under `/api`), so the chat showed "The assistant server did not answer".
+- Fix: `api/chat.ts` is a Vercel function with the same logic as `server/index.ts` (POST only, JSON body, 400 for a bad message, 405 for other methods). It is registered in `vercel.json` with `mock/db.json` bundled. `packages/data/src/assistant.ts` no longer imports `@pi/config` (stage labels are local, and a test keeps them equal to the donut's), so the function loads without the workspace packages: bundled alone as CommonJS it is 774 KB and contains no `@pi/` reference. The deployed client already calls `/api/chat` (`ASSISTANT_BASE`).
+- Limit: the function answers from the seed file. Edits made on the deployed site live in the json-server function's memory, so server sentences that count live data (a saved draft, feedback totals) reflect the seed, not those edits. The cards themselves read live data and are unaffected.
+- Checked here: handler called directly (POST, string body, GET 405, bad message 400), the bundle check, `pnpm build:vercel`, 100 tests. Not checked here: the real Vercel deploy.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

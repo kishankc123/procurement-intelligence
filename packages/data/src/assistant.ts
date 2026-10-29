@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { LIFECYCLE_STEPS } from '@pi/config'
 import type { Amendment, Chunk, CompletionReport, Contract, ContractMilestone, Doc, Feedback, Plan, Project, SupervisionReport, TenderDraft } from './schemas'
 
 /**
@@ -37,7 +36,7 @@ export const Dossier = z.object({
 })
 export type Dossier = z.infer<typeof Dossier>
 
-/** The four lifecycle stages, as the donut and the blocks name them. Kept in step with LIFECYCLE_STEPS (tested). */
+/** The four lifecycle stages, as the donut and the blocks name them. Kept in step with LIFECYCLE_STEPS and its labels (tested). */
 export const STAGES = ['planning', 'tender-design', 'monitoring', 'learning'] as const
 export type LifecycleStage = (typeof STAGES)[number]
 
@@ -165,7 +164,8 @@ export function buildDossier(db: AssistantDb, project: Project): { dossier: Doss
 
 export type Intent = 'lifecycle' | LifecycleStage
 
-const STAGE_LABEL = Object.fromEntries(LIFECYCLE_STEPS.map((l) => [l.id, l.label])) as Record<LifecycleStage, string>
+// Plain labels, not imported from @pi/config: the Vercel function loads this file on its own, without the workspace packages. A test keeps them equal to the donut's.
+export const STAGE_LABEL: Record<LifecycleStage, string> = { planning: 'Planning', 'tender-design': 'Tender design', monitoring: 'Monitoring', learning: 'Learning' }
 
 /**
  * What does the user want to see? The whole lifecycle comes first ("the entire timeline"), then a single stage.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LIFECYCLE_STEPS } from '@pi/config'
-import { AssistantReply, STAGES, answer, detectIntent, resolveProject, type AssistantDb } from './assistant'
+import { AssistantReply, STAGES, STAGE_LABEL, answer, detectIntent, resolveProject, type AssistantDb } from './assistant'
 import type { Contract, Project } from './schemas'
 
 const project = (id: string, name: string, country: string, practice: string) => ({ project_id: id, project_name: name, borrower_country: country, project_global_practice: practice }) as Project
@@ -133,5 +133,6 @@ describe('answer with intents', () => {
 describe('stages', () => {
   it('match the lifecycle steps the donut shows', () => {
     expect([...STAGES]).toEqual(LIFECYCLE_STEPS.map((s) => s.id))
+    expect(Object.entries(STAGE_LABEL)).toEqual(LIFECYCLE_STEPS.map((s) => [s.id, s.label]))
   })
 })
