@@ -7,6 +7,7 @@ import { BlockView } from './ChatBlocks'
 import { MapBlock } from './MapBlock'
 import { LifecycleProposal, PlanProposal, TenderProposal } from './ProposalCards'
 import { FeatureOptions, MyLifecycleCard } from './MyLifecycle'
+import { LifecycleBubble } from './LifecycleBubble'
 import styles from './CopilotPanel.module.css'
 
 const STAGE = z.enum(['planning', 'tender-design', 'monitoring', 'learning'])
@@ -178,6 +179,7 @@ function Inner({ onEngage }: { onEngage: () => void }) {
       projects: (projects.data ?? []).map((p) => ({ id: p.project_id, name: p.project_name, kind: projectScope(p.project_id) })),
     },
   })
+  const send = useSendToChat()
   const setChatProject = useUiStore((st) => st.setChatProject)
   const lcName = useMyLifecycle((st) => st.name)
   const lcItems = useMyLifecycle((st) => st.items)
@@ -198,10 +200,10 @@ function Inner({ onEngage }: { onEngage: () => void }) {
               <button type="button" onClick={() => setChatProject(null)} aria-label="Clear the project in context">Clear</button></>
             : 'No project in context'}
         </span>
-        <button type="button" onClick={() => setLcOpen(!lcOpen)} aria-expanded={lcOpen}>My lifecycle · {lcItems.length} {lcItems.length === 1 ? 'item' : 'items'} {lcOpen ? '▾' : '▸'}</button>
+        <button type="button" onClick={() => setLcOpen(true)} aria-haspopup="dialog">My lifecycle · {lcItems.length} {lcItems.length === 1 ? 'item' : 'items'} ▸</button>
       </div>
-      {lcOpen && <MyLifecycleInChat />}
       <CopilotChat />
+      <LifecycleBubble open={lcOpen} onOpenChange={setLcOpen} onSend={send} />
     </div>
   )
 }

@@ -61,3 +61,6 @@
   .touchOnly { display: inline; }
   .info { display: none; }
 }
+
+/* Room under the chat for the lifecycle bubble fixed to the corner, so it never covers the last line or the input. */
+.landing { padding-bottom: 72px; }
