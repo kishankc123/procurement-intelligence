@@ -13,6 +13,14 @@ let listener
 export default async function handler(req, res) {
   try {
     // Imported inside the try so that a problem loading the runtime is reported as a message instead of a bare 500.
+    // vercel.json rewrites /api/copilotkit/<anything> to /api/copilotkit?path=<anything>. Whether Vercel then shows the function the original URL or the
+    // rewritten one, put the full path back so the runtime sees /api/copilotkit/<anything>.
+    const url = new URL(req.url ?? '/', 'http://localhost')
+    const rest = url.searchParams.get('path')
+    if (rest !== null && url.pathname.replace(/\/$/, '') === '/api/copilotkit') {
+      url.searchParams.delete('path')
+      req.url = `/api/copilotkit/${rest}${url.search}`
+    }
     listener ??= (await import('../_lib/copilot.mjs')).createCopilotListener(loadDb)
     if (!listener) { res.statusCode = 404; res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify({ error: 'The model is not configured (no OPENAI_API_KEY).' })) }
     return listener(req, res)
