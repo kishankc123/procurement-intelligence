@@ -29,3 +29,8 @@
 
 .dateAsk { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; }
 .dateAsk label { display: grid; gap: 4px; font-weight: 600; }
+
+/* Suppliers table on a phone: the stacked rows keep their column names beside each value. */
+@media (max-width: 640px) {
+  .labelled td[data-label]::before { content: attr(data-label) ': '; color: var(--muted); font-size: 12px; }
+}

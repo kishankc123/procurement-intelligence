@@ -34,6 +34,9 @@ describe('the view registry', () => {
     expect(best('show a map of our projects')).toBe('projects-map')
     expect(best('where are the projects')).toBe('projects-map')
     expect(findViews('list the suppliers')[0]?.view.id).toBe('suppliers')
+    // Potential suppliers for the user's own procurement are not the suppliers of one stored project.
+    expect(findViews('What are the potential suppliers I could contact?')[0]?.view.id).toBe('suppliers-proposal')
+    expect(findViews('who could I contact for a road project like this')[0]?.view.id).toBe('suppliers-proposal')
     // The names a stored project's stages go by.
     expect(best('show plans executed for the Lao project')).toBe('planning')
     expect(best('show tenders published for the Lao project')).toBe('tender-design')

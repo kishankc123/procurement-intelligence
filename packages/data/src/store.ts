@@ -19,10 +19,13 @@ interface UiState {
   projectId: string
   /** The project the conversation is about: null until one is shown or named, and null again when the user turns to their own procurement. Separate from the filter's project, which always has a value. */
   chatProjectId: string | null
+  /** What the user's own procurement is modelled on (a country, a sector or a project name), taken from the last suggestion drawn for it. Null until there is one. */
+  referenceKeyword: string | null
   fiscalYear: number
   role: Role
   setProject: (projectId: string) => void
   setChatProject: (projectId: string | null) => void
+  setReferenceKeyword: (keyword: string | null) => void
   addChat: (entry: ChatEntry) => void
   setChatPending: (pending: boolean) => void
   finishChat: (id: string) => void
@@ -48,6 +51,8 @@ export const useUiStore = create<UiState>((set) => ({
   finishChat: (id) => set((s) => ({ chat: s.chat.map((e) => (e.id === id ? { ...e, animate: false } : e)) })),
   projectId: DEFAULT_PROJECT_ID,
   chatProjectId: null,
+  referenceKeyword: null,
+  setReferenceKeyword: (referenceKeyword) => set({ referenceKeyword }),
   setChatProject: (chatProjectId) => set({ chatProjectId }),
   fiscalYear: DEFAULT_FISCAL_YEAR,
   role: readRole(),

@@ -37,6 +37,14 @@ const LifecycleResult = z.object({
   how_to_read: z.string(),
 })
 
+const SuppliersResult = z.object({
+  data_kind: z.string(), keyword: z.string().nullable(),
+  projects: z.array(z.object({ id: z.string(), name: z.string(), country: z.string() })),
+  supplier_count: z.number(),
+  suppliers: z.array(z.object({ supplier_id: z.string(), name: z.string(), country: z.string(), contracts: z.number(), total_usd: z.number(), categories: z.array(z.string()), projects: z.array(z.string()) })),
+  notes: z.array(z.string()),
+})
+
 /** A tool result arrives as text. Anything that is not the expected JSON shows as an empty state, never as a half-drawn card. */
 function parse<T>(schema: z.ZodType<T>, result: string | undefined): { ok: true; data: T } | { ok: false; missing: string } {
   if (!result) return { ok: false, missing: 'The assistant sent no result.' }
@@ -210,6 +218,41 @@ export function LifecycleProposal({ result }: { result: string | undefined }) {
         </Card>
       ))}
       <p className={styles.note}>{how_to_read}{groups.some((g) => g.scope === 'mock') ? ' Mock figures are demonstration data, not market benchmarks.' : ''}</p>
+    </div>
+  )
+}
+
+/**
+ * Potential suppliers for the user's own procurement: who won contracts on the similar real projects, ranked by value. It says what the data cannot give
+ * (contact details, who will bid), and the table keeps about five rows in view with the rest scrolling.
+ */
+export function PotentialSuppliers({ result }: { result: string | undefined }) {
+  const r = parse(SuppliersResult, result)
+  if (!r.ok) return <Gap title="Potential suppliers" text={r.missing} />
+  const { suppliers, projects, supplier_count, notes, data_kind } = r.data
+  return (
+    <div className={styles.card}>
+      <p className={styles.lead}><strong>Potential suppliers</strong> from {projects.length} similar {projects.length === 1 ? 'project' : 'projects'}: {projects.slice(0, 3).map((p) => p.name).join(', ')}{projects.length > 3 ? ` and ${projects.length - 3} more` : ''}.</p>
+      <Card title={`${supplier_count} ${supplier_count === 1 ? 'supplier' : 'suppliers'} with contracts`} aside={<ProvenanceChip kind={data_kind.startsWith('real') ? 'public' : 'derived'} detail={data_kind.startsWith('real') ? 'contract awards' : 'mock'} />}>
+        <div className={styles.scrollBox} tabIndex={0} role="region" aria-label="Potential suppliers, scrollable">
+          <table className={`${styles.table} ${styles.labelled}`}>
+            <thead><tr><th scope="col">Supplier</th><th scope="col">Country</th><th scope="col">Contracts</th><th scope="col">Value (USD)</th><th scope="col">Categories</th></tr></thead>
+            <tbody>
+              {suppliers.map((s) => (
+                <tr key={s.supplier_id}>
+                  <th scope="row">{s.name}<br /><span className={`mono ${styles.basis}`}>{s.supplier_id}</span></th>
+                  <td data-label="Country">{s.country}</td>
+                  <td className={styles.value} data-label="Contracts">{s.contracts}</td>
+                  <td className={styles.value} data-label="Value (USD)">{s.total_usd.toLocaleString('en-US')}</td>
+                  <td data-label="Categories">{s.categories.join(', ')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {supplier_count > suppliers.length && <p className={styles.note}>The first {suppliers.length} of {supplier_count}, by value.</p>}
+      </Card>
+      {notes.map((n) => <p key={n} className={styles.note}>{n}</p>)}
     </div>
   )
 }

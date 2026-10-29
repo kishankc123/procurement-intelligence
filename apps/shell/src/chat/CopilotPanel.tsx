@@ -5,7 +5,7 @@ import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
 import { MapBlock } from './MapBlock'
-import { LifecycleProposal, PlanProposal, TenderProposal } from './ProposalCards'
+import { LifecycleProposal, PlanProposal, PotentialSuppliers, TenderProposal } from './ProposalCards'
 import { FeatureOptions, MyLifecycleCard } from './MyLifecycle'
 import { LifecycleBubble } from './LifecycleBubble'
 import styles from './CopilotPanel.module.css'
@@ -21,6 +21,8 @@ function Card({ block }: { block: unknown }) {
   if (!parsed.success) return null
   // A card for a project that does not exist says so, instead of drawing empty tables the model then talks about.
   const id = parsed.data.projectId
+  // A card that needs a stored project and was given none draws nothing: the model is told so and asks, instead of the page showing an empty card.
+  if (parsed.data.type === 'tool' ? !id && (parsed.data.tool === 'suppliers' || parsed.data.tool === 'project-data') : !id) return null
   if (id && projects.data && !projects.data.some((p) => p.project_id === id)) return <p role="status" className={styles.problem}>There is no project with id {id}.</p>
   return <div className={styles.cards}><BlockView block={parsed.data} onSend={send} /></div>
 }
@@ -46,8 +48,9 @@ function useCardTools() {
   const known = useRef(new Set<string>())
   known.current = new Set((projects.data ?? []).map((p) => p.project_id))
   /** Makes the project the one the conversation is about (and the filter's project) when it exists; otherwise the model gets a sentence it has to pass on, and the card says so too. */
+  const NO_PROJECT = "No project id was given, so nothing was shown. If the user did not name a project, ask which one (real or mock). If this is about their own procurement, use the suggestion tools instead (propose_suppliers for potential suppliers, propose_lifecycle, propose_plan, propose_tender_draft). Do not tell the user that anything was displayed."
   const open = (projectId: string | null | undefined, shown: string) => {
-    if (!projectId) return shown
+    if (!projectId) return NO_PROJECT
     if (!known.current.has(projectId)) return `There is no project with id ${projectId}. Tell the user, and ask which project they mean.`
     setProject(projectId)
     setChatProject(projectId)
@@ -87,7 +90,7 @@ function useCardTools() {
     name: 'show_tool',
     description: 'Show a tool as a card: suppliers, project-data (contracts), knowledge (sources and documents) or evidence (conflicts). projectId may be omitted for knowledge and evidence.',
     parameters: z.object({ tool: TOOL, projectId: z.string().nullable().optional() }),
-    handler: async ({ tool, projectId }) => open(projectId, `Showed ${tool}`),
+    handler: async ({ tool, projectId }) => (!projectId && (tool === 'knowledge' || tool === 'evidence') ? `Showed ${tool}.` : open(projectId, `Showed ${tool}`)),
     render: ({ args }) => <Card block={{ type: 'tool', tool: args.tool, projectId: args.projectId ?? null }} />,
   })
 }
@@ -128,36 +131,53 @@ const handledProposals = new Set<string>()
  * A suggestion is for the user's own procurement, not for an existing project, so drawing one takes the conversation off the project it was on
  * (the chip says "No project in context"). Done here, once per suggestion, rather than left to the model remembering to ask for it.
  */
-function ForOwnProcurement({ id, children }: { id: string; children: React.ReactNode }) {
+/** What a suggestion was modelled on (the keyword it was worked out for), read from its result: a country, a sector or a project name. */
+function referenceOf(result: string | undefined): string | null {
+  try {
+    const r = JSON.parse(result ?? '') as { keyword?: unknown; filtered_by?: unknown; basis?: { filtered_by?: unknown } }
+    const found = [r.keyword, r.filtered_by, r.basis?.filtered_by].find((v): v is string => typeof v === 'string' && v.trim() !== '' && !v.startsWith('all stored'))
+    return found ?? null
+  } catch { return null }
+}
+
+function ForOwnProcurement({ id, result, children }: { id: string; result?: string; children: React.ReactNode }) {
   const setChatProject = useUiStore((s) => s.setChatProject)
+  const setReference = useUiStore((s) => s.setReferenceKeyword)
   useEffect(() => {
     if (handledProposals.has(id)) return
     handledProposals.add(id)
     setChatProject(null)
-  }, [id, setChatProject])
+    // Remembered, so a follow-up such as "potential suppliers" is worked out for the same reference without the model having to recall it.
+    const reference = referenceOf(result)
+    if (reference) setReference(reference)
+  }, [id, result, setChatProject, setReference])
   return <>{children}</>
 }
 
 function useProposalTools() {
   useRenderTool({
+    name: 'propose_suppliers', parameters: z.object({}).passthrough(),
+    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId} result={p.result}><div className={styles.cards}><PotentialSuppliers result={p.result} /></div></ForOwnProcurement> : <p>Finding suppliers on the similar projects…</p>),
+  }, [])
+  useRenderTool({
     name: 'propose_monitoring', parameters: z.object({}).passthrough(),
-    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId}><Options stage="monitoring" title="Ways to evaluate and monitor your project" result={p.result} /></ForOwnProcurement> : <p>Looking at the monitoring features…</p>),
+    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId} result={p.result}><Options stage="monitoring" title="Ways to evaluate and monitor your project" result={p.result} /></ForOwnProcurement> : <p>Looking at the monitoring features…</p>),
   }, [])
   useRenderTool({
     name: 'propose_learning', parameters: z.object({}).passthrough(),
-    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId}><Options stage="learning" title="Ways to add learning to your project" result={p.result} /></ForOwnProcurement> : <p>Looking at the learning features…</p>),
+    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId} result={p.result}><Options stage="learning" title="Ways to add learning to your project" result={p.result} /></ForOwnProcurement> : <p>Looking at the learning features…</p>),
   }, [])
   useRenderTool({
     name: 'propose_lifecycle', parameters: z.object({}).passthrough(),
-    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId}><div className={styles.cards}><LifecycleProposal result={p.result} /></div></ForOwnProcurement> : <p>Working out estimates from the stored projects…</p>),
+    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId} result={p.result}><div className={styles.cards}><LifecycleProposal result={p.result} /></div></ForOwnProcurement> : <p>Working out estimates from the stored projects…</p>),
   }, [])
   useRenderTool({
     name: 'propose_plan', parameters: z.object({}).passthrough(),
-    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId}><div className={styles.cards}><PlanProposal result={p.result} /></div></ForOwnProcurement> : <p>Working out a plan from the stored plans…</p>),
+    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId} result={p.result}><div className={styles.cards}><PlanProposal result={p.result} /></div></ForOwnProcurement> : <p>Working out a plan from the stored plans…</p>),
   }, [])
   useRenderTool({
     name: 'propose_tender_draft', parameters: z.object({}).passthrough(),
-    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId}><div className={styles.cards}><TenderProposal result={p.result} /></div></ForOwnProcurement> : <p>Working out tender clauses from the stored drafts…</p>),
+    render: (p) => (p.status === 'complete' ? <ForOwnProcurement id={p.toolCallId} result={p.result}><div className={styles.cards}><TenderProposal result={p.result} /></div></ForOwnProcurement> : <p>Working out tender clauses from the stored drafts…</p>),
   }, [])
 }
 
@@ -181,12 +201,17 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   })
   const send = useSendToChat()
   const setChatProject = useUiStore((st) => st.setChatProject)
+  const reference = useUiStore((st) => st.referenceKeyword)
   const lcName = useMyLifecycle((st) => st.name)
   const lcItems = useMyLifecycle((st) => st.items)
   const [lcOpen, setLcOpen] = useState(false)
   useAgentContext({
     description: "The user's own lifecycle, built from the suggestions they pressed Add on. stagesStillEmpty lists what is missing. You cannot add to it; the cards have the Add button.",
     value: describeLifecycle(lcName, lcItems),
+  })
+  useAgentContext({
+    description: "What the user's own procurement is modelled on (a country, a sector or a project name), from the last suggestion drawn for it; null when there is none. Use it as the keyword for follow-ups about their own procurement, such as potential suppliers.",
+    value: { ownProcurement: { reference } },
   })
   // The prompts come from the stored projects (a request per country they are in), so the chat offers what it can actually answer.
   const prompts = suggestedPrompts(projects.data ?? [])
