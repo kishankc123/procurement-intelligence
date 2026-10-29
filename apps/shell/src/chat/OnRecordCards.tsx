@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { can, whyDisabled } from '@pi/config'
 import { useCurrentUser, usePlanPackages, useProject, useSavePlanPackage, useSaveTenderNotice, useTenderNotices, type PlanPackage, type TenderNotice } from '@pi/data'
-import { Badge, Button, Card, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, Paged, ProvenanceChip } from '@pi/ui'
 import { EditRowDialog, type EditField } from './EditRowDialog'
 import styles from './OnRecordCards.module.css'
 
@@ -14,18 +14,25 @@ const TENDER_FIELDS: EditField[] = [
   { key: 'posted', label: 'Posted', type: 'date', required: true }, { key: 'deadline', label: 'Bids due', type: 'date' },
 ]
 
-/** Shown when a source field is empty: the document left it blank, which is different from the app not having read it. */
-const text = (v: string | null) => v ?? <span className={styles.none}>not stated</span>
+/** A source field the document left empty. That is different from the app not having read it. */
+const text = (v: string | null | undefined) => v || <span className={styles.none}>not stated</span>
+
+/** The keyboard and mouse behaviour of a row that opens into details, the same as the donut's plans list. */
+const rowProps = (open: boolean, toggle: () => void) => ({
+  className: `${styles.clickable} ${open ? styles.selected : ''}`, tabIndex: 0, 'aria-expanded': open,
+  onClick: toggle, onKeyDown: (e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle() } },
+})
 
 /**
- * The procurement plan a project has on record: the package rows read from its newest World Bank plan document, copied as the document writes them
- * (cost, method and dates are the document's own text). It is a plan that existed, not a suggestion.
+ * The procurement plan a project has on record, in the same layout as the Plans list of the Planning stage: the package rows read from its newest World
+ * Bank plan document, as the document writes them (cost, method and dates are the document's own text). A row opens into its details and an Edit button.
  */
 export function PlanOnRecord({ projectId }: { projectId: string }) {
   const project = useProject(projectId).data?.[0]
   const rows = usePlanPackages(projectId)
   const { role } = useCurrentUser()
   const save = useSavePlanPackage()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<PlanPackage | null>(null)
   const allowed = can(role, 'edit_plan')
   if (!rows.isSuccess || !project) return <Card state="loading">{null}</Card>
@@ -33,89 +40,139 @@ export function PlanOnRecord({ projectId }: { projectId: string }) {
   const first = rows.data[0]!
   const unit = first.cost_unit
   return (
-    <Card title="Procurement plan on record" aside={<ProvenanceChip kind="public" detail={`plan of ${first.plan_date}`} />}>
-      <p className={styles.lead}>
-        {rows.data.length} rows from the World Bank procurement plan of {first.plan_date} for {project.project_name}, as the document writes them.
-        The plan holds more packages than these first rows, and the oldest packages often come first. <a href={first.source_url} target="_blank" rel="noreferrer">Open the plan document</a>
+    <div className={styles.chatCard}>
+      <p className={styles.chatSummary}>
+        <strong>{rows.data.length} procurement plan {rows.data.length === 1 ? 'row' : 'rows'}</strong> for {project.project_name}, read from the World Bank procurement plan of <span className="mono">{first.plan_date}</span>, as the document writes them.{' '}
+        <ProvenanceChip kind="public" />
       </p>
-      <div className={styles.scroll}>
-        <table className={styles.table}>
-          <thead>
-            <tr><th scope="col">Reference</th><th scope="col">Description</th><th scope="col">Estimated cost{unit ? ` (${unit})` : ''}</th><th scope="col">Method</th><th scope="col">Review</th><th scope="col">Expected bid opening</th><th scope="col"><span className="sr-only">Edit</span></th></tr>
-          </thead>
-          <tbody>
-            {rows.data.map((r) => (
-              <tr key={r.id}>
-                <td className="mono">{text(r.ref_no)}</td>
-                <td>{r.description}{r.packages ? <span className={styles.none}> · {r.packages} packages</span> : null}</td>
-                <td className={styles.num}>{text(r.estimated_cost)}</td>
-                <td>{text(r.method)}</td>
-                <td>{text(r.review)}</td>
-                <td>{text(r.expected_bid_opening)}</td>
-                <td className={styles.edit}>
-                  {r.edited && <Badge>Edited</Badge>}{' '}
-                  <Button onClick={() => setEditing(r)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Card title="Plans" aside={<ProvenanceChip kind="public" detail={`plan of ${first.plan_date}`} />}>
+        <Paged items={rows.data} label="plan rows">{(pageRows) => (
+          <div className={styles.scroll}>
+            <table className={`${styles.table} ${styles.rows}`}>
+              <thead><tr><th>Plan</th><th>Estimated cost{unit ? ` (${unit})` : ''}</th><th>Method</th><th>Expected bid opening</th><th aria-label="Status" /></tr></thead>
+              <tbody>
+                {pageRows.map((r) => {
+                  const open = r.id === selectedId
+                  const toggle = () => setSelectedId(open ? null : r.id)
+                  return (
+                    <Fragment key={r.id}>
+                      <tr {...rowProps(open, toggle)}>
+                        <td>{r.description}<br /><span className={`mono ${styles.nowrap}`}>{r.ref_no ?? r.id}</span></td>
+                        <td className={styles.num}>{text(r.estimated_cost)}</td>
+                        <td>{text(r.method)}</td>
+                        <td className={styles.nowrap}>{text(r.expected_bid_opening)}</td>
+                        <td>{r.edited && <Badge>Edited</Badge>}</td>
+                      </tr>
+                      {open && (
+                        <tr>
+                          <td colSpan={5} className={styles.expandedCell}>
+                            <div className={styles.expanded}>
+                              <div className={styles.expandedHead}>
+                                <strong>{r.ref_no ?? r.id}</strong>
+                                <span>
+                                  <Button onClick={() => setEditing(r)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit</Button>{' '}
+                                  <Button onClick={() => setSelectedId(null)}>Close</Button>
+                                </span>
+                              </div>
+                              <dl className={styles.facts}>
+                                <div><dt>Category</dt><dd>{text(r.category)}</dd></div>
+                                <div><dt>Review by the Bank</dt><dd>{text(r.review)}</dd></div>
+                                <div><dt>Packages in the row</dt><dd>{text(r.packages)}</dd></div>
+                                <div><dt>Plan document</dt><dd><a href={r.source_url} target="_blank" rel="noreferrer">{r.plan_doc}</a> · {r.plan_date}</dd></div>
+                              </dl>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}</Paged>
+        <p className={styles.sub}>Each row is a package in the plan. The plan holds more packages than these first rows, and the oldest often come first. Click a row to see its details and edit it.</p>
+      </Card>
       {editing && (
         <EditRowDialog open onOpenChange={(o) => { if (!o) setEditing(null) }} title="Edit plan row" description={`${editing.ref_no ?? 'Row'} · saved as entered by you, the document is not changed`}
           fields={PLAN_FIELDS} row={editing as unknown as Record<string, unknown>} pending={save.isPending}
           onSave={(next) => save.mutate(next as unknown as PlanPackage, { onSuccess: () => setEditing(null) })} />
       )}
-    </Card>
+    </div>
   )
 }
 
-const SHOWN = 8
-
-/** The tenders (Invitation for Bids notices) a project published, newest first, each linking to its notice on the World Bank site. */
+/** The tenders a project published, in the same layout: a summary line, a Tenders card with a compact table, rows that open into details, an Edit button and the notice link. */
 export function TenderNoticesOnRecord({ projectId }: { projectId: string }) {
+  const project = useProject(projectId).data?.[0]
   const notices = useTenderNotices(projectId)
   const { role } = useCurrentUser()
   const save = useSaveTenderNotice()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<TenderNotice | null>(null)
   const allowed = can(role, 'edit_tender_facts')
-  const [all, setAll] = useState(false)
-  if (!notices.isSuccess) return <Card state="loading">{null}</Card>
+  if (!notices.isSuccess || !project) return <Card state="loading">{null}</Card>
   if (notices.data.length === 0) return null
   const rows = [...notices.data].sort((a, b) => b.posted.localeCompare(a.posted))
-  const shown = all ? rows : rows.slice(0, SHOWN)
   return (
-    <Card title="Tenders published" aside={<ProvenanceChip kind="public" detail={`${rows.length} notices`} />}>
-      <p className={styles.lead}>Invitation for Bids notices from the World Bank procurement notices, newest first. Bid validity, security and the other clauses are in the bidding documents, which are not in these notices.</p>
-      <div className={styles.scroll}>
-        <table className={styles.table}>
-          <thead>
-            <tr><th scope="col">Posted</th><th scope="col">Reference</th><th scope="col">Description</th><th scope="col">Method</th><th scope="col">Bids due</th><th scope="col">Notice</th><th scope="col"><span className="sr-only">Edit</span></th></tr>
-          </thead>
-          <tbody>
-            {shown.map((n) => (
-              <tr key={n.id}>
-                <td className="mono">{n.posted}</td>
-                <td className="mono">{n.reference || <span className={styles.none}>not stated</span>}</td>
-                <td>{n.description || <span className={styles.none}>not stated</span>}<span className={styles.none}> · {n.category}, {n.organization}</span></td>
-                <td>{n.method}</td>
-                <td className="mono">{n.deadline ?? <span className={styles.none}>not stated</span>}</td>
-                <td><a href={n.url} target="_blank" rel="noreferrer">{n.id}</a></td>
-                <td className={styles.edit}>
-                  {n.edited && <Badge>Edited</Badge>}{' '}
-                  <Button onClick={() => setEditing(n)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_facts')}>Edit</Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {rows.length > SHOWN && <Button onClick={() => setAll(!all)}>{all ? 'Show fewer' : `Show all ${rows.length}`}</Button>}
+    <div className={styles.chatCard}>
+      <p className={styles.chatSummary}>
+        <strong>{rows.length} {rows.length === 1 ? 'tender' : 'tenders'} published</strong> for {project.project_name}, newest first, from the World Bank procurement notices.{' '}
+        <ProvenanceChip kind="public" />
+      </p>
+      <Card title="Tenders" aside={<ProvenanceChip kind="public" detail={`${rows.length} notices`} />}>
+        <Paged items={rows} label="tenders">{(pageRows) => (
+          <div className={styles.scroll}>
+            <table className={`${styles.table} ${styles.rows}`}>
+              <thead><tr><th>Tender</th><th>Posted</th><th>Bids due</th><th>Method</th><th aria-label="Status" /></tr></thead>
+              <tbody>
+                {pageRows.map((n) => {
+                  const open = n.id === selectedId
+                  const toggle = () => setSelectedId(open ? null : n.id)
+                  return (
+                    <Fragment key={n.id}>
+                      <tr {...rowProps(open, toggle)}>
+                        <td>{text(n.description)}<br /><span className={`mono ${styles.nowrap}`}>{n.reference || n.id}</span></td>
+                        <td className={`mono ${styles.nowrap}`}>{n.posted}</td>
+                        <td className={`mono ${styles.nowrap}`}>{text(n.deadline)}</td>
+                        <td>{n.method}</td>
+                        <td>{n.edited && <Badge>Edited</Badge>}</td>
+                      </tr>
+                      {open && (
+                        <tr>
+                          <td colSpan={5} className={styles.expandedCell}>
+                            <div className={styles.expanded}>
+                              <div className={styles.expandedHead}>
+                                <strong>{n.reference || n.id}</strong>
+                                <span>
+                                  <Button onClick={() => setEditing(n)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_facts')}>Edit</Button>{' '}
+                                  <Button onClick={() => setSelectedId(null)}>Close</Button>
+                                </span>
+                              </div>
+                              <dl className={styles.facts}>
+                                <div><dt>Category</dt><dd>{n.category}</dd></div>
+                                <div><dt>Published by</dt><dd>{n.organization}</dd></div>
+                                <div><dt>Status</dt><dd>{n.status}</dd></div>
+                                <div><dt>World Bank notice</dt><dd><a href={n.url} target="_blank" rel="noreferrer">{n.id}</a></dd></div>
+                              </dl>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}</Paged>
+        <p className={styles.sub}>Invitation for Bids notices. Bid validity, security and the other clauses are in the bidding documents, which are not in these notices. Click a row to see its details and edit it.</p>
+      </Card>
       {editing && (
         <EditRowDialog open onOpenChange={(o) => { if (!o) setEditing(null) }} title="Edit tender notice" description={`${editing.id} · saved as entered by you, the World Bank notice is not changed`}
           fields={TENDER_FIELDS} row={editing as unknown as Record<string, unknown>} pending={save.isPending}
           onSave={(next) => save.mutate(next as unknown as TenderNotice, { onSuccess: () => setEditing(null) })} />
       )}
-    </Card>
+    </div>
   )
 }

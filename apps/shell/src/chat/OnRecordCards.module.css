@@ -1,15 +1,33 @@
-.lead { line-height: 1.5; margin: 0 0 10px; color: var(--muted); }
-.lead a { color: var(--primary); }
-.scroll { overflow-x: auto; margin-bottom: 10px; }
-.table { width: 100%; border-collapse: collapse; font-size: 0.93em; }
-.table th, .table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
-.table th { color: var(--muted); font-weight: 600; white-space: nowrap; }
-.table td a { color: var(--primary); }
+/* Same look as the Plans list inside the donut's Planning view (apps/planning/src/Planning.module.css): a summary line, a Card with a compact table whose first
+   column is the name with its ID underneath, narrow columns, rows that open into details. Kept in step by hand: the remote's CSS is not shared with the shell. */
+.chatCard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.chatSummary { line-height: 1.5; margin: 0; }
+.sub { color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
+.sub a { color: var(--primary); }
+.scroll { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; }
+.table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; }
+.table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.rows { min-width: 640px; }
+.rows th:first-child, .rows td:first-child { min-width: 220px; }
+.nowrap { white-space: nowrap; }
 .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .none { color: var(--muted); }
+.clickable { cursor: pointer; }
+.clickable:hover { background: var(--bg); }
+.clickable:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.selected { background: var(--selected); }
+.table td.expandedCell { padding: 0; background: var(--bg); border-bottom: 1px solid var(--border); }
+.expanded { margin: 0 0 0 16px; padding: 10px 12px 12px; border-left: 3px solid var(--primary); display: grid; gap: 8px; font-size: 13px; }
+.expandedHead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 16px; margin: 0; }
+.facts div { min-width: 0; }
+.facts dt { color: var(--muted); font-size: 12px; }
+.facts dd { margin: 0; overflow-wrap: anywhere; }
+.facts a { color: var(--primary); }
 
+/* Edit row dialog */
 .form { display: grid; gap: 10px; }
-.form label { display: grid; gap: 4px; color: var(--muted); font-size: 0.93em; }
-.form input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.form label { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
+.form input { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--surface); color: var(--text); font: inherit; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
-.edit { white-space: nowrap; }

@@ -18,3 +18,5 @@
 .table th, .table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
 .table th { color: var(--muted); width: 55%; }
 .table td { font-variant-numeric: tabular-nums; }
+
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }

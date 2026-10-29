@@ -178,7 +178,7 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
   }
   if (!draft) {
     return (
-      <>
+      <div className={styles.stack}>
       <Card title="Tender draft on record" aside={<ProvenanceChip kind="missing" />}>
         <EmptyState title={`No tender draft on record for ${project.project_name}`} text="Nothing is made up for an existing project. Tender clauses are not in the public sources, so they appear only when someone enters them. Any tenders the project published are listed below." />
         <div className={styles.actions}>
@@ -187,11 +187,11 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
         </div>
       </Card>
       <TenderNoticesOnRecord projectId={projectId} />
-      </>
+      </div>
     )
   }
   return (
-    <>
+    <div className={styles.stack}>
     <Card title="Tender draft on record" aside={<ProvenanceChip kind="entered" />}>
       <p className={styles.lead}>The draft saved for {project.project_name}. These are the clauses it has, as entered.</p>
       <table className={styles.table}>
@@ -208,6 +208,6 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
       </div>
     </Card>
     <TenderNoticesOnRecord projectId={projectId} />
-    </>
+    </div>
   )
 }
