@@ -9,6 +9,7 @@ import styles from './MyLifecycle.module.css'
 
 // The user's lifecycle is drawn with the micro front-ends' own components, the same ones a stored project's stages are made of.
 const PlanProposalCard = lazy(() => import('planning/PlanProposalCard'))
+const EstimateTimelineCard = lazy(() => import('planning/EstimateTimelineCard'))
 const MonitoringFeature = lazy(() => import('monitoring/MonitoringFeature'))
 const LearningFeature = lazy(() => import('learning/LearningFeature'))
 
@@ -18,6 +19,10 @@ const PlanDetail = z.object({
 })
 const ClausesDetail = z.object({ clauses: z.array(z.object({ label: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]), source: z.enum(['real', 'mock']).optional() })) })
 const RowsDetail = z.object({ rows: z.array(z.object({ metric: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]).nullable(), n: z.number(), counts: z.string(), thin: z.boolean() })) })
+const TimelineDetail = z.object({
+  completion: z.string(), assumed: z.boolean(), notes: z.array(z.string()), overrun: z.boolean(),
+  milestones: z.array(z.object({ id: z.enum(['approval', 'effectiveness', 'advertisement', 'bid_opening', 'evaluation_complete', 'contract_signing', 'completion']), label: z.string(), date: z.string(), how: z.string() })),
+})
 const FeatureDetail = z.object({ id: z.string() })
 
 /**
@@ -59,8 +64,11 @@ function ItemView({ item }: { item: LifecycleItem }) {
   }
   if (item.kind === 'estimates') {
     const d = RowsDetail.safeParse(item.detail)
+    const timeline = TimelineDetail.safeParse((item.detail as { timeline?: unknown } | null)?.timeline)
     if (d.success) {
       return (
+        <>
+        {timeline.success && <RemoteBoundary name="Planning"><EstimateTimelineCard timeline={timeline.data} /></RemoteBoundary>}
         <table className={styles.table}>
           <tbody>
             {d.data.rows.filter((r) => r.value !== null).map((r) => (
@@ -68,6 +76,7 @@ function ItemView({ item }: { item: LifecycleItem }) {
             ))}
           </tbody>
         </table>
+        </>
       )
     }
   }

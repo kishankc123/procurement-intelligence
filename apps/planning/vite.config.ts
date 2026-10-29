@@ -19,7 +19,7 @@ export default defineConfig({
     federation({
       name: 'planning',
       filename: 'remoteEntry.js',
-      exposes: { './Planning': './src/Planning.tsx', './PlanningCard': './src/PlanningCard.tsx', './PlanProposalCard': './src/PlanProposalCard.tsx' },
+      exposes: { './Planning': './src/Planning.tsx', './PlanningCard': './src/PlanningCard.tsx', './PlanProposalCard': './src/PlanProposalCard.tsx', './EstimateTimelineCard': './src/EstimateTimelineCard.tsx' },
       shared,
     }),
   ],

@@ -1,6 +1,6 @@
 import { lazy, useState } from 'react'
 import { z } from 'zod'
-import type { Citation, LifecycleStage } from '@pi/data'
+import { datePlanningEstimates, defaultCompletion, type Citation, type LifecycleStage, type NewLifecycleItem } from '@pi/data'
 import { LIFECYCLE_STEPS } from '@pi/config'
 import { Badge, Card, EmptyState, ProvenanceChip } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
@@ -129,6 +129,25 @@ export function TenderProposal({ result }: { result: string | undefined }) {
   )
 }
 
+const today = () => new Date().toISOString().slice(0, 10)
+
+/**
+ * Planning figures are durations, which need a date to be drawn on a calendar. Ask for the project completion date; with none, it is ten years from
+ * today and the other dates are worked back from it. The date is chosen before adding; adding again with another date replaces the earlier item.
+ */
+function PlanningAdd({ label, item }: { label: string; item: (completion?: string) => NewLifecycleItem }) {
+  const [date, setDate] = useState('')
+  return (
+    <div className={styles.dateAsk}>
+      <label>Project completion date
+        <input type="date" value={date} min={today()} onChange={(e) => setDate(e.target.value)} aria-describedby="completion-hint" />
+      </label>
+      <span id="completion-hint" className={styles.basis}>{date ? 'The other dates are worked back from it.' : `Leave empty to use ${defaultCompletion(today())}, 10 years from today.`}</span>
+      <AddToLifecycle label={label} item={item(date || undefined)} />
+    </div>
+  )
+}
+
 const formatValue = (v: number | string, unit: string) => `${typeof v === 'number' ? v.toLocaleString('en-US') : v}${unit ? ` ${unit}` : ''}`
 
 /**
@@ -175,11 +194,17 @@ export function LifecycleProposal({ result }: { result: string | undefined }) {
             {LIFECYCLE_STEPS.flatMap((step) => {
               const rows = g.rows.filter((x) => x.stage === step.id && x.value !== null)
               if (rows.length === 0) return []
-              return [<AddToLifecycle key={step.id} label={`Add ${step.label.toLowerCase()} figures`} item={{
-                key: `estimates:${g.scope}:${step.id}`, stage: step.id as LifecycleStage, kind: 'estimates', title: `${step.label} estimates (${g.scope === 'real' ? 'real projects' : 'mock projects, illustrative'})`,
-                summary: rows.slice(0, 4).map((x) => `${x.metric}: ${typeof x.value === 'number' ? x.value.toLocaleString('en-US') : x.value}${x.unit ? ` ${x.unit}` : ''}`).join('; '),
-                basis: `${g.label}; each figure is a median with n=${rows.map((x) => x.n).join(', ')} ${rows[0]!.counts}.`, detail: { scope: g.scope, rows },
-              }} />]
+              const item = (completion?: string) => {
+                const timeline = step.id === 'planning' ? datePlanningEstimates(rows, completion, today()) : undefined
+                return {
+                  key: `estimates:${g.scope}:${step.id}`, stage: step.id as LifecycleStage, kind: 'estimates' as const, title: `${step.label} estimates (${g.scope === 'real' ? 'real projects' : 'mock projects, illustrative'})`,
+                  summary: rows.slice(0, 4).map((x) => `${x.metric}: ${typeof x.value === 'number' ? x.value.toLocaleString('en-US') : x.value}${x.unit ? ` ${x.unit}` : ''}`).join('; ') + (timeline ? `. Project completion ${timeline.completion}${timeline.assumed ? ' (assumed: 10 years from today)' : ''}.` : ''),
+                  basis: `${g.label}; each figure is a median with n=${rows.map((x) => x.n).join(', ')} ${rows[0]!.counts}.`, detail: { scope: g.scope, rows, timeline },
+                }
+              }
+              return [step.id === 'planning'
+                ? <PlanningAdd key={step.id} label={`Add ${step.label.toLowerCase()} figures`} item={item} />
+                : <AddToLifecycle key={step.id} label={`Add ${step.label.toLowerCase()} figures`} item={item()} />]
             })}
           </div>
         </Card>
