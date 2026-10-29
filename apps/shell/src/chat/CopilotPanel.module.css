@@ -93,3 +93,7 @@
   --tw-prose-body: var(--app-on-solid); --tw-prose-bold: var(--app-on-solid); --tw-prose-links: var(--app-on-solid);
 }
 .panel :global(.copilotKitUserMessage) :global([class~="cpk:prose"]) p { margin: 0; text-align: left; }
+
+.lcBar { display: flex; justify-content: flex-end; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.lcBar button { background: none; border: 0; color: var(--primary); font: inherit; cursor: pointer; padding: 4px 6px; border-radius: 6px; }
+.lcBar button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

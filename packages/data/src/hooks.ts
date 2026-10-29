@@ -21,6 +21,8 @@ export const useEnrichments = () => useQuery(list('enrichments', '/enrichments',
 export const useAmendments = () => useQuery(list('amendments', '/amendments', S.Amendment))
 export const usePlan = (projectId: string) => useQuery(list('plans', `/plans?project_id=${q(projectId)}`, S.Plan))
 export const useAllPlans = () => useQuery(list('plans', '/plans', S.Plan))
+export const usePlanPackages = (projectId: string) => useQuery(list('plan_packages', `/plan_packages?project_id=${q(projectId)}`, S.PlanPackage))
+export const useTenderNotices = (projectId: string) => useQuery(list('tender_notices', `/tender_notices?project_id=${q(projectId)}`, S.TenderNotice))
 export const useTenderDraft = (projectId: string) => useQuery(list('tender_drafts', `/tender_drafts?project_id=${q(projectId)}`, S.TenderDraft))
 export const useReports = (projectId: string) => useQuery(list('supervision_reports', `/supervision_reports?project_id=${q(projectId)}`, S.SupervisionReport))
 export const useCompletionReports = () => useQuery(list('completion_reports', '/completion_reports', S.CompletionReport))
@@ -56,6 +58,19 @@ export const useSavePlan = () =>
   useWrite<S.Plan>(async (plan) => {
     await send('PUT', `/plans/${plan.id}`, plan)
     return { action: 'Saved plan', target: plan.project_id }
+  })
+
+/** Edits to past data keep the row where it is and mark it edited, so the screen can tell the document's own text from a user's change. */
+export const useSavePlanPackage = () =>
+  useWrite<S.PlanPackage>(async (row) => {
+    await send('PUT', `/plan_packages/${row.id}`, { ...row, edited: true })
+    return { action: 'Edited plan row', target: row.project_id }
+  })
+
+export const useSaveTenderNotice = () =>
+  useWrite<S.TenderNotice>(async (row) => {
+    await send('PUT', `/tender_notices/${row.id}`, { ...row, edited: true })
+    return { action: 'Edited tender notice', target: row.project_id }
   })
 
 export const useDeletePlan = () =>

@@ -19,6 +19,8 @@ function scopedDb(db, scope) {
     contracts,
     plans: db.plans.filter((p) => inScope(p.project_id)),
     tender_drafts: db.tender_drafts.filter((d) => inScope(d.project_id)),
+    plan_packages: db.plan_packages.filter((d) => inScope(d.project_id)),
+    tender_notices: db.tender_notices.filter((d) => inScope(d.project_id)),
     supervision_reports: db.supervision_reports.filter((r) => inScope(r.project_id)),
     completion_reports: db.completion_reports.filter((r) => inScope(r.project_id)),
     documents,
@@ -157,6 +159,9 @@ var VIEWS = [
   ...STAGES.map((step) => ({ id: step, ...STAGE_VIEWS[step], show: { tool: "show_stage", args: { step } }, needsProject: true })),
   ...TOOLS.map((tool) => ({ id: tool, ...TOOL_VIEWS[tool], show: { tool: "show_tool", args: { tool } }, needsProject: tool !== "knowledge" && tool !== "evidence" })),
   { id: "lifecycle-proposal", title: "Proposed lifecycle (estimates)", description: "Estimated durations, clauses, reporting rhythm and contract sizes for the user's own procurement, as medians of similar projects.", show: { tool: "propose_lifecycle", args: {} }, needsProject: false, keywords: ["propose a lifecycle", "suggest a lifecycle", "lifecycle for my", "how long should", "how long would", "estimate", "typical duration", "contract be valid", "bid validity should", "for my procurement", "for my project"] },
+  { id: "my-lifecycle", title: "My lifecycle", description: "The lifecycle the user is building for their own procurement, with what is still missing.", show: { tool: "show_my_lifecycle", args: {} }, needsProject: false, keywords: ["my lifecycle", "my plan so far", "what do i have", "what is missing from my", "what is still missing", "saved lifecycle"] },
+  { id: "monitoring-options", title: "Monitoring options", description: "The charts, schedule and early-warning board the user can add to monitor their own project.", show: { tool: "propose_monitoring", args: {} }, needsProject: false, keywords: ["how can i monitor", "how can i evaluate", "evaluate and monitor", "monitor my project", "monitoring options", "which charts"] },
+  { id: "learning-options", title: "Learning options", description: "The feedback queue and learning figures the user can add to their own lifecycle.", show: { tool: "propose_learning", args: {} }, needsProject: false, keywords: ["how should i add learning", "add learning", "learning options", "feedback queue for my"] },
   { id: "plan-proposal", title: "Proposed plan", description: "A timeline for the user's own procurement, worked out from stored plans.", show: { tool: "propose_plan", args: {} }, needsProject: false, keywords: ["propose a plan", "plan my", "my procurement", "when should", "deadline", "start date", "sign by"] },
   { id: "tender-draft-proposal", title: "Proposed tender draft", description: "Suggested clause values and lessons for the user's own tender.", show: { tool: "propose_tender_draft", args: {} }, needsProject: false, keywords: ["draft a tender", "tender draft", "my tender", "clauses for", "write a tender"] }
 ];
@@ -217,7 +222,11 @@ function estimateGroup(all, scope, keyword) {
     rows.push(row("planning", "Award to signing (evaluation complete to signing)", plans.map((x) => days(x.planned_evaluation_complete, x.planned_signing)), "days", "plans", "Median of the planned gap between the end of evaluation and signing."));
     rows.push(row("planning", "Advertisement to signing, in total", plans.map((x) => days(x.planned_advertisement, x.planned_signing)), "days", "plans", "Median of the whole planned procurement time."));
   } else {
-    rows.push(gap("planning", "Bidding, evaluation and signing periods", "No advertisement, bid-opening or evaluation dates exist in the public sources for these projects, so they cannot be estimated from them."));
+    rows.push(gap("planning", "Evaluation and signing periods", "No bid-opening, evaluation or signing dates exist in the public sources for these projects, so they cannot be estimated from them."));
+  }
+  const tenders = db.tender_notices.filter((t) => ids.has(t.project_id) && valid(t.deadline));
+  if (tenders.length > 0) {
+    rows.push(row("planning", "Bidding period (tender posted to bids due)", tenders.map((t) => days(t.posted, t.deadline)).filter((d) => d >= 3 && d <= 365), "days", "tender notices", "Median days between a tender notice being posted and its bid deadline. Notices with the same day or a gap over a year are left out."));
   }
   for (const [category] of Object.entries(tally(contracts, (c) => c.procurement_category)).sort((a, b) => b[1] - a[1]).slice(0, 3)) {
     rows.push(row("planning", `Typical ${category} contract size`, contracts.filter((c) => c.procurement_category === category && c.supplier_contract_amount_usd > 0).map((c) => c.supplier_contract_amount_usd), "USD", "contracts", `Median amount of the ${category} contracts.`));
@@ -262,6 +271,17 @@ function estimateLifecycle(db, keyword) {
     how_to_read: "Each figure is a median of similar stored projects with the number it rests on. Real and mock groups are separate and never combined. A row marked missing means the data holds nothing for it."
   };
 }
+
+// packages/data/src/lifecycleOptions.ts
+var MONITORING_OPTIONS = [
+  { id: "disbursement-chart", title: "Disbursement against time chart", what: "The share of money disbursed against the share of time used, from each supervision report, with the lag that raises an alert.", uses: "Supervision reports" },
+  { id: "project-schedule", title: "Project schedule", what: "The planned and actual progress of each activity on a timeline, with the ones running behind flagged.", uses: "Schedule items entered by the team" },
+  { id: "early-warning", title: "Early-warning board", what: "Alerts for a rating drop, a risk increase, a disbursement lag, a contract past its end date and many amendments, urgent ones first, each assignable.", uses: "Supervision reports, contracts, amendments" }
+];
+var LEARNING_OPTIONS = [
+  { id: "feedback-queue", title: "Feedback queue", what: "Every suggestion can be rated Helpful or Not helpful; reviewers accept, edit or reject each one, and every decision is logged.", uses: "Ratings from users, reviewers" },
+  { id: "learning-figures", title: "Learning figures", what: "How many pieces of feedback came in, how many were reviewed and how many accepted, worked out from the queue.", uses: "The feedback queue" }
+];
 
 // packages/data/src/assistantData.ts
 var kindOf = (p) => scopeLabel(projectScope(p.project_id));
@@ -435,7 +455,9 @@ B. Real or mock, never both. Projects with ids like P158504 are REAL World Bank 
 
 C. Two modes, never mixed. REVIEW: the user asks about a project that exists (its planning, tender design, monitoring, learning, suppliers, contracts, documents). Show what that project HAS on record with find_views and the view, and describe only recorded facts. Do not propose, suggest, estimate or draft anything for it; if it holds nothing for a stage, say it is missing. SUGGEST: the user asks you to propose, plan, estimate or advise for THEIR OWN procurement (for example "propose a lifecycle for my road", "how long should bidding take", "how long should the contract be valid"). Do not ask for a reference project and do not refuse for lack of one. Call propose_lifecycle (whole lifecycle), propose_plan (dated timeline) or propose_tender_draft (clauses), and give the estimates: medians of similar stored projects, each with how many it rests on. Real and mock results are separate groups: say which group a figure comes from, never blend them, and say that mock figures are illustrative. Where a group is missing a figure, say so plainly instead of inventing one. Do not ask clarifying questions before estimating: call the tool with what you have. After a proposal card is on screen, reply with at most two short sentences (what it rests on and what is missing, naming the group) and do not repeat the figures it shows. Estimates are suggestions for the user's team to review, never promises. When the user asked only about real data, lead with the real group and what it is missing, and bring in the mock group only if they ask for it or accept it.
 
-D. Be honest. If you do not know, say "I don't know" or "The data does not say". If a question is unclear or could mean two things, ask one short clarifying question and wait; do not guess. If a tool returns an error, a "missing" value or nothing, say so plainly and do not fill the gap. Never invent a figure, name, id, date, chunk id or citation. Say so when something is outside what this app does.
+D. The user's own lifecycle. The user can build one lifecycle of their own (one per session) by pressing "Add to my lifecycle" on a suggestion card: a plan, tender clauses, estimates, monitoring features, learning features. You cannot add anything yourself and must never say you did, or that something "was added for you": the user added it. Say "you added" or "your lifecycle has", and say the card has an Add button. The context holds their lifecycle (its items and which stages are still empty): use it when they ask what they have or what is missing, and offer the next suggestion for an empty stage (plan, then tender clauses, then monitoring with propose_monitoring, then learning with propose_learning). To show it, call show_my_lifecycle. When they ask how they can evaluate or monitor a project, call propose_monitoring; when they ask how to add learning, call propose_learning.
+
+E. Be honest. If you do not know, say "I don't know" or "The data does not say". If a question is unclear or could mean two things, ask one short clarifying question and wait; do not guess. If a tool returns an error, a "missing" value or nothing, say so plainly and do not fill the gap. Never invent a figure, name, id, date, chunk id or citation. Say so when something is outside what this app does.
 
 You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
@@ -523,6 +545,18 @@ function buildTools(loadDb) {
       description: "ESTIMATES for the USER's OWN new procurement across all four stages (planning, tender design, monitoring, learning), as medians of similar stored projects: project length, bidding and evaluation periods, bid validity, contract duration, security, reporting rhythm, disbursement pace, contract sizes. Each figure carries how many projects, plans, contracts or reports it rests on. Real and mock projects come back as two separate groups, never blended; what a group does not hold is marked missing with the reason. It does not need a matching reference project: if the sector keyword matches nothing it uses all projects and says so. The chat draws the table from the result, so call this instead of working out values yourself.",
       parameters: z2.object({ keyword: z2.string().optional().describe("Sector, name or country to narrow by, for example road, water, health") }),
       execute: guard(({ keyword }) => estimateLifecycle(loadDb(), keyword))
+    }),
+    defineTool({
+      name: "propose_monitoring",
+      description: "The monitoring and evaluation features the app has, to offer the USER for their own project: the disbursement against time chart, the project schedule and the early-warning board. Call it when the user asks how they can evaluate or monitor a project. The chat draws the options with an Add button for each; the user decides what to add to their own lifecycle.",
+      parameters: z2.object({}),
+      execute: guard(() => ({ options: MONITORING_OPTIONS }))
+    }),
+    defineTool({
+      name: "propose_learning",
+      description: "The learning features the app has, to offer the USER for their own project: the feedback queue and the learning figures. Call it when the user asks how to add learning or feedback. The chat draws the options with an Add button for each.",
+      parameters: z2.object({}),
+      execute: guard(() => ({ options: LEARNING_OPTIONS }))
     }),
     defineTool({
       name: "propose_plan",

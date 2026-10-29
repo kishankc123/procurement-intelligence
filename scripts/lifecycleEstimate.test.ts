@@ -25,11 +25,19 @@ describe('estimating a lifecycle for a new procurement', () => {
     expect(real.rows.find((x) => x.metric.startsWith('Typical Works'))!.counts).toBe('contracts')
   })
 
+  it('gives a real bidding period from the published tender notices', () => {
+    const real = group(r, 'real')
+    const bidding = real.rows.find((x) => x.metric.startsWith('Bidding period'))!
+    expect(bidding.counts).toBe('tender notices')
+    expect(bidding.value).toBeGreaterThanOrEqual(3)
+    expect(bidding.n).toBeGreaterThan(10)
+  })
+
   it('says what the real data cannot hold instead of filling it in', () => {
     const real = group(r, 'real')
-    const bid = real.rows.find((x) => x.metric.startsWith('Bidding, evaluation and signing'))!
+    const bid = real.rows.find((x) => x.metric === 'Evaluation and signing periods')!
     expect(bid.value).toBeNull()
-    expect(bid.missing).toContain('No advertisement')
+    expect(bid.missing).toContain('No bid-opening')
     expect(real.rows.find((x) => x.stage === 'tender-design')!.value).toBeNull()
   })
 

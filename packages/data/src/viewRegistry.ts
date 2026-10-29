@@ -9,7 +9,7 @@ export interface ViewEntry {
   /** What the user sees. */
   description: string
   /** The tool that draws it, and the arguments to pass. `projectId` is filled in from the selected project. */
-  show: { tool: 'show_lifecycle' | 'show_stage' | 'show_tool' | 'propose_lifecycle' | 'propose_plan' | 'propose_tender_draft'; args: Record<string, string> }
+  show: { tool: 'show_lifecycle' | 'show_stage' | 'show_tool' | 'show_my_lifecycle' | 'propose_lifecycle' | 'propose_monitoring' | 'propose_learning' | 'propose_plan' | 'propose_tender_draft'; args: Record<string, string> }
   needsProject: boolean
   /** Words and phrases a user might use for it, including synonyms. Matching ignores case and a trailing s. */
   keywords: string[]
@@ -34,6 +34,9 @@ export const VIEWS: ViewEntry[] = [
   ...STAGES.map((step): ViewEntry => ({ id: step, ...STAGE_VIEWS[step], show: { tool: 'show_stage', args: { step } }, needsProject: true })),
   ...TOOLS.map((tool): ViewEntry => ({ id: tool, ...TOOL_VIEWS[tool], show: { tool: 'show_tool', args: { tool } }, needsProject: tool !== 'knowledge' && tool !== 'evidence' })),
   { id: 'lifecycle-proposal', title: 'Proposed lifecycle (estimates)', description: 'Estimated durations, clauses, reporting rhythm and contract sizes for the user\'s own procurement, as medians of similar projects.', show: { tool: 'propose_lifecycle', args: {} }, needsProject: false, keywords: ['propose a lifecycle', 'suggest a lifecycle', 'lifecycle for my', 'how long should', 'how long would', 'estimate', 'typical duration', 'contract be valid', 'bid validity should', 'for my procurement', 'for my project'] },
+  { id: 'my-lifecycle', title: 'My lifecycle', description: 'The lifecycle the user is building for their own procurement, with what is still missing.', show: { tool: 'show_my_lifecycle', args: {} }, needsProject: false, keywords: ['my lifecycle', 'my plan so far', 'what do i have', 'what is missing from my', 'what is still missing', 'saved lifecycle'] },
+  { id: 'monitoring-options', title: 'Monitoring options', description: 'The charts, schedule and early-warning board the user can add to monitor their own project.', show: { tool: 'propose_monitoring', args: {} }, needsProject: false, keywords: ['how can i monitor', 'how can i evaluate', 'evaluate and monitor', 'monitor my project', 'monitoring options', 'which charts'] },
+  { id: 'learning-options', title: 'Learning options', description: 'The feedback queue and learning figures the user can add to their own lifecycle.', show: { tool: 'propose_learning', args: {} }, needsProject: false, keywords: ['how should i add learning', 'add learning', 'learning options', 'feedback queue for my'] },
   { id: 'plan-proposal', title: 'Proposed plan', description: 'A timeline for the user\'s own procurement, worked out from stored plans.', show: { tool: 'propose_plan', args: {} }, needsProject: false, keywords: ['propose a plan', 'plan my', 'my procurement', 'when should', 'deadline', 'start date', 'sign by'] },
   { id: 'tender-draft-proposal', title: 'Proposed tender draft', description: 'Suggested clause values and lessons for the user\'s own tender.', show: { tool: 'propose_tender_draft', args: {} }, needsProject: false, keywords: ['draft a tender', 'tender draft', 'my tender', 'clauses for', 'write a tender'] },
 ]

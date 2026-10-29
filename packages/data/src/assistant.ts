@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Amendment, Chunk, CompletionReport, Conflict, Contract, ContractMilestone, Doc, Enrichment, Feedback, Plan, Project, Source, SupervisionReport, TenderDraft } from './schemas'
+import type { Amendment, Chunk, CompletionReport, Conflict, Contract, ContractMilestone, Doc, Enrichment, Feedback, Plan, PlanPackage, Project, TenderNotice, Source, SupervisionReport, TenderDraft } from './schemas'
 
 /**
  * The assistant's contract with the interface: a request goes to the server, a reply comes back.
@@ -81,6 +81,8 @@ export interface AssistantDb {
   contracts: Contract[]
   plans: Plan[]
   tender_drafts: TenderDraft[]
+  plan_packages: PlanPackage[]
+  tender_notices: TenderNotice[]
   supervision_reports: SupervisionReport[]
   completion_reports: CompletionReport[]
   documents: Doc[]
@@ -94,7 +96,7 @@ export interface AssistantDb {
   meta?: { dataset_label?: string }
 }
 
-const COLLECTIONS = ['projects', 'contracts', 'plans', 'tender_drafts', 'supervision_reports', 'completion_reports', 'documents', 'chunks', 'amendments', 'contract_milestones', 'feedback', 'sources', 'enrichments', 'conflicts'] as const
+const COLLECTIONS = ['projects', 'contracts', 'plans', 'tender_drafts', 'plan_packages', 'tender_notices', 'supervision_reports', 'completion_reports', 'documents', 'chunks', 'amendments', 'contract_milestones', 'feedback', 'sources', 'enrichments', 'conflicts'] as const
 
 /** A missing collection is an empty one, so a half-filled data file gives a plain answer instead of a crash. */
 export function withDefaults(raw: Partial<AssistantDb> | null | undefined): AssistantDb {
@@ -216,6 +218,8 @@ function stageIntro(db: AssistantDb, project: Project, step: LifecycleStage): st
   const name = project.project_name
   if (step === 'planning') {
     const plans = db.plans.filter((p) => p.project_id === project.project_id)
+    const rows = db.plan_packages.filter((r) => r.project_id === project.project_id)
+    if (plans.length === 0 && rows.length > 0) return `${name} has no saved plan, but its World Bank procurement plan of ${rows[0]!.plan_date} is on record: ${plural(rows.length, 'row')} are shown below as the document writes them.`
     if (plans.length === 0) return `I found no procurement plans for ${name}. Plans are entered by a planner, so there is nothing to show yet.`
     return `I found ${plural(plans.length, 'procurement plan')} for ${name}. The timeline shows the four tender stages of the selected plan; pick another plan in the table to compare, or switch stage with the donut.`
   }
@@ -223,7 +227,10 @@ function stageIntro(db: AssistantDb, project: Project, step: LifecycleStage): st
     const draft = db.tender_drafts.find((d) => d.project_id === project.project_id)
     return draft
       ? `A tender draft is on record for ${name}. Below are its clauses as entered.`
-      : `There is no tender draft on record for ${name}, and nothing is made up for an existing project. Ask me to suggest clauses for your own procurement if that is what you need.`
+      : (() => {
+          const tenders = db.tender_notices.filter((t) => t.project_id === project.project_id).length
+          return `There is no tender draft on record for ${name}, and nothing is made up for an existing project.${tenders > 0 ? ` It did publish ${plural(tenders, 'tender')}, listed below.` : ''} Ask me to suggest clauses for your own procurement if that is what you need.`
+        })()
   }
   if (step === 'monitoring') {
     const reports = db.supervision_reports.filter((r) => r.project_id === project.project_id)

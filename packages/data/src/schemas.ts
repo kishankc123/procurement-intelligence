@@ -97,6 +97,45 @@ export const TenderDraft = z.object({
 })
 export type TenderDraft = z.infer<typeof TenderDraft>
 
+/** One row of a procurement plan document, copied as the document writes it (cost, method and date are the document's own text, not converted). */
+export const PlanPackage = z.object({
+  id: z.string(),
+  project_id: z.string(),
+  plan_doc: z.string(),
+  plan_date: z.string(),
+  ref_no: z.string().nullable(),
+  description: z.string(),
+  category: z.string().nullable(),
+  estimated_cost: z.string().nullable(),
+  cost_unit: z.string().nullable(),
+  /** How many packages a summary row stands for, as written. */
+  packages: z.string().nullable(),
+  method: z.string().nullable(),
+  review: z.string().nullable(),
+  expected_bid_opening: z.string().nullable(),
+  source_url: z.string(),
+  /** True once a user has changed the row: it then stops being the document's own text and counts as entered. */
+  edited: z.boolean().optional(),
+})
+export type PlanPackage = z.infer<typeof PlanPackage>
+
+/** A tender (Invitation for Bids notice) published for a project. */
+export const TenderNotice = z.object({
+  id: z.string(),
+  project_id: z.string(),
+  reference: z.string(),
+  description: z.string(),
+  category: z.string(),
+  method: z.string(),
+  posted: z.string(),
+  deadline: z.string().nullable(),
+  status: z.string(),
+  organization: z.string(),
+  url: z.string(),
+  edited: z.boolean().optional(),
+})
+export type TenderNotice = z.infer<typeof TenderNotice>
+
 const Rating = z.enum(['HS', 'S', 'MS', 'MU', 'U', 'HU'])
 export type Rating = z.infer<typeof Rating>
 

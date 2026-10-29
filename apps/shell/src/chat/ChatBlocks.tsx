@@ -1,6 +1,6 @@
 import { lazy, useState } from 'react'
 import { LIFECYCLE_STEPS } from '@pi/config'
-import { useProjects, type Block, type LifecycleStage } from '@pi/data'
+import { usePlan, usePlanPackages, useProjects, type Block, type LifecycleStage } from '@pi/data'
 import { Badge, CircleCheck, DonutNav, ProvenanceChip } from '@pi/ui'
 import { FeedbackWidget } from '@pi/domain'
 import { RemoteBoundary } from '../RemoteBoundary'
@@ -10,6 +10,7 @@ import { ContractsCard } from './ContractsCard'
 import { KnowledgeCard } from './KnowledgeCard'
 import { SuppliersCard } from './SuppliersCard'
 import { TenderDraftCard } from './TenderDraftCard'
+import { PlanOnRecord } from './OnRecordCards'
 import { EvidenceCard } from '../pages/Evidence'
 import tool from './ToolCards.module.css'
 import { useStageFacts } from './useStageFacts'
@@ -57,6 +58,20 @@ function BigDonut({ projectId, onSend, heading }: { projectId: string; onSend: (
   )
 }
 
+/** The plans a project has: saved plans (the Planning card) and the plan rows read from a World Bank plan document. Whichever exist are shown; the Planning card's own empty state shows only when neither does. */
+function PlanningStage({ projectId }: { projectId: string }) {
+  const plans = usePlan(projectId)
+  const packages = usePlanPackages(projectId)
+  const hasRows = (packages.data?.length ?? 0) > 0
+  const hasPlans = (plans.data?.length ?? 0) > 0
+  return (
+    <>
+      {(hasPlans || !hasRows) && <RemoteBoundary name="Planning"><PlanningCard projectId={projectId} /></RemoteBoundary>}
+      {hasRows && <PlanOnRecord projectId={projectId} />}
+    </>
+  )
+}
+
 /** One stage, headed by the small donut so the user can move to any other stage. The stage's own cards are added step by step. */
 function Stage({ step, projectId, onSend }: { step: LifecycleStage; projectId: string; onSend: (text: string) => void }) {
   const project = useProjects().data?.find((p) => p.project_id === projectId)
@@ -72,7 +87,7 @@ function Stage({ step, projectId, onSend }: { step: LifecycleStage; projectId: s
         </div>
       </div>
       {step === 'planning' ? (
-        <RemoteBoundary name="Planning"><PlanningCard projectId={projectId} /></RemoteBoundary>
+        <PlanningStage projectId={projectId} />
       ) : step === 'tender-design' ? (
         <TenderDraftCard projectId={projectId} onSend={onSend} />
       ) : step === 'monitoring' ? (

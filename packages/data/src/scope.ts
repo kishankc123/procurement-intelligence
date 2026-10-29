@@ -22,6 +22,8 @@ export function scopedDb(db: AssistantDb, scope: DataScope): AssistantDb {
     contracts,
     plans: db.plans.filter((p) => inScope(p.project_id)),
     tender_drafts: db.tender_drafts.filter((d) => inScope(d.project_id)),
+    plan_packages: db.plan_packages.filter((d) => inScope(d.project_id)),
+    tender_notices: db.tender_notices.filter((d) => inScope(d.project_id)),
     supervision_reports: db.supervision_reports.filter((r) => inScope(r.project_id)),
     completion_reports: db.completion_reports.filter((r) => inScope(r.project_id)),
     documents,

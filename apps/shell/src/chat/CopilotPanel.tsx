@@ -2,9 +2,10 @@ import { z } from 'zod'
 import { useEffect, useState } from 'react'
 import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool, useRenderTool } from '@copilotkit/react-core/v2'
 import { COPILOT_URL } from '@pi/config'
-import { useProjects, useUiStore, Block, projectScope, scopeLabel } from '@pi/data'
+import { useProjects, useUiStore, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
 import { LifecycleProposal, PlanProposal, TenderProposal } from './ProposalCards'
+import { FeatureOptions, MyLifecycleCard } from './MyLifecycle'
 import styles from './CopilotPanel.module.css'
 
 const STAGE = z.enum(['planning', 'tender-design', 'monitoring', 'learning'])
@@ -46,6 +47,13 @@ function useCardTools() {
     return `${shown} (${scopeLabel(projectScope(projectId))}).`
   }
   useFrontendTool({
+    name: 'show_my_lifecycle',
+    description: "Show the user's own lifecycle (what they added from suggestions, and which stages are still empty) as a card in the chat.",
+    parameters: z.object({}),
+    handler: async () => 'Showed the user\'s own lifecycle.',
+    render: () => <MyLifecycleInChat />,
+  })
+  useFrontendTool({
     name: 'show_lifecycle',
     description: 'Show the whole lifecycle (planning, tender design, monitoring, learning) for a project as a card in the chat.',
     parameters: z.object({ projectId: z.string() }),
@@ -68,8 +76,30 @@ function useCardTools() {
   })
 }
 
+/** The user's own lifecycle drawn in the chat. A click on a missing stage asks the model for the next suggestion, as if the user had typed it. */
+function MyLifecycleInChat() {
+  const send = useSendToChat()
+  return <div className={styles.cards}><MyLifecycleCard onSend={send} /></div>
+}
+
+/** A monitoring or learning tool result is a short list of features, each with an Add button. Anything else shows nothing rather than half a card. */
+function Options({ stage, title, result }: { stage: 'monitoring' | 'learning'; title: string; result: string | undefined }) {
+  try {
+    const options = (JSON.parse(result ?? '') as { options?: FeatureOption[] }).options
+    return Array.isArray(options) && options.length > 0 ? <div className={styles.cards}><FeatureOptions stage={stage} title={title} options={options} /></div> : null
+  } catch { return null }
+}
+
 /** The suggestions the server works out (dates, clauses) are drawn with the app's own components. The model only chooses to call the tool; the numbers come from its result. */
 function useProposalTools() {
+  useRenderTool({
+    name: 'propose_monitoring', parameters: z.object({}).passthrough(),
+    render: (p) => (p.status === 'complete' ? <Options stage="monitoring" title="Ways to evaluate and monitor your project" result={p.result} /> : <p>Looking at the monitoring features…</p>),
+  }, [])
+  useRenderTool({
+    name: 'propose_learning', parameters: z.object({}).passthrough(),
+    render: (p) => (p.status === 'complete' ? <Options stage="learning" title="Ways to add learning to your project" result={p.result} /> : <p>Looking at the learning features…</p>),
+  }, [])
   useRenderTool({
     name: 'propose_lifecycle', parameters: z.object({}).passthrough(),
     render: (p) => (p.status === 'complete' ? <div className={styles.cards}><LifecycleProposal result={p.result} /></div> : <p>Working out estimates from the stored projects…</p>),
@@ -102,6 +132,13 @@ function Inner({ onEngage }: { onEngage: () => void }) {
       projects: (projects.data ?? []).map((p) => ({ id: p.project_id, name: p.project_name, kind: projectScope(p.project_id) })),
     },
   })
+  const lcName = useMyLifecycle((st) => st.name)
+  const lcItems = useMyLifecycle((st) => st.items)
+  const [lcOpen, setLcOpen] = useState(false)
+  useAgentContext({
+    description: "The user's own lifecycle, built from the suggestions they pressed Add on. stagesStillEmpty lists what is missing. You cannot add to it; the cards have the Add button.",
+    value: describeLifecycle(lcName, lcItems),
+  })
   useConfigureSuggestions({
     suggestions: [
       { title: 'Plan my procurement', message: 'I want to procure a new road rehabilitation project. Using the mock projects as reference, help me plan it: which stages, how long each takes, and which procurement methods to use.' },
@@ -115,6 +152,10 @@ function Inner({ onEngage }: { onEngage: () => void }) {
     available: 'before-first-message' }, [firstReal?.project_id])
   return (
     <div className={styles.panel} onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) onEngage() }}>
+      <div className={styles.lcBar}>
+        <button type="button" onClick={() => setLcOpen(!lcOpen)} aria-expanded={lcOpen}>My lifecycle · {lcItems.length} {lcItems.length === 1 ? 'item' : 'items'} {lcOpen ? '▾' : '▸'}</button>
+      </div>
+      {lcOpen && <MyLifecycleInChat />}
       <CopilotChat />
     </div>
   )

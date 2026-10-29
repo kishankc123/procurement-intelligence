@@ -1,10 +1,11 @@
 import { lazy, useState } from 'react'
 import { z } from 'zod'
-import type { Citation } from '@pi/data'
+import type { Citation, LifecycleStage } from '@pi/data'
 import { LIFECYCLE_STEPS } from '@pi/config'
 import { Badge, Card, EmptyState, ProvenanceChip } from '@pi/ui'
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import { RemoteBoundary } from '../RemoteBoundary'
+import { AddToLifecycle } from './MyLifecycle'
 import styles from './ProposalCards.module.css'
 
 const PlanProposalCard = lazy(() => import('planning/PlanProposalCard'))
@@ -57,7 +58,18 @@ export function PlanProposal({ result }: { result: string | undefined }) {
   if (!r.ok) return <Gap title="Suggested plan" text={r.missing} />
   const { plan, basis, deadline_check } = r.data
   const deadline = typeof deadline_check === 'object' ? deadline_check : undefined
-  return <RemoteBoundary name="Planning"><PlanProposalCard proposal={{ plan, basis, deadline }} /></RemoteBoundary>
+  return (
+    <div className={styles.card}>
+      <RemoteBoundary name="Planning"><PlanProposalCard proposal={{ plan, basis, deadline }} /></RemoteBoundary>
+      <div className={styles.add}>
+        <AddToLifecycle item={{
+          key: `plan:${plan.name}:${plan.planned_advertisement}`, stage: 'planning', kind: 'plan', title: plan.name || 'Suggested plan',
+          summary: `Advertise ${plan.planned_advertisement}, open bids ${plan.planned_bid_opening}, finish evaluation ${plan.planned_evaluation_complete}, sign ${plan.planned_signing}.`,
+          basis: `Median of ${basis.sample_size} stored ${basis.sample_size === 1 ? 'plan' : 'plans'} (${basis.filtered_by}); ${basis.median_total_days} days from advertisement to signing.`, detail: { plan, basis },
+        }} />
+      </div>
+    </div>
+  )
 }
 
 /** The suggested tender clauses, each with how it was worked out, and the lessons that go with them (citations open the shared evidence drawer). */
@@ -95,6 +107,13 @@ export function TenderProposal({ result }: { result: string | undefined }) {
           </ul>
         </Card>
       )}
+      <div className={styles.add}>
+        <AddToLifecycle item={{
+          key: 'tender-clauses', stage: 'tender-design', kind: 'tender-clauses', title: 'Tender clauses',
+          summary: clauses.map((c) => `${c.label}: ${typeof c.value === 'number' ? c.value.toLocaleString('en-US') : c.value}${c.unit ? ` ${c.unit}` : ''}`).join('; '),
+          basis: `Median of ${clauses[0]?.sample_size ?? 0} stored ${clauses[0]?.sample_size === 1 ? 'draft' : 'drafts'} (${filtered_by}). Mock projects are demonstration data.`, detail: { clauses, lessons },
+        }} />
+      </div>
       <p className={styles.note}>Mock projects are demonstration data, so these are reference values, not market benchmarks.</p>
       <SourceDrawer citation={open} onClose={() => setOpen(null)} />
     </div>
@@ -137,6 +156,21 @@ export function LifecycleProposal({ result }: { result: string | undefined }) {
               </tbody>
             </table>
           )}
+        </Card>
+      ))}
+      {groups.filter((g) => g.rows.some((x) => x.value !== null)).map((g) => (
+        <Card key={`add-${g.scope}`} title={`Add to my lifecycle · ${g.scope === 'real' ? 'real projects' : 'mock projects'}`}>
+          <div className={styles.add}>
+            {LIFECYCLE_STEPS.flatMap((step) => {
+              const rows = g.rows.filter((x) => x.stage === step.id && x.value !== null)
+              if (rows.length === 0) return []
+              return [<AddToLifecycle key={step.id} label={`Add ${step.label.toLowerCase()} figures`} item={{
+                key: `estimates:${g.scope}:${step.id}`, stage: step.id as LifecycleStage, kind: 'estimates', title: `${step.label} estimates (${g.scope === 'real' ? 'real projects' : 'mock projects, illustrative'})`,
+                summary: rows.slice(0, 4).map((x) => `${x.metric}: ${typeof x.value === 'number' ? x.value.toLocaleString('en-US') : x.value}${x.unit ? ` ${x.unit}` : ''}`).join('; '),
+                basis: `${g.label}; each figure is a median with n=${rows.map((x) => x.n).join(', ')} ${rows[0]!.counts}.`, detail: { scope: g.scope, rows },
+              }} />]
+            })}
+          </div>
         </Card>
       ))}
       <p className={styles.note}>{how_to_read} Mock figures are demonstration data, not market benchmarks.</p>

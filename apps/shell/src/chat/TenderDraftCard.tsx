@@ -7,6 +7,7 @@ import {
 } from '@pi/data'
 import { Badge, Button, Card, EmptyState, ProvenanceChip, Select } from '@pi/ui'
 import { ValidityCoverage } from '../pages/ValidityCoverage'
+import { TenderNoticesOnRecord } from './OnRecordCards'
 import styles from './TenderDraftCard.module.css'
 
 const METHODS = ['Lowest evaluated price', 'Quality and cost based', 'Fixed budget']
@@ -177,16 +178,20 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
   }
   if (!draft) {
     return (
+      <>
       <Card title="Tender draft on record" aside={<ProvenanceChip kind="missing" />}>
-        <EmptyState title={`No tender draft on record for ${project.project_name}`} text="Nothing is made up for an existing project. Tender clauses are not in the public sources, so they appear only when someone enters them." />
+        <EmptyState title={`No tender draft on record for ${project.project_name}`} text="Nothing is made up for an existing project. Tender clauses are not in the public sources, so they appear only when someone enters them. Any tenders the project published are listed below." />
         <div className={styles.actions}>
           <Button variant="primary" onClick={() => onSend('Suggest tender clauses for my own procurement')}>Suggest a draft for my own procurement</Button>
           <Button onClick={() => setEditing(true)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Enter a draft for this project</Button>
         </div>
       </Card>
+      <TenderNoticesOnRecord projectId={projectId} />
+      </>
     )
   }
   return (
+    <>
     <Card title="Tender draft on record" aside={<ProvenanceChip kind="entered" />}>
       <p className={styles.lead}>The draft saved for {project.project_name}. These are the clauses it has, as entered.</p>
       <table className={styles.table}>
@@ -202,5 +207,7 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
         <Button onClick={() => onSend('Suggest tender clauses for my own procurement')}>Suggest a draft for my own procurement</Button>
       </div>
     </Card>
+    <TenderNoticesOnRecord projectId={projectId} />
+    </>
   )
 }

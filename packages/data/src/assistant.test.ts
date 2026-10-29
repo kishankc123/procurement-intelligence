@@ -13,7 +13,7 @@ const db: AssistantDb = {
     project('P-MOCK-003', 'Mock Urban Health Clinics Upgrade', 'Romania', 'Health'),
   ],
   contracts: [contract('R1', 'P-MOCK-001'), contract('R2', 'P-MOCK-001'), contract('W1', 'P-MOCK-002')],
-  plans: [], tender_drafts: [], supervision_reports: [], completion_reports: [], documents: [], chunks: [], amendments: [], contract_milestones: [], feedback: [], sources: [], enrichments: [], conflicts: [],
+  plans: [], tender_drafts: [], plan_packages: [], tender_notices: [], supervision_reports: [], completion_reports: [], documents: [], chunks: [], amendments: [], contract_milestones: [], feedback: [], sources: [], enrichments: [], conflicts: [],
 }
 
 describe('resolveProject', () => {

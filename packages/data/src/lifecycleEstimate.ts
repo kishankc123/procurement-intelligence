@@ -83,7 +83,12 @@ function estimateGroup(all: AssistantDb, scope: DataScope, keyword?: string): Es
     rows.push(row('planning', 'Award to signing (evaluation complete to signing)', plans.map((x) => days(x.planned_evaluation_complete, x.planned_signing)), 'days', 'plans', 'Median of the planned gap between the end of evaluation and signing.'))
     rows.push(row('planning', 'Advertisement to signing, in total', plans.map((x) => days(x.planned_advertisement, x.planned_signing)), 'days', 'plans', 'Median of the whole planned procurement time.'))
   } else {
-    rows.push(gap('planning', 'Bidding, evaluation and signing periods', 'No advertisement, bid-opening or evaluation dates exist in the public sources for these projects, so they cannot be estimated from them.'))
+    rows.push(gap('planning', 'Evaluation and signing periods', 'No bid-opening, evaluation or signing dates exist in the public sources for these projects, so they cannot be estimated from them.'))
+  }
+  // Real tender notices carry the day a tender was posted and the day bids were due, which is a real bidding period. A same-day or longer-than-a-year gap is a placeholder, not a period.
+  const tenders = db.tender_notices.filter((t) => ids.has(t.project_id) && valid(t.deadline))
+  if (tenders.length > 0) {
+    rows.push(row('planning', 'Bidding period (tender posted to bids due)', tenders.map((t) => days(t.posted, t.deadline!)).filter((d) => d >= 3 && d <= 365), 'days', 'tender notices', 'Median days between a tender notice being posted and its bid deadline. Notices with the same day or a gap over a year are left out.'))
   }
   for (const [category] of Object.entries(tally(contracts, (c) => c.procurement_category)).sort((a, b) => b[1] - a[1]).slice(0, 3)) {
     rows.push(row('planning', `Typical ${category} contract size`, contracts.filter((c) => c.procurement_category === category && c.supplier_contract_amount_usd > 0).map((c) => c.supplier_contract_amount_usd), 'USD', 'contracts', `Median amount of the ${category} contracts.`))

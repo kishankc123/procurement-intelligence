@@ -25,6 +25,9 @@ describe('the view registry', () => {
     expect(best('give me an overview of everything')).toBe('lifecycle')
     expect(best('propose a lifecycle for my road project')).toBe('lifecycle-proposal')
     expect(best('how long should the bidding take')).toBe('lifecycle-proposal')
+    expect(best('How can I evaluate and monitor my project?')).toBe('monitoring-options')
+    expect(best('how should I add learning to my project')).toBe('learning-options')
+    expect(best('what is still missing from my lifecycle')).toBe('my-lifecycle')
   })
 
   it('returns nothing, not a guess, when no view fits', () => {

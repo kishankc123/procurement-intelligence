@@ -1,0 +1,9 @@
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: 0.93em; line-height: 1.45; }
+.name { display: grid; gap: 4px; color: var(--muted); font-size: 0.93em; margin-bottom: 6px; }
+.name input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.stage { margin-top: 14px; }
+.stage h4 { margin: 0 0 6px; }
+.actions { margin-top: 14px; }

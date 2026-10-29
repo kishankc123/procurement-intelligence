@@ -49,3 +49,20 @@ describe('real versus mock', () => {
     expect(scopeProblem(db, 'real')).toBeNull()
   })
 })
+
+describe('plans and tenders of real projects', () => {
+  it('every real project has plan rows and tender notices on record, each pointing at its own project', () => {
+    const real = scopedDb(db, 'real')
+    for (const p of real.projects) {
+      const rows = real.plan_packages.filter((r) => r.project_id === p.project_id)
+      const tenders = real.tender_notices.filter((t) => t.project_id === p.project_id)
+      expect(rows.length, `${p.project_id} plan rows`).toBeGreaterThan(0)
+      expect(tenders.length, `${p.project_id} tenders`).toBeGreaterThan(0)
+      expect(new Set(rows.map((r) => r.plan_doc)).size).toBe(1)
+      expect(rows.every((r) => r.description.length > 3 && r.source_url.startsWith('http'))).toBe(true)
+    }
+  })
+  it('keeps no people\'s details from the notices', () => {
+    expect(JSON.stringify(db.tender_notices)).not.toMatch(/@[a-z0-9-]+\./i)
+  })
+})
