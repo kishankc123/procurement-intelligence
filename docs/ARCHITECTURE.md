@@ -1,5 +1,7 @@
 # Architecture
 
+> The chat-first product and the Copilot runtime are documented in `docs/architecture/` (start with its `README.md`; one file per micro front-end plus `copilot-runtime.md`). That folder is more current. This file keeps the original rubric mapping and API contract.
+
 Front-end-only demo of a Procurement Intelligence platform on a mocked backend. Status: shell, Planning, Monitoring and Learning are built, plus Project data and a thin Tender design page in the shell. Knowledge base and Evidence workbench are built in simple form as shell pages.
 
 ## 1. Big picture

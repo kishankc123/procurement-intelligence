@@ -1,6 +1,8 @@
 # Chat platform: context for a new thread
 
-Read this first, then `CLAUDE.md` (project rules) and `docs/PROGRESS.md` (history, Blocks 1 to 42). Written on 2026-10-28 for K, who builds the front end.
+**Start with `docs/architecture/README.md`** (updated 2026-10-29): how the whole system fits together, with one file per micro front-end (`shell`, `planning`, `monitoring`, `learning`, `ai`) and `copilot-runtime.md` (the model-backed chat, its tools and prompt, and the theme over CopilotKit). This file is the earlier history and parked-items list; where it disagrees with `docs/architecture/`, the architecture folder is newer.
+
+Then `CLAUDE.md` (project rules) and `docs/PROGRESS.md` (history, Blocks 1 to about 69). Written on 2026-10-28 for K, who builds the front end.
 
 ## 1. The goal
 
