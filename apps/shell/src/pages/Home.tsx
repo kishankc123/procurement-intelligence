@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { LIFECYCLE_STEPS } from '@pi/config'
-import { useAssistantChat, useProjects } from '@pi/data'
+import { projectScope, useAssistantChat, useProjects } from '@pi/data'
 import { DonutNav } from '@pi/ui'
 import { ChatWindow, type ChatMessageView } from '@pi/domain'
 import { STEP_COLOR } from '../stepColors'
@@ -30,7 +30,9 @@ export function Home() {
   ]
   // Follow-ups come from the latest answer (they depend on the project and on what was just shown); before the first answer, a starter list.
   const latest = [...chat].reverse().find((e) => e.reply)?.reply
-  const suggestions = latest?.suggestions ?? ['Help me with one of the mock projects', ...(projects.data ?? []).map((p) => `Help me with ${p.project_name}`), 'What is the data source?']
+  // The built-in assistant answers about one named project, so its starters are the real projects (the ones with most to show first) and then the mock one.
+  const starters = [...(projects.data ?? [])].sort((a, b) => Number(projectScope(a.project_id) === 'mock') - Number(projectScope(b.project_id) === 'mock'))
+  const suggestions = latest?.suggestions ?? [...starters.slice(0, 5).map((p) => `Help me with ${p.project_name}`), 'What is the data source?']
 
   return (
     <div className={styles.landing}>

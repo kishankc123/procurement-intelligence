@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { useEffect, useRef, useState } from 'react'
 import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool, useRenderTool } from '@copilotkit/react-core/v2'
 import { COPILOT_URL } from '@pi/config'
-import { useProjects, useUiStore, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
+import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
 import { LifecycleProposal, PlanProposal, TenderProposal } from './ProposalCards'
 import { FeatureOptions, MyLifecycleCard } from './MyLifecycle'
@@ -154,7 +154,6 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
   const spoken = agent.messages.length > 0
   useEffect(() => { if (spoken) onEngage() }, [spoken, onEngage])
-  const firstReal = (projects.data ?? []).find((p) => projectScope(p.project_id) === 'real')
   const current = (projects.data ?? []).find((p) => p.project_id === chatProjectId)
   useAgentContext({
     description: 'currentProject is the project this conversation is about (null when none): use it whenever the user asks for a stage, a view or a fact without naming a project. projects lists every project; kind says whether each is real World Bank data or mock demo data. Never mix the two kinds in one answer.',
@@ -171,17 +170,9 @@ function Inner({ onEngage }: { onEngage: () => void }) {
     description: "The user's own lifecycle, built from the suggestions they pressed Add on. stagesStillEmpty lists what is missing. You cannot add to it; the cards have the Add button.",
     value: describeLifecycle(lcName, lcItems),
   })
-  useConfigureSuggestions({
-    suggestions: [
-      { title: 'Plan my procurement', message: 'I want to procure a new road rehabilitation project. Using the mock projects as reference, help me plan it: which stages, how long each takes, and which procurement methods to use.' },
-      { title: 'Draft a tender', message: 'Help me draft a tender for works on a rural water supply scheme. Use the mock projects as sources for bid validity, duration, performance security and evaluation method, and tell me what the data cannot answer.' },
-      { title: 'Lessons learned', message: 'What lessons from the completion reports should I apply when I design tenders for a new project?' },
-      { title: 'Compare the projects', message: 'Compare the three mock projects: how long their plans take, their methods and their tender clauses.' },
-      { title: 'Real projects', message: 'Which real World Bank projects do you have?' },
-      ...(firstReal ? [{ title: 'Real suppliers', message: `Show the suppliers of the real project ${firstReal.project_name}.` }] : []),
-      { title: 'Data source', message: 'What are the data sources?' },
-    ],
-    available: 'before-first-message' }, [firstReal?.project_id])
+  // The prompts come from the stored projects (a request per country they are in), so the chat offers what it can actually answer.
+  const prompts = suggestedPrompts(projects.data ?? [])
+  useConfigureSuggestions({ suggestions: prompts, available: 'before-first-message' }, [prompts.map((p) => p.message).join('|')])
   return (
     <div className={styles.panel} onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) onEngage() }}>
       <div className={styles.lcBar}>
