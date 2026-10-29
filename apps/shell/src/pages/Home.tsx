@@ -18,7 +18,7 @@ export function Home() {
   const projects = useProjects()
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [clicked, setClicked] = useState(false)
-  const copilot = useCopilotAvailable()
+  const { state: copilot, reason: copilotReason } = useCopilotAvailable()
   const engaged = clicked || chat.length > 0 || pending
   const active = LIFECYCLE_STEPS.find((s) => s.id === hoverId) ?? null
 
@@ -57,6 +57,7 @@ export function Home() {
         </section>
       )}
       <div className={styles.chatWrap}>
+        {copilot === 'off' && copilotReason && <p role="status" className={styles.modelNote}>Model chat unavailable: {copilotReason}. Using the built-in rule-based assistant.</p>}
         {copilot === 'on' ? <CopilotPanel onEngage={() => setClicked(true)} /> : <ChatWindow onEngage={() => setClicked(true)} size={engaged ? 'full' : 'compact'} messages={messages} onSend={send} pending={pending} suggestions={suggestions} placeholder="e.g. Help me with the road project" />}
       </div>
     </div>

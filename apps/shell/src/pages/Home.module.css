@@ -44,3 +44,12 @@
 .landing { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; justify-items: center; }
 .heroTitle { font-size: clamp(24px, 5vw, 36px); line-height: 1.15; font-weight: 600; letter-spacing: -.01em; margin: 0; }
 .chatWrap { width: 100%; display: grid; justify-items: center; }
+
+.modelNote {
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #fef0d6;
+  color: #7a4a06;
+  font-size: 13px;
+}
