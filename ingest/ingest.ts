@@ -151,6 +151,7 @@ async function main() {
   // 4. Supervision reports, read without a model
   const supervisionReports: unknown[] = []
   const unparsed: { doc_id: string; date: string; problems: string[] }[] = []
+  const usedIsrIds = new Set<string>()
   const parsedIsrs: { doc: RawDoc; parse: ReturnType<typeof parseIsr> }[] = []
   for (const d of isrs) {
     const p = parseIsr(texts.get(d.id) ?? '')
@@ -158,8 +159,12 @@ async function main() {
     const code = (name: string | null) => (name ? RATING_CODE[name] ?? null : null)
     const ok = p.sequence !== null && code(p.progress.current) && code(p.implementation.current) && p.risk.current && p.disbursedPct !== null
     if (!ok) { unparsed.push({ doc_id: `DOC-WB-${d.id}`, date: apiDateToIso(d.docdt) ?? '', problems: p.problems }); continue }
+    // Two documents can carry the same sequence number (a re-issued report); keep the first id as it is and make later ones unique.
+    const baseId = `ISR-WB-${projectId}-${p.sequence}`
+    const id = usedIsrIds.has(baseId) ? `${baseId}-${d.id}` : baseId
+    usedIsrIds.add(id)
     supervisionReports.push({
-      id: `ISR-WB-${projectId}-${p.sequence}`, project_id: projectId, sequence: p.sequence, date: apiDateToIso(d.docdt),
+      id, project_id: projectId, sequence: p.sequence, date: apiDateToIso(d.docdt),
       progress_rating_prev: code(p.progress.previous), progress_rating: code(p.progress.current),
       implementation_rating: code(p.implementation.current),
       overall_risk_prev: p.risk.previous, overall_risk: p.risk.current,

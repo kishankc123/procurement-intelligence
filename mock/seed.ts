@@ -254,7 +254,9 @@ if (existsSync(ingestedDir)) {
     const snapshot = JSON.parse(readFileSync(ingestedDir + file, 'utf8')) as { manifest: { project_id: string; ingested_at: string }; collections: Record<string, unknown[]> }
     for (const [name, rows] of Object.entries(snapshot.collections)) {
       const target = (db as unknown as Record<string, unknown[]>)[name]
-      if (Array.isArray(target)) target.push(...rows)
+      // Every snapshot lists the same three public sources; a row whose id is already there (for example SRC-WB-PROJECTS) is not added twice.
+      const known = new Set((target as { id?: string }[]).map((r) => r.id))
+      if (Array.isArray(target)) target.push(...rows.filter((r) => name !== 'sources' || !known.has((r as { id: string }).id)))
     }
     ingested.push(`${snapshot.manifest.project_id} (ingested ${snapshot.manifest.ingested_at.slice(0, 10)})`)
   }

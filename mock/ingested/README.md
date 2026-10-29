@@ -7,3 +7,5 @@ A snapshot has a `manifest` (sources and URLs, fetch time, counts, what was not 
 Stage now: **structured**. Contracts, documents and text chunks come straight from the APIs; supervision reports are read from the report text by a parser (no model). Not done yet (needs a model): completion-report lessons and procurement-plan packages. Bidder counts, bid dates, amendments and tender drafts are not in any public structured source and stay Missing.
 
 Data: World Bank open data (CC BY 4.0), attribute the World Bank. Some completion-report text is a disclosed draft; check before sharing. The raw API responses are cached in `ingest/cache` (not committed).
+
+Snapshots now: P102398, P123961, P125574, P150572, P155522, P158504, P163730 (all road projects). P102398 has no contract awards in the source. Supervision-report coverage varies (older layouts parse less), see each manifest's notes.
