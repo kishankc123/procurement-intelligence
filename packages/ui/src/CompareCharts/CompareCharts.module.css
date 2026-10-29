@@ -1,0 +1,26 @@
+.bars { margin: 0; min-width: 0; }
+.bars figcaption { font-weight: 600; margin-bottom: 6px; }
+.bars ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.bars li { display: grid; grid-template-columns: minmax(70px, 38%) minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-size: 0.93em; }
+.track { display: block; height: 14px; border-radius: 4px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+.fill { display: block; height: 100%; }
+.value { font-family: 'IBM Plex Mono', monospace; font-size: 0.93em; min-width: 5ch; text-align: right; }
+.missing { grid-column: 2 / -1; color: var(--muted-strong, var(--muted)); border: 1px dotted var(--border); border-radius: 6px; padding: 0 8px; font-size: 0.86em; justify-self: start; }
+.note { margin: 6px 0 0; color: var(--muted); font-size: 0.86em; line-height: 1.4; }
+
+.scatter { margin: 0; min-width: 0; }
+.grid { stroke: var(--border); stroke-width: 1; }
+.tick { fill: var(--muted); font-size: 11px; font-family: 'IBM Plex Mono', monospace; }
+.axis { fill: var(--muted); font-size: 12px; }
+.dot { stroke: var(--surface); stroke-width: 2; }
+.dot:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pointLabel { fill: var(--text); font-size: 12px; }
+.missingAll { margin: 0; padding: 12px; border: 1px dotted var(--border); border-radius: 8px; color: var(--muted); }
+
+/* Five series colours that stay apart for the common kinds of colour blindness; the label always says which is which. */
+.s0 { background: #2456A6; fill: #2456A6; }
+.s1 { background: #C2410C; fill: #C2410C; }
+.s2 { background: #0F766E; fill: #0F766E; }
+.s3 { background: #7C3AED; fill: #7C3AED; }
+.s4 { background: #BE123C; fill: #BE123C; }

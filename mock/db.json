@@ -36031,15 +36031,6 @@
       "role": "contract_manager",
       "status": "new",
       "created_at": "2026-05-16T14:00:00Z"
-    },
-    {
-      "target_id": "AI-LAYER-chatplanning-P158504",
-      "rating": "helpful",
-      "reason": "",
-      "id": "FB-1793293921018",
-      "role": "admin",
-      "status": "new",
-      "created_at": "2026-10-29T17:12:01.018Z"
     }
   ],
   "audit_log": [
@@ -37204,20 +37195,6 @@
       "role": "reviewer",
       "action": "Approved entry",
       "target": "ENR-X38"
-    },
-    {
-      "id": "AUD-1793293071159",
-      "at": "2026-10-29T16:57:51.159Z",
-      "role": "admin",
-      "action": "Feedback accepted",
-      "target": "FB-SEED-1"
-    },
-    {
-      "id": "AUD-1793293921082",
-      "at": "2026-10-29T17:12:01.082Z",
-      "role": "admin",
-      "action": "Feedback: helpful",
-      "target": "AI-LAYER-chatplanning-P158504"
     }
   ],
   "schedule_items": [

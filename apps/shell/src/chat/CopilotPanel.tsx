@@ -5,6 +5,7 @@ import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
 import { MapBlock } from './MapBlock'
+import { CompareProjectsCard } from './CompareCard'
 import { LifecycleProposal, PlanProposal, PotentialSuppliers, TenderProposal } from './ProposalCards'
 import { FeatureOptions, MyLifecycleCard } from './MyLifecycle'
 import { LifecycleBubble } from './LifecycleBubble'
@@ -109,6 +110,25 @@ function useMapTool() {
   })
 }
 
+/** A comparison card: two to five stored projects of the same kind (all real or all mock) as bar charts and a scatter plot. */
+function useCompareTool() {
+  const projects = useProjects()
+  const known = useRef(new Set<string>())
+  known.current = new Set((projects.data ?? []).map((p) => p.project_id))
+  useFrontendTool({
+    name: 'show_compare',
+    description: 'Show a comparison card for two to five stored projects: bar charts of committed amount, contracts, suppliers, average contract, price change after signing, times extended, disbursed and time elapsed, a status line each, and a scatter plot of any two figures. Use it when the user asks to compare projects, or which project has more suppliers, costs more or was extended more. Pass the project ids. All projects must be the same kind (all real or all mock); never mix them. Budget is not in the data: say so if asked, the committed amount is shown instead.',
+    parameters: z.object({ projectIds: z.array(z.string()).min(2).max(5) }),
+    handler: async ({ projectIds }) => {
+      const missing = projectIds.filter((id) => !known.current.has(id))
+      if (missing.length > 0) return `There is no project with id ${missing.join(', ')}. Tell the user, and ask which projects they mean.`
+      if (new Set(projectIds.map(projectScope)).size > 1) return 'These projects mix real and mock data, so nothing was shown. Tell the user they are not compared with each other and ask for two real projects or two mock projects.'
+      return `Showed a comparison of ${projectIds.join(', ')} (${scopeLabel(projectScope(projectIds[0]!))}).`
+    },
+    render: ({ args }) => (args.projectIds && args.projectIds.length >= 2 ? <div className={styles.cards}><CompareProjectsCard projectIds={args.projectIds} /></div> : <p>Drawing the comparison…</p>),
+  })
+}
+
 /** The user's own lifecycle drawn in the chat. A click on a missing stage asks the model for the next suggestion, as if the user had typed it. */
 function MyLifecycleInChat() {
   const send = useSendToChat()
@@ -186,6 +206,7 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   const chatProjectId = useUiStore((s) => s.chatProjectId)
   useCardTools()
   useMapTool()
+  useCompareTool()
   useProposalTools()
   // Once anyone has said anything, the page gives the chat the room (same as the rule-based chat).
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })

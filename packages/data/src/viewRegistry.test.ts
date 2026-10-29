@@ -28,6 +28,9 @@ describe('the view registry', () => {
     expect(best('How can I evaluate and monitor my project?')).toBe('monitoring-options')
     expect(best('how should I add learning to my project')).toBe('learning-options')
     expect(best('what is still missing from my lifecycle')).toBe('my-lifecycle')
+    expect(best('compare these two projects')).toBe('compare-projects')
+    expect(best('which project has more suppliers')).toBe('compare-projects')
+    expect(best('show a bar chart of project prices')).toBe('compare-projects')
     // A map is a different view from the table, even for the same data.
     expect(best('Show me a map of where the suppliers on the Lao Road Sector Project 2 are')).toBe('suppliers-map')
     expect(best('where are our suppliers located?')).toBe('suppliers-map')

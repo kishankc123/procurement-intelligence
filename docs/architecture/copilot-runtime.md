@@ -90,6 +90,7 @@ Prompts are the soft layer: they make the right behaviour likely, not certain. R
 | `show_stage` | `step`, `projectId` | same | `BlockView` stage |
 | `show_tool` | `tool` (suppliers, project-data, knowledge, evidence), `projectId?` | for suppliers and project-data with no project: returns an error text telling the model to ask or use `propose_suppliers`; otherwise same as above | `BlockView` tool card |
 | `show_map` | `kind` suppliers or projects, `projectId?` | validates the id | `MapBlock` |
+| `show_compare` | `projectIds` (2 to 5) | validates the ids; refuses a mix of real and mock | `CompareProjectsCard` (`compareProjects` in `@pi/data`; bars and scatter from `@pi/ui`) |
 | `show_my_lifecycle` | none | | `MyLifecycleCard` |
 | `set_project_context` | `projectId` or null | sets or clears the conversation's project | nothing |
 
