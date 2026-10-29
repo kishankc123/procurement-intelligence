@@ -2,7 +2,7 @@
 // projects (or plans, contracts, reports) it rests on. Real and mock projects are never averaged together: each kind is its own group, so a figure is
 // always either "real World Bank data" or "mock demonstration data". What a kind does not hold is reported as missing, with the reason, never filled in.
 import type { AssistantDb, LifecycleStage } from './assistant'
-import { scopedDb, scopeLabel, type DataScope } from './scope'
+import { projectScope, scopedDb, scopeLabel, type DataScope } from './scope'
 import type { Project } from './schemas'
 
 /** Below this many samples an estimate is still given, but flagged as thin. */
@@ -138,12 +138,15 @@ function estimateGroup(all: AssistantDb, scope: DataScope, keyword?: string): Es
 
 /**
  * Estimates for the user's own procurement from similar stored projects. `keyword` narrows by sector, name or country (for example road); when
- * nothing of a kind matches, all projects of that kind are used and the group says so. Returns one group per kind of data, never a blend.
+ * nothing of the chosen kind matches, all projects of that kind are used and the group says so.
+ * `scope` picks the kind of data. Left out ("auto"), it is the real projects whenever any exist, and the mock ones only when there are no real
+ * projects at all: mock figures are shown only when someone asks for them. Real and mock are never blended.
  */
-export function estimateLifecycle(db: AssistantDb, keyword?: string): { keyword: string | null; groups: EstimateGroup[]; how_to_read: string } {
+export function estimateLifecycle(db: AssistantDb, keyword?: string, scope: DataScope | 'auto' = 'auto'): { keyword: string | null; groups: EstimateGroup[]; how_to_read: string } {
+  const chosen: DataScope = scope === 'auto' ? (db.projects.some((p) => projectScope(p.project_id) === 'real') ? 'real' : 'mock') : scope
   return {
     keyword: keyword?.trim() || null,
-    groups: (['real', 'mock'] as const).map((scope) => estimateGroup(db, scope, keyword)),
-    how_to_read: 'Each figure is a median of similar stored projects with the number it rests on. Real and mock groups are separate and never combined. A row marked missing means the data holds nothing for it.',
+    groups: [estimateGroup(db, chosen, keyword)],
+    how_to_read: `Each figure is a median of similar stored ${chosen} projects with the number it rests on. A row marked missing means the data holds nothing for it; it is not filled from the other kind of data.`,
   }
 }

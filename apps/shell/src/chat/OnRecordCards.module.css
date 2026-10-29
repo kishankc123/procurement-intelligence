@@ -4,7 +4,10 @@
 .chatSummary { line-height: 1.5; margin: 0; }
 .sub { color: var(--muted); margin: 8px 0 0; line-height: 1.45; }
 .sub a { color: var(--primary); }
-.scroll { overflow-x: auto; }
+/* About five rows are visible; the rest scroll inside the card, with the column headings kept in view. */
+.scroll { overflow: auto; max-height: 22rem; }
+.scroll:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.scroll thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
 .table { width: 100%; border-collapse: collapse; }
 .table th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; }
 .table th, .table td { padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }

@@ -137,6 +137,7 @@ export function LifecycleProposal({ result }: { result: string | undefined }) {
         <Card key={g.scope} title={g.label} aside={<ProvenanceChip kind={g.scope === 'real' ? 'public' : 'derived'} detail={`${g.projects.length} ${g.projects.length === 1 ? 'project' : 'projects'}`} />}>
           {g.note && <p className={styles.note}>{g.note}</p>}
           {g.rows.length === 0 ? <EmptyState title="Nothing to estimate from" text="There are no projects of this kind." /> : (
+            <div className={styles.scrollBox} tabIndex={0} role="region" aria-label="Estimated figures, scrollable">
             <table className={styles.table}>
               <thead><tr><th scope="col">Stage and figure</th><th scope="col">Estimate</th><th scope="col">Worked out from</th></tr></thead>
               <tbody>
@@ -155,6 +156,7 @@ export function LifecycleProposal({ result }: { result: string | undefined }) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </Card>
       ))}
@@ -173,7 +175,7 @@ export function LifecycleProposal({ result }: { result: string | undefined }) {
           </div>
         </Card>
       ))}
-      <p className={styles.note}>{how_to_read} Mock figures are demonstration data, not market benchmarks.</p>
+      <p className={styles.note}>{how_to_read}{groups.some((g) => g.scope === 'mock') ? ' Mock figures are demonstration data, not market benchmarks.' : ''}</p>
     </div>
   )
 }

@@ -10,3 +10,8 @@
 .note { margin: 0; color: var(--muted); }
 
 .add { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+
+/* About five figures are visible; the rest scroll inside the card, with the column headings kept in view. */
+.scrollBox { overflow: auto; max-height: 22rem; }
+.scrollBox:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.scrollBox thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }

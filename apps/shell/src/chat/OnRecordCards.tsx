@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { can, whyDisabled } from '@pi/config'
 import { useCurrentUser, usePlanPackages, useProject, useSavePlanPackage, useSaveTenderNotice, useTenderNotices, type PlanPackage, type TenderNotice } from '@pi/data'
-import { Badge, Button, Card, Paged, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, ProvenanceChip } from '@pi/ui'
 import { EditRowDialog, type EditField } from './EditRowDialog'
 import styles from './OnRecordCards.module.css'
 
@@ -46,12 +46,11 @@ export function PlanOnRecord({ projectId }: { projectId: string }) {
         <ProvenanceChip kind="public" />
       </p>
       <Card title="Plans" aside={<ProvenanceChip kind="public" detail={`plan of ${first.plan_date}`} />}>
-        <Paged items={rows.data} label="plan rows">{(pageRows) => (
-          <div className={styles.scroll}>
+        <div className={styles.scroll} tabIndex={0} role="region" aria-label="Plan rows, scrollable">
             <table className={`${styles.table} ${styles.rows}`}>
               <thead><tr><th>Plan</th><th>Estimated cost{unit ? ` (${unit})` : ''}</th><th>Method</th><th>Expected bid opening</th><th aria-label="Status" /></tr></thead>
               <tbody>
-                {pageRows.map((r) => {
+                {rows.data.map((r) => {
                   const open = r.id === selectedId
                   const toggle = () => setSelectedId(open ? null : r.id)
                   return (
@@ -90,7 +89,6 @@ export function PlanOnRecord({ projectId }: { projectId: string }) {
               </tbody>
             </table>
           </div>
-        )}</Paged>
         <p className={styles.sub}>Each row is a package in the plan. The plan holds more packages than these first rows, and the oldest often come first. Click a row to see its details and edit it.</p>
       </Card>
       {editing && (
@@ -121,12 +119,11 @@ export function TenderNoticesOnRecord({ projectId }: { projectId: string }) {
         <ProvenanceChip kind="public" />
       </p>
       <Card title="Tenders" aside={<ProvenanceChip kind="public" detail={`${rows.length} notices`} />}>
-        <Paged items={rows} label="tenders">{(pageRows) => (
-          <div className={styles.scroll}>
+        <div className={styles.scroll} tabIndex={0} role="region" aria-label="Tenders, scrollable">
             <table className={`${styles.table} ${styles.rows}`}>
               <thead><tr><th>Tender</th><th>Posted</th><th>Bids due</th><th>Method</th><th aria-label="Status" /></tr></thead>
               <tbody>
-                {pageRows.map((n) => {
+                {rows.map((n) => {
                   const open = n.id === selectedId
                   const toggle = () => setSelectedId(open ? null : n.id)
                   return (
@@ -165,7 +162,6 @@ export function TenderNoticesOnRecord({ projectId }: { projectId: string }) {
               </tbody>
             </table>
           </div>
-        )}</Paged>
         <p className={styles.sub}>Invitation for Bids notices. Bid validity, security and the other clauses are in the bidding documents, which are not in these notices. Click a row to see its details and edit it.</p>
       </Card>
       {editing && (
