@@ -31,7 +31,7 @@ export function ScheduleCard({ project, badge, footer }: { project: Project; bad
   const flagged = rows.filter((r) => r.status === 'behind' || r.status === 'overdue').length
 
   return (
-    <Card title="Project schedule" aside={<span className={styles.row}>{badge}<ProvenanceChip kind="derived" detail={`n=${rows.length}`} /></span>}>
+    <Card title="Project schedule" downloadName={`${project.project_id} project schedule`} aside={<span className={styles.row}>{badge}<ProvenanceChip kind="derived" detail={`n=${rows.length}`} /></span>}>
       <div className={styles.stack}>
         <p className={styles.sub}>
           Phase: <strong>{projectPhase(project, rows, asOf)}</strong> · {flagged} behind or overdue as of <span className="mono">{asOf}</span>. Tender rows come from your plans; works, supplies and manpower rows are <Badge>Mock</Badge> operational records.

@@ -11,12 +11,13 @@
   },
   "dependencies": {
     "@copilotkit/react-core": "^1.83.0",
-    "zod": "*",
     "@pi/config": "workspace:*",
     "@pi/data": "workspace:*",
     "@pi/domain": "workspace:*",
     "@pi/events": "workspace:*",
-    "@pi/ui": "workspace:*"
+    "@pi/ui": "workspace:*",
+    "docx": "^9.15.0",
+    "zod": "*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3"

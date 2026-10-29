@@ -50,7 +50,7 @@ export function PlanAgenda({ plans, asOf, compact, title = 'Plan timeline', prov
   const gaps = stages.filter((s) => s.daysSincePrevious !== null && s.daysSincePrevious > 0)
 
   return (
-    <Card title={title} aside={<ProvenanceChip kind={provenance} />}>
+    <Card title={title} downloadName={title} aside={<ProvenanceChip kind={provenance} />}>
       <div className={styles.stack}>
         {plans.length > 1 && (
           <div style={{ maxWidth: 420 }}>

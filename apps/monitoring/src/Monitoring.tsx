@@ -147,7 +147,7 @@ export function DisbursementCard({ projectId }: { projectId: string }) {
   if (!project) return <Card state="loading">{null}</Card>
   const points = [...reports].sort((a, b) => a.sequence - b.sequence).map((r) => ({ x: timeElapsedPct(project, r.date), y: r.disbursed_pct, label: `ISR ${r.sequence}`, date: r.date }))
   return (
-    <Card title="Disbursement vs. time elapsed" aside={<ProvenanceChip kind="public" detail="one point per report" />}>
+    <Card title="Disbursement vs. time elapsed" downloadName="Disbursement vs time elapsed" aside={<ProvenanceChip kind="public" detail="one point per report" />}>
       {points.length < 2 ? <EmptyState title="Needs at least 2 supervision reports" text={`${points.length} available.`} /> : <DisbursementChart points={points} />}
     </Card>
   )

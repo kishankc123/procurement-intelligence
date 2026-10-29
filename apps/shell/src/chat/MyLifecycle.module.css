@@ -24,3 +24,5 @@
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 6px 6px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; vertical-align: top; }
 .table th { color: var(--muted); width: 50%; }
+
+.row { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }

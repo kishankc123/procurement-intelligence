@@ -21,7 +21,7 @@ export default function EstimateTimelineCard({ timeline }: { timeline: DatedPlan
   const marks = timeline.milestones.filter((m) => m.id !== 'completion').map((m) => toDate(m.date))
   const end = toDate(timeline.completion)
   return (
-    <Card title="Planning timeline" aside={<ProvenanceChip kind="derived" detail={timeline.assumed ? 'completion date assumed' : 'from your completion date'} />}>
+    <Card title="Planning timeline" downloadName="Planning timeline" aside={<ProvenanceChip kind="derived" detail={timeline.assumed ? 'completion date assumed' : 'from your completion date'} />}>
       <div className={styles.stack}>
         <p className={styles.sub}>
           Project completion <strong className="mono">{timeline.completion}</strong>

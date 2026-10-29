@@ -1,10 +1,11 @@
-import { lazy, useState } from 'react'
-import { z } from 'zod'
+import { lazy, useRef, useState } from 'react'
 import { LIFECYCLE_STEPS } from '@pi/config'
 import { lifecycleStatus, useExampleProject, useMyLifecycle, type FeatureOption, type LifecycleItem, type LifecycleStage, type NewLifecycleItem } from '@pi/data'
-import { Badge, Button, Card, DonutNav, EmptyState, ProvenanceChip } from '@pi/ui'
+import { Badge, Button, Card, DonutNav, DownloadPng, EmptyState, ProvenanceChip } from '@pi/ui'
 import { RemoteBoundary } from '../RemoteBoundary'
 import { STEP_COLOR } from '../stepColors'
+import { downloadLifecycleDocx } from './exportLifecycle'
+import { ClausesDetail, FeatureDetail, PlanDetail, RowsDetail, TimelineDetail } from './lifecycleDetail'
 import styles from './MyLifecycle.module.css'
 
 // The user's lifecycle is drawn with the micro front-ends' own components, the same ones a stored project's stages are made of.
@@ -12,18 +13,6 @@ const PlanProposalCard = lazy(() => import('planning/PlanProposalCard'))
 const EstimateTimelineCard = lazy(() => import('planning/EstimateTimelineCard'))
 const MonitoringFeature = lazy(() => import('monitoring/MonitoringFeature'))
 const LearningFeature = lazy(() => import('learning/LearningFeature'))
-
-const PlanDetail = z.object({
-  plan: z.object({ name: z.string(), category: z.string(), method: z.string(), planned_advertisement: z.string(), planned_bid_opening: z.string(), planned_evaluation_complete: z.string(), planned_signing: z.string() }),
-  basis: z.object({ sample_size: z.number(), projects: z.array(z.string()), median_total_days: z.number(), filtered_by: z.string() }),
-})
-const ClausesDetail = z.object({ clauses: z.array(z.object({ label: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]), source: z.enum(['real', 'mock']).optional() })) })
-const RowsDetail = z.object({ rows: z.array(z.object({ metric: z.string(), unit: z.string(), value: z.union([z.number(), z.string()]).nullable(), n: z.number(), counts: z.string(), thin: z.boolean() })) })
-const TimelineDetail = z.object({
-  completion: z.string(), assumed: z.boolean(), notes: z.array(z.string()), overrun: z.boolean(),
-  milestones: z.array(z.object({ id: z.enum(['approval', 'effectiveness', 'advertisement', 'bid_opening', 'evaluation_complete', 'contract_signing', 'completion']), label: z.string(), date: z.string(), how: z.string() })),
-})
-const FeatureDetail = z.object({ id: z.string() })
 
 /**
  * One monitoring or learning feature, drawn by the monitoring or learning micro front-end. A user's own project has no data yet, so it is shown with a
@@ -87,6 +76,26 @@ function ItemView({ item }: { item: LifecycleItem }) {
   return null
 }
 
+/** One item with its heading, basis and view. Remove and the PNG button are left out of the picture the PNG button saves. */
+function ItemRow({ item, onRemove }: { item: LifecycleItem; onRemove: () => void }) {
+  const ref = useRef<HTMLLIElement>(null)
+  return (
+    <li ref={ref} className={styles.item}>
+      <div className={styles.itemHead}>
+        <div>
+          <strong>{item.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />
+          <p className={styles.sub}>Basis: {item.basis}</p>
+        </div>
+        <div className={styles.row} data-export-ignore="">
+          <DownloadPng targetRef={ref} name={item.title} />
+          <Button onClick={onRemove}>Remove</Button>
+        </div>
+      </div>
+      <ItemView item={item} />
+    </li>
+  )
+}
+
 const labelOf = (stage: LifecycleStage) => LIFECYCLE_STEPS.find((s) => s.id === stage)?.label ?? stage
 const STAGE_IDS = LIFECYCLE_STEPS.map((s) => s.id as LifecycleStage)
 
@@ -148,7 +157,7 @@ export function MyLifecycleCard({ onSend }: { onSend?: (text: string) => void })
     return { id: step.id, label: step.label, color: filled ? color : `color-mix(in srgb, ${color} 30%, var(--surface))` }
   })
   return (
-    <Card title="My lifecycle" aside={<Badge tone={complete ? 'low' : 'medium'}>{complete ? 'Complete' : `${missing.length} stage${missing.length === 1 ? '' : 's'} empty`}</Badge>}>
+    <Card title="My lifecycle" downloadName={name} aside={<span className={styles.row}><Badge tone={complete ? 'low' : 'medium'}>{complete ? 'Complete' : `${missing.length} stage${missing.length === 1 ? '' : 's'} empty`}</Badge><Button disabled={items.length === 0} title={items.length === 0 ? 'Add something to the lifecycle first' : 'Every stage and item as a Word file; opens in Google Docs too'} onClick={() => void downloadLifecycleDocx(name, items)}>Download all (.docx)</Button></span>}>
       <label className={styles.name}>Name
         <input value={name} onChange={(e) => rename(e.target.value)} maxLength={80} />
       </label>
@@ -182,18 +191,7 @@ export function MyLifecycleCard({ onSend }: { onSend?: (text: string) => void })
           </>
         ) : (
           <ul className={styles.list}>
-            {byStage[shown].map((i) => (
-              <li key={i.id} className={styles.item}>
-                <div className={styles.itemHead}>
-                  <div>
-                    <strong>{i.title}</strong> <ProvenanceChip kind="derived" detail="suggested" />
-                    <p className={styles.sub}>Basis: {i.basis}</p>
-                  </div>
-                  <Button onClick={() => remove(i.id)}>Remove</Button>
-                </div>
-                <ItemView item={i} />
-              </li>
-            ))}
+            {byStage[shown].map((i) => <ItemRow key={i.id} item={i} onRemove={() => remove(i.id)} />)}
           </ul>
         )}
       </section>

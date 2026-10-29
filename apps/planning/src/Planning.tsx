@@ -138,7 +138,7 @@ export function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete
   const { role } = useCurrentUser()
   const allowed = can(role, 'edit_plan')
   return (
-    <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
+    <Card title="Plans" downloadName="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
         <Paged items={plans} label="plans">{(pageRows) =><table className={`${styles.table} ${styles.plans}`}>
           <thead><tr><th>Plan</th>{!compact && <><th>Category</th><th>Method</th></>}<th>Advertisement</th><th>Signing</th><th>Days to sign</th><th aria-label="Actions" /></tr></thead>
@@ -210,7 +210,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
         <p>{plan.category} · {plan.method} · {project.project_name}, {project.borrower_country}</p>
       </div>
 
-      <Card title="Stage timeline" aside={<ProvenanceChip kind="entered" />}>
+      <Card title="Stage timeline" downloadName="Stage timeline" aside={<ProvenanceChip kind="entered" />}>
         <StageTable plan={plan} />
       </Card>
       <EditPlanDialog plan={plan} open={editing} onOpenChange={setEditing} onDeleted={onDeleted} />
@@ -241,7 +241,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
         </Card>
       </Carousel>
 
-      <Card title="Duration model" aside={<Badge>Simulated</Badge>}>
+      <Card title="Duration model" downloadName="Duration model" aside={<Badge>Simulated</Badge>}>
         <DataGate gate={durationGate} title="Duration curve locked" unit="completed projects with key dates">
           <p>Curve available.</p>
         </DataGate>
@@ -301,7 +301,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
         </Card>
       </div>
 
-      <Card title="Similar completed projects" aside={<span className={styles.sub}>from completion reports</span>}>
+      <Card title="Similar completed projects" downloadName="Similar completed projects" aside={<span className={styles.sub}>from completion reports</span>}>
         {completions.length === 0 ? <EmptyState title="No completion reports ingested" /> : (
           <Paged items={completions} label="completion reports" maxHeight="420px">{(pageRows) => <table className={styles.table}>
             <thead><tr><th>Project</th><th>Completion rating</th><th>Restructurings</th><th>Closing extension</th></tr></thead>

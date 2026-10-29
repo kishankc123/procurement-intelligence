@@ -1,8 +1,9 @@
-import { lazy, useState } from 'react'
+import { lazy, useRef, useState } from 'react'
 import { LIFECYCLE_STEPS, PAST_STAGE_LABEL } from '@pi/config'
 import { usePlan, usePlanPackages, useProjects, type Block, type LifecycleStage } from '@pi/data'
-import { Badge, CircleCheck, DonutNav, ProvenanceChip } from '@pi/ui'
+import { Badge, CircleCheck, DonutNav, DownloadPng, ProvenanceChip } from '@pi/ui'
 import { FeedbackWidget } from '@pi/domain'
+import { DownloadProject } from '../exportProject'
 import { RemoteBoundary } from '../RemoteBoundary'
 import { STEP_COLOR } from '../stepColors'
 import { CardBoundary, MissingInfo } from './CardBoundary'
@@ -153,14 +154,18 @@ function BlockBody({ block, onSend }: { block: Block; onSend: (text: string) => 
 
 /** Draws what the assistant asked for under its answer, with Helpful / Not helpful, which lands in the Learning queue. */
 export function BlockView({ block, onSend }: { block: Block; onSend: (text: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const title = block.type === 'stage' ? labelOf(block.step) : block.type === 'tool' ? TOOL_TITLE[block.tool] : 'Lifecycle'
   return (
-    <div className={styles.blockWrap}>
+    <div ref={ref} className={styles.blockWrap}>
       <CardBoundary name={block.type === 'stage' ? labelOf(block.step) : block.type === 'tool' ? TOOL_TITLE[block.tool] : 'Lifecycle'}>
         <BlockBody block={block} onSend={onSend} />
       </CardBoundary>
-      <div className={styles.rate}>
+      <div className={styles.rate} data-export-ignore="">
         <span className={styles.sub}>Was this useful?</span>
         <FeedbackWidget targetId={feedbackTarget(block)} />
+        <DownloadPng targetRef={ref} name={`${block.projectId ?? 'all'} ${title}`} />
+        {block.projectId && <DownloadProject projectId={block.projectId} />}
       </div>
     </div>
   )
