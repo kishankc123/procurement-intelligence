@@ -256,6 +256,12 @@ Why: the assessment asks for ingestion of public data, linking structured record
 - Checked here: handler called directly (POST, string body, GET 405, bad message 400), the bundle check, `pnpm build:vercel`, 100 tests. Not checked here: the real Vercel deploy.
 - First deploy answered 500. The function now loads the shared logic inside a try block and answers `{ error, detail }` on any failure (also logged with `console.error`), and the chat shows that text: "The assistant server answered with an error (500). The assistant function failed. <detail>". The committed `mock/db.json` was checked and has every collection the assistant reads, so the cause is in how Vercel loads the function, not the data.
 
+## Block 51: the chat function as plain JavaScript (nothing committed)
+- The deployed `api/chat.ts` answered `FUNCTION_INVOCATION_FAILED` (the function crashed before it could answer), while the plain JavaScript json-server function next to it works. So the function is now plain CommonJS too: `api/chat.js` requires `api/_lib/assistant.js`, a generated CommonJS copy of `packages/data/src/assistant.ts` (`pnpm build:chat`, `scripts/build-chat-function.mjs`, using the esbuild that comes with tsx; TypeScript 7 has no transpile API). It needs only `zod`. Files under `api/_lib` are not functions (underscore prefix). `vercel.json` registers `api/chat.js`.
+- A test (`scripts/chatFunction.test.ts`, 2 tests, 102 in all) fails when the generated copy is stale and checks it gives the same answers as the TypeScript source for the seed data. After editing `assistant.ts`, run `pnpm build:chat` and commit `api/_lib/assistant.js`.
+- Behaviour unchanged: POST only, 400 for a bad message, 405 otherwise, and any failure answers `{ error, detail }` which the chat shows. Preview deployments are protected by Vercel Authentication, so `curl` gets 401; use the browser while logged in, or turn the protection off for the demo.
+- Checked here: the function called directly under plain Node (POST, string body, GET 405, bad 400), 102 tests, `pnpm build:vercel`. Not checked here: the real Vercel deploy.
+
 ## Status of the screens
 | Screen | Where | State |
 | --- | --- | --- |

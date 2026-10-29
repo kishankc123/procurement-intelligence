@@ -6,7 +6,7 @@
     "api/[...path].js": {
       "includeFiles": "mock/db.json"
     },
-    "api/chat.ts": {
+    "api/chat.js": {
       "includeFiles": "mock/db.json"
     }
   },
