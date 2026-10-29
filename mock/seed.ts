@@ -175,6 +175,9 @@ const db = {
       planned_evaluation_complete: '2026-09-30', planned_signing: '2026-11-10', category: 'Consulting services', method: 'Quality-based' },
     ...X.extraPlans,
   ],
+  // Filled from mock/ingested/*.json (real projects only): the plan rows and tender notices read from World Bank sources.
+  plan_packages: [] as unknown[],
+  tender_notices: [] as unknown[],
   tender_drafts: [{ id: `TD-${P}`, project_id: P, duration_months: 18, bid_validity_days: 60, performance_security_pct: 10,
     min_similar_contracts: 2, min_similar_value_usd: 2_000_000, evaluation_method: 'Lowest evaluated price' }, ...X.extraDrafts],
   supervision_reports: [...supervision_reports, ...X.extraReports], completion_reports: [...completion_reports, ...X.extraCompletionReports],

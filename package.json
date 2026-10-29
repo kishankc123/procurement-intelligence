@@ -11,6 +11,8 @@
     "assistant": "tsx server/index.ts",
     "build:chat": "node scripts/build-chat-function.mjs",
     "ingest": "tsx ingest/ingest.ts",
+    "ingest:notices": "tsx ingest/notices.ts",
+    "ingest:plans": "tsx ingest/plans.ts",
     "seed": "tsx mock/seed.ts",
     "reset-db": "tsx mock/seed.ts",
     "import-gppd": "tsx mock/import-gppd.ts",
