@@ -23,6 +23,10 @@ declare module 'planning/PlanningCard' {
   const PlanningCard: React.ComponentType<{ projectId: string }>
   export default PlanningCard
 }
+declare module 'planning/PlanProposalCard' {
+  const PlanProposalCard: React.ComponentType<{ proposal: { plan: Omit<import('@pi/data').Plan, 'id' | 'project_id'>; basis: { sample_size: number; projects: string[]; median_total_days: number; filtered_by: string }; deadline?: { fits: boolean; spare_days?: number; days_over?: number } } }>
+  export default PlanProposalCard
+}
 declare module 'monitoring/MonitoringCard' {
   const MonitoringCard: React.ComponentType<{ projectId: string }>
   export default MonitoringCard

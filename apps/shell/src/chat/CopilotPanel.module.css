@@ -6,7 +6,7 @@
   min-height: 70vh;
   border: 1px solid var(--border);
   border-radius: var(--radius-card, 12px);
-  background: var(--surface);
+  background: var(--bg);
   overflow: hidden;
 }
 
@@ -27,7 +27,7 @@
   --app-on-solid: var(--on-solid); --app-radius: var(--radius-ctl);
 }
 .panel :global([data-copilotkit]) {
-  --background: var(--app-surface);
+  --background: var(--app-bg);
   --foreground: var(--app-text);
   --card: var(--app-surface);
   --card-foreground: var(--app-text);
@@ -53,9 +53,43 @@
 }
 /* The input pill and suggestion chips carry their own light colours (CopilotKit only darkens them under a .dark ancestor), so set them from our tokens. */
 .panel :global(.copilotKitInput) {
-  background: var(--app-bg);
+  background: var(--app-surface);
   border: 1px solid var(--app-border);
   color: var(--app-text);
 }
 .panel :global(.copilotKitInput textarea) { color: var(--app-text); }
 .panel :global(.copilotKitInput textarea::placeholder) { color: var(--app-muted-text); }
+
+/* CopilotKit's --muted is a background; ours is the muted text colour. Our cards sit inside CopilotKit's element, so they get our meaning back here. */
+.cards { --muted: var(--app-muted-text); text-align: left; }
+
+/* Message text uses the typography plugin, which only turns light under a .dark ancestor. Point its colours at ours. */
+.panel :global([class~="cpk:prose"]) {
+  --tw-prose-body: var(--app-text); --tw-prose-headings: var(--app-text); --tw-prose-lead: var(--app-text); --tw-prose-bold: var(--app-text);
+  --tw-prose-counters: var(--app-muted-text); --tw-prose-bullets: var(--app-muted-text); --tw-prose-quotes: var(--app-text);
+  --tw-prose-code: var(--app-text); --tw-prose-links: var(--link); --tw-prose-hr: var(--app-border); --tw-prose-th-borders: var(--app-border); --tw-prose-td-borders: var(--app-border);
+  color: var(--app-text);
+}
+
+/* Reading text. CopilotKit centres its message column, which centres every list and paragraph; messages are left aligned, paragraphs justified,
+   and lists keep their markers (its reset removes them). Our cards sit on a lighter surface than the chat background, so they read as separate blocks. */
+.panel :global(.copilotKitMessages) { text-align: left; }
+.panel :global(.copilotKitAssistantMessage) :global([class~="cpk:prose"]) { max-width: 72ch; font-size: 15px; line-height: 1.65; color: var(--app-text); }
+.panel :global([class~="cpk:prose"]) p { margin: 0 0 0.75em; text-align: justify; hyphens: auto; }
+.panel :global([class~="cpk:prose"]) :is(ul, ol) { margin: 0.25em 0 0.9em; padding-left: 1.5em; text-align: left; }
+.panel :global([class~="cpk:prose"]) ul { list-style: disc; }
+.panel :global([class~="cpk:prose"]) ol { list-style: decimal; }
+.panel :global([class~="cpk:prose"]) li { margin: 0.3em 0; padding-left: 0.2em; text-align: left; }
+.panel :global([class~="cpk:prose"]) li::marker { color: var(--app-muted-text); }
+.panel :global([class~="cpk:prose"]) :is(h1, h2, h3, h4) { margin: 1em 0 0.4em; font-size: 15px; font-weight: 600; text-align: left; }
+.panel :global([class~="cpk:prose"]) strong { font-weight: 600; }
+.panel :global([class~="cpk:prose"]) :is(p, li):last-child { margin-bottom: 0; }
+.panel :global([class~="cpk:prose"]) code { font-family: var(--mono); font-size: 0.92em; padding: 1px 5px; border-radius: 4px; background: var(--app-surface); border: 1px solid var(--app-border); }
+.panel :global([class~="cpk:prose"]) code::before, .panel :global([class~="cpk:prose"]) code::after { content: none; }
+
+/* What the user said: a solid bubble with white text, clearly apart from the reply. */
+.panel :global(.copilotKitUserMessage) :global([class~="cpk:prose"]) {
+  background: var(--app-primary); color: var(--app-on-solid); text-align: left;
+  --tw-prose-body: var(--app-on-solid); --tw-prose-bold: var(--app-on-solid); --tw-prose-links: var(--app-on-solid);
+}
+.panel :global(.copilotKitUserMessage) :global([class~="cpk:prose"]) p { margin: 0; text-align: left; }

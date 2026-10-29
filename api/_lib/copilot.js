@@ -204,6 +204,94 @@ function searchDocuments(db, query, projectId, limit = 5) {
     })
   };
 }
+var median = (xs) => {
+  if (xs.length === 0) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  return s.length % 2 ? s[(s.length - 1) / 2] : Math.round((s[s.length / 2 - 1] + s[s.length / 2]) / 2 * 10) / 10;
+};
+var daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+var tally = (rows, key) => rows.reduce((n, r) => ({ ...n, [key(r)]: (n[key(r)] ?? 0) + 1 }), {});
+function referencePractice(db, keyword) {
+  const k = keyword?.trim().toLowerCase();
+  const projects = db.projects.filter((p) => !k || [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k)));
+  const lessons = db.completion_reports.filter((r) => !k || r.project_name.toLowerCase().includes(k) || r.lessons.some((l) => l.text.toLowerCase().includes(k))).flatMap((r) => r.lessons.map((l) => ({ report: r.id, project: r.project_name, outcome_rating: r.outcome_rating, lesson: l.text, chunk_id: l.chunk_id })));
+  return {
+    projects: projects.map((p) => {
+      const draft = db.tender_drafts.find((d) => d.project_id === p.project_id);
+      const plans = db.plans.filter((x) => x.project_id === p.project_id);
+      const contracts = db.contracts.filter((c) => c.project_id === p.project_id);
+      return {
+        project_id: p.project_id,
+        name: p.project_name,
+        country: p.borrower_country,
+        sector: p.project_global_practice,
+        kind: isReal(p) ? "real World Bank data (ingested snapshot)" : "mock",
+        tender_draft: draft ? { id: draft.id, duration_months: draft.duration_months, bid_validity_days: draft.bid_validity_days, performance_security_pct: draft.performance_security_pct, min_similar_contracts: draft.min_similar_contracts, min_similar_value_usd: draft.min_similar_value_usd, evaluation_method: draft.evaluation_method } : "missing: no tender draft saved for this project",
+        plans: plans.length ? { count: plans.length, median_days_advertisement_to_signing: median(plans.map((x) => daysBetween(x.planned_advertisement, x.planned_signing))), by_method: tally(plans, (x) => x.method) } : "missing: no procurement plans",
+        contracts: contracts.length ? { count: contracts.length, total_amount_usd: Math.round(contracts.reduce((n, c) => n + c.supplier_contract_amount_usd, 0)), by_category: tally(contracts, (c) => c.procurement_category), by_method: tally(contracts, (c) => c.procurement_method) } : "missing: no contracts"
+      };
+    }),
+    lessons: lessons.length ? lessons : "missing: no completion report lessons match"
+  };
+}
+var addDays = (iso, n) => new Date(Date.parse(iso) + n * 864e5).toISOString().slice(0, 10);
+var medianInt = (xs) => Math.round(median(xs) ?? 0);
+var matchesKeyword = (p, k) => !k || [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k.trim().toLowerCase()));
+function proposePlan(db, raw) {
+  const input = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? void 0 : v]));
+  const ids = new Set(db.projects.filter((p) => matchesKeyword(p, input.keyword)).map((p) => p.project_id));
+  const cat = input.category?.trim().toLowerCase();
+  const refs = db.plans.filter((x) => ids.has(x.project_id) && (!cat || x.category.toLowerCase().includes(cat)));
+  if (refs.length === 0) return { missing: "No reference plans match this sector and category, so no plan is suggested." };
+  const gap = {
+    to_bid_opening: medianInt(refs.map((x) => daysBetween(x.planned_advertisement, x.planned_bid_opening))),
+    to_evaluation_complete: medianInt(refs.map((x) => daysBetween(x.planned_bid_opening, x.planned_evaluation_complete))),
+    to_signing: medianInt(refs.map((x) => daysBetween(x.planned_evaluation_complete, x.planned_signing)))
+  };
+  const total = gap.to_bid_opening + gap.to_evaluation_complete + gap.to_signing;
+  const startIgnored = !!input.start_date && !!input.signing_by && input.start_date >= input.signing_by;
+  const given = startIgnored ? void 0 : input.start_date;
+  const start = given ?? (input.signing_by ? addDays(input.signing_by, -total) : void 0);
+  if (!start) return { missing: "Give a start date (advertisement) or a date the contract must be signed by." };
+  const bid = addDays(start, gap.to_bid_opening);
+  const evalc = addDays(bid, gap.to_evaluation_complete);
+  const sign = addDays(evalc, gap.to_signing);
+  return {
+    plan: {
+      name: input.name?.trim() || "Your procurement",
+      category: input.category?.trim() || refs[0].category,
+      method: input.method?.trim() || [...Object.entries(tally(refs, (x) => x.method))].sort((a, b) => b[1] - a[1])[0][0],
+      planned_advertisement: start,
+      planned_bid_opening: bid,
+      planned_evaluation_complete: evalc,
+      planned_signing: sign
+    },
+    basis: { sample_size: refs.length, projects: [...new Set(refs.map((x) => x.project_id))], median_gap_days: gap, median_total_days: total, filtered_by: [input.keyword, input.category].filter(Boolean).join(" \xB7 ") || "all stored plans" },
+    ...startIgnored ? { note: "The start date was on or after the signing deadline, so the plan was worked back from the deadline." } : {},
+    deadline_check: input.signing_by ? sign <= input.signing_by ? { fits: true, spare_days: daysBetween(sign, input.signing_by) } : { fits: false, days_over: daysBetween(input.signing_by, sign) } : "No signing deadline was given."
+  };
+}
+var CLAUSES = [
+  { field: "duration_months", label: "Contract duration", unit: "months" },
+  { field: "bid_validity_days", label: "Bid validity", unit: "days" },
+  { field: "performance_security_pct", label: "Performance security", unit: "%" },
+  { field: "min_similar_contracts", label: "Minimum similar contracts", unit: "" },
+  { field: "min_similar_value_usd", label: "Minimum similar contract value", unit: "USD" }
+];
+function proposeTenderDraft(db, keyword) {
+  const ids = new Set(db.projects.filter((p) => matchesKeyword(p, keyword)).map((p) => p.project_id));
+  const drafts = db.tender_drafts.filter((d) => ids.has(d.project_id));
+  if (drafts.length === 0) return { missing: "No stored tender draft matches this sector, so no clause values are suggested." };
+  const from = drafts.map((d) => d.project_id);
+  const clauses = CLAUSES.map((c) => {
+    const values = drafts.map((d) => d[c.field]);
+    return { field: c.field, label: c.label, unit: c.unit, value: medianInt(values), sample_size: values.length, from };
+  });
+  const methods = Object.entries(tally(drafts, (d) => d.evaluation_method)).sort((a, b) => b[1] - a[1]);
+  clauses.push({ field: "evaluation_method", label: "Evaluation method", unit: "", value: methods[0][0], sample_size: drafts.length, from });
+  const lessons = db.completion_reports.flatMap((r) => r.lessons.map((l) => ({ report: r.id, project: r.project_name, lesson: l.text, chunk_id: l.chunk_id })));
+  return { clauses, lessons, filtered_by: keyword?.trim() || "all stored drafts" };
+}
 
 // server/copilot.ts
 var COPILOT_BASE_PATH = "/api/copilotkit";
@@ -215,7 +303,18 @@ Rules you always follow:
 3. When the user wants to SEE a stage, a tool or the lifecycle, call show_stage, show_tool or show_lifecycle with the right project id so the chat draws it. Then add one or two sentences; do not repeat what the card shows. If the user has not said which project and none is selected, ask which one instead of guessing.
 4. The data is a snapshot, not live. Projects whose ids start with P-MOCK are mock data made for the demo. Any other project is real World Bank public data, ingested ahead of time. Say which kind you are talking about when it matters.
 5. Public sources do not hold bidder counts, bid dates, amendments or tender drafts for the real project. These are missing, not zero.
-6. Keep answers short and in plain language. Offer a natural next step when it helps.`;
+6. Keep answers short and in plain language. Offer a natural next step when it helps.
+
+You are also a procurement strategy ADVISOR. The user often brings their OWN procurement (a road, a water scheme, a clinic programme, anything) and wants to plan and draft tenders for it. The stored projects are your reference material, not the user's project:
+- Start from what the user wants to procure. If you do not know the sector, rough size, works/goods/consultancy and country, ask for them in one short question. Do not invent them.
+- Call get_reference_practice (with a sector keyword when you can) and base advice on what the stored projects did: plan durations, methods, tender clauses, completion-report lessons. Say which project each point comes from, by id, and cite lessons by chunk id.
+- When the user asks for a plan, schedule or timeline (especially with a date), call propose_plan with their start date or signing deadline, and a sector keyword. The chat draws the timeline from the result: reply with one or two sentences (the basis, whether a deadline fits) and do not repeat the dates. A signing deadline alone is enough (pass signing_by only, and the plan is worked back from it); so is a start date alone. Ask only when the user gave neither, and in that case do not call the tool yet. Pass only what the user said; never invent a signing deadline, method or category.
+- When the user asks for a tender draft or clauses, call propose_tender_draft with a sector keyword. The chat draws the clause table and lessons: reply with one or two sentences on what the data cannot answer, and do not list the clause values again.
+- After propose_plan or propose_tender_draft the card is ALREADY on the user's screen. Reply in at most two short sentences: what the numbers rest on (the sample size) and what the data cannot answer, then one next step. Never list the dates or clause values again, and never offer to "show" or "create" the card.
+- Older guidance, only if those tools return nothing useful: propose a short plan: stages in order (advertisement, bid opening, evaluation, signing) with day counts taken from the reference plans. Say these are reference durations, not a forecast, and give the sample size (how many plans).
+- When asked to draft a tender, propose clause values (duration, bid validity, performance security, similar-contract requirement, evaluation method) taken from the reference drafts. For any clause with no reference, write "No reference in the data" and ask the user. Mark the result as a suggestion for the user to review, and mention that the Tender design card can save a draft for a stored project.
+- When the stored projects do not cover the user's sector, say so plainly and use the closest one, naming the difference. Never present a mock figure as a real benchmark: mock projects are demonstration data.
+- Never give legal advice or promise outcomes. A draft is a starting point for the user's procurement team.`;
 var jsonSchemaId = import_zod2.z.string().describe("Project id, for example P-MOCK-001 or P158504");
 function buildTools(loadDb) {
   return [
@@ -252,6 +351,31 @@ function buildTools(loadDb) {
       description: "The supervision reports of a project in order: ratings, risk, disbursement and restructurings.",
       parameters: import_zod2.z.object({ project_id: jsonSchemaId }),
       execute: async ({ project_id }) => supervisionSeries(loadDb(), project_id)
+    }),
+    (0, import_v2.defineTool)({
+      name: "get_reference_practice",
+      description: "What the stored projects did that a NEW procurement can learn from: each project's tender draft clauses (duration, bid validity, performance security, similar-contract requirement, evaluation method), how many days its plans take from advertisement to signing, the mix of contract categories and methods, and the lessons from completion reports (with chunk ids). Optional keyword narrows by sector, name or country, for example road, water, health.",
+      parameters: import_zod2.z.object({ keyword: import_zod2.z.string().optional().describe("Sector, name or country to narrow by") }),
+      execute: async ({ keyword }) => referencePractice(loadDb(), keyword)
+    }),
+    (0, import_v2.defineTool)({
+      name: "propose_plan",
+      description: `Suggest a plan (advertisement, bid opening, evaluation complete, signing dates) for the USER's own procurement, worked out from the stored plans. Give start_date (advertisement day) or signing_by (day the contract must be signed); either one alone is enough. The chat draws the timeline from the result, so call this instead of working out dates yourself. Dates are YYYY-MM-DD. start_date and signing_by are DIFFERENT dates: when the user gives only a deadline, pass only signing_by and leave start_date out. Pass ONLY what the user said: leave out signing_by, method and category unless the user gave them. Never fill a value with a guess or with "unknown".`,
+      parameters: import_zod2.z.object({
+        start_date: import_zod2.z.string().optional().describe("Advertisement date, YYYY-MM-DD"),
+        signing_by: import_zod2.z.string().optional().describe("Latest contract signing date, YYYY-MM-DD"),
+        name: import_zod2.z.string().optional().describe("What is being procured"),
+        category: import_zod2.z.string().optional().describe("Works, Goods or Consultant"),
+        method: import_zod2.z.string().optional(),
+        keyword: import_zod2.z.string().optional().describe("Sector to take reference plans from, for example road, water, health")
+      }),
+      execute: async (args) => proposePlan(loadDb(), args)
+    }),
+    (0, import_v2.defineTool)({
+      name: "propose_tender_draft",
+      description: "Suggest tender clauses (duration, bid validity, performance security, similar-contract requirement, evaluation method) and lessons for the USER's own procurement, worked out from the stored tender drafts. The chat draws a table from the result, so call this instead of listing clause values yourself.",
+      parameters: import_zod2.z.object({ keyword: import_zod2.z.string().optional().describe("Sector to take reference drafts from, for example road, water, health") }),
+      execute: async ({ keyword }) => proposeTenderDraft(loadDb(), keyword)
     }),
     (0, import_v2.defineTool)({
       name: "search_documents",

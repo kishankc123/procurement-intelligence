@@ -1,9 +1,10 @@
 import { z } from 'zod'
 import { useEffect, useState } from 'react'
-import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool } from '@copilotkit/react-core/v2'
+import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool, useRenderTool } from '@copilotkit/react-core/v2'
 import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, Block } from '@pi/data'
 import { BlockView } from './ChatBlocks'
+import { PlanProposal, TenderProposal } from './ProposalCards'
 import styles from './CopilotPanel.module.css'
 
 const STAGE = z.enum(['planning', 'tender-design', 'monitoring', 'learning'])
@@ -14,7 +15,7 @@ function Card({ block }: { block: unknown }) {
   const send = useSendToChat()
   const parsed = Block.safeParse(block)
   if (!parsed.success) return null
-  return <BlockView block={parsed.data} onSend={send} />
+  return <div className={styles.cards}><BlockView block={parsed.data} onSend={send} /></div>
 }
 
 /** What a click inside a card does: it says the same thing in the chat, as if the user had typed it, and the model answers. */
@@ -54,16 +55,37 @@ function useCardTools() {
   })
 }
 
+/** The suggestions the server works out (dates, clauses) are drawn with the app's own components. The model only chooses to call the tool; the numbers come from its result. */
+function useProposalTools() {
+  useRenderTool({
+    name: 'propose_plan', parameters: z.object({}).passthrough(),
+    render: (p) => (p.status === 'complete' ? <div className={styles.cards}><PlanProposal result={p.result} /></div> : <p>Working out a plan from the stored plans…</p>),
+  }, [])
+  useRenderTool({
+    name: 'propose_tender_draft', parameters: z.object({}).passthrough(),
+    render: (p) => (p.status === 'complete' ? <div className={styles.cards}><TenderProposal result={p.result} /></div> : <p>Working out tender clauses from the stored drafts…</p>),
+  }, [])
+}
+
 function Inner({ onEngage }: { onEngage: () => void }) {
   const projects = useProjects()
   const projectId = useUiStore((s) => s.projectId)
   useCardTools()
+  useProposalTools()
   // Once anyone has said anything, the page gives the chat the room (same as the rule-based chat).
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
   const spoken = agent.messages.length > 0
   useEffect(() => { if (spoken) onEngage() }, [spoken, onEngage])
   useAgentContext({ description: 'The project currently selected in the app, and the projects that exist (mock ones have ids like P-MOCK-001).', value: { selectedProjectId: projectId, projects: (projects.data ?? []).map((p) => ({ id: p.project_id, name: p.project_name })) } })
-  useConfigureSuggestions({ suggestions: [{ title: 'Mock projects', message: 'Help me with one of the mock projects' }, { title: 'Data source', message: 'What is the data source?' }], available: 'before-first-message' })
+  useConfigureSuggestions({
+    suggestions: [
+      { title: 'Plan my procurement', message: 'I want to procure a new road rehabilitation project. Using the mock projects as reference, help me plan it: which stages, how long each takes, and which procurement methods to use.' },
+      { title: 'Draft a tender', message: 'Help me draft a tender for works on a rural water supply scheme. Use the mock projects as sources for bid validity, duration, performance security and evaluation method, and tell me what the data cannot answer.' },
+      { title: 'Lessons learned', message: 'What lessons from the completion reports should I apply when I design tenders for a new project?' },
+      { title: 'Compare the projects', message: 'Compare the three mock projects: how long their plans take, their methods and their tender clauses.' },
+      { title: 'Data source', message: 'What is the data source?' },
+    ],
+    available: 'before-first-message' })
   return (
     <div className={styles.panel} onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) onEngage() }}>
       <CopilotChat />

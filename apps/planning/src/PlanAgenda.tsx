@@ -29,7 +29,7 @@ function useWide(query = '(min-width: 1000px)') {
  * Plan timeline at the top of Planning (`compact` stacks it and shows one month, for the chat): a calendar with the four tender stages marked, next to an agenda that lists
  * them with the days between. Click a stage in either place to highlight it in the other. Dates come from the saved plan.
  */
-export function PlanAgenda({ plans, asOf, compact }: { plans: Plan[]; asOf: string; compact?: boolean }) {
+export function PlanAgenda({ plans, asOf, compact, title = 'Plan timeline', provenance = 'entered' }: { plans: Plan[]; asOf: string; compact?: boolean; title?: string; provenance?: 'entered' | 'derived' }) {
   const [planId, setPlanId] = useState<string | null>(null)
   const [active, setActive] = useState<StageId | null>(null)
   const plan = plans.find((p) => p.id === planId) ?? plans[0]
@@ -50,7 +50,7 @@ export function PlanAgenda({ plans, asOf, compact }: { plans: Plan[]; asOf: stri
   const gaps = stages.filter((s) => s.daysSincePrevious !== null && s.daysSincePrevious > 0)
 
   return (
-    <Card title="Plan timeline" aside={<ProvenanceChip kind="entered" />}>
+    <Card title={title} aside={<ProvenanceChip kind={provenance} />}>
       <div className={styles.stack}>
         {plans.length > 1 && (
           <div style={{ maxWidth: 420 }}>
