@@ -1,10 +1,10 @@
 {
   "latestErrorEvent": {
     "code": "TYPE-001",
-    "message": "Failed to generate type declaration. Execute the below cmd to reproduce and fix the error. #TYPE-001\nargs: {\"cmd\":\"/usr/local/bin/node /Users/kishan/Desktop/procurement-intelligence/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/bin/tsc --project /Users/kishan/Desktop/procurement-intelligence/apps/monitoring/node_modules/.federation/tsconfig.e825e2046af7c9919a7e58811af00893.json\"}\nView the docs to see how to solve: https://module-federation.io/guide/troubleshooting/type#type-001",
+    "message": "Failed to generate type declaration. Execute the below cmd to reproduce and fix the error. #TYPE-001\nargs: {\"cmd\":\"/usr/local/bin/node /Users/kishan/Desktop/procurement-intelligence/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/bin/tsc --project /Users/kishan/Desktop/procurement-intelligence/apps/monitoring/node_modules/.federation/tsconfig.d056c4913281f138a7dd124193dd95cf.json\"}\nView the docs to see how to solve: https://module-federation.io/guide/troubleshooting/type#type-001",
     "args": {
-      "cmd": "/usr/local/bin/node /Users/kishan/Desktop/procurement-intelligence/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/bin/tsc --project /Users/kishan/Desktop/procurement-intelligence/apps/monitoring/node_modules/.federation/tsconfig.e825e2046af7c9919a7e58811af00893.json"
+      "cmd": "/usr/local/bin/node /Users/kishan/Desktop/procurement-intelligence/node_modules/.pnpm/typescript@7.0.2/node_modules/typescript/bin/tsc --project /Users/kishan/Desktop/procurement-intelligence/apps/monitoring/node_modules/.federation/tsconfig.d056c4913281f138a7dd124193dd95cf.json"
     },
-    "timestamp": 1793240118305
+    "timestamp": 1793286850323
   }
 }
