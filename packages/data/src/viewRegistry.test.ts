@@ -23,6 +23,8 @@ describe('the view registry', () => {
     expect(best('what is the bid validity clause')).toBe('tender-design')
     expect(best('show the project timeline')).toBe('planning')
     expect(best('give me an overview of everything')).toBe('lifecycle')
+    expect(best('propose a lifecycle for my road project')).toBe('lifecycle-proposal')
+    expect(best('how long should the bidding take')).toBe('lifecycle-proposal')
   })
 
   it('returns nothing, not a guess, when no view fits', () => {

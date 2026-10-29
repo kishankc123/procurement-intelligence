@@ -156,6 +156,7 @@ var VIEWS = [
   { id: "lifecycle", title: "Whole lifecycle", description: "All four stages for one project with what was found in each.", show: { tool: "show_lifecycle", args: {} }, needsProject: true, keywords: ["lifecycle", "overview", "everything", "all stages", "summary of the project", "whole project"] },
   ...STAGES.map((step) => ({ id: step, ...STAGE_VIEWS[step], show: { tool: "show_stage", args: { step } }, needsProject: true })),
   ...TOOLS.map((tool) => ({ id: tool, ...TOOL_VIEWS[tool], show: { tool: "show_tool", args: { tool } }, needsProject: tool !== "knowledge" && tool !== "evidence" })),
+  { id: "lifecycle-proposal", title: "Proposed lifecycle (estimates)", description: "Estimated durations, clauses, reporting rhythm and contract sizes for the user's own procurement, as medians of similar projects.", show: { tool: "propose_lifecycle", args: {} }, needsProject: false, keywords: ["propose a lifecycle", "suggest a lifecycle", "lifecycle for my", "how long should", "how long would", "estimate", "typical duration", "contract be valid", "bid validity should", "for my procurement", "for my project"] },
   { id: "plan-proposal", title: "Proposed plan", description: "A timeline for the user's own procurement, worked out from stored plans.", show: { tool: "propose_plan", args: {} }, needsProject: false, keywords: ["propose a plan", "plan my", "my procurement", "when should", "deadline", "start date", "sign by"] },
   { id: "tender-draft-proposal", title: "Proposed tender draft", description: "Suggested clause values and lessons for the user's own tender.", show: { tool: "propose_tender_draft", args: {} }, needsProject: false, keywords: ["draft a tender", "tender draft", "my tender", "clauses for", "write a tender"] }
 ];
@@ -168,6 +169,98 @@ function findViews(query, limit = 3) {
     const ws = tokens(k);
     return n + (ws.length > 0 && ws.every(has) ? ws.length + 1 : 0);
   }, 0) })).filter((x) => x.score > 0).sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
+// packages/data/src/lifecycleEstimate.ts
+var THIN_SAMPLE_BELOW = 3;
+var DAY = 864e5;
+var days = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / DAY);
+var median = (xs) => {
+  if (xs.length === 0) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  return s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2;
+};
+var round = (x, places = 0) => x === null ? null : Math.round(x * 10 ** places) / 10 ** places;
+var valid = (d) => !!d && !Number.isNaN(Date.parse(d));
+var tally = (rows, key) => rows.reduce((n, r) => ({ ...n, [key(r)]: (n[key(r)] ?? 0) + 1 }), {});
+var row = (stage, metric, values, unit, counts, basis, places = 0) => {
+  const value = round(median(values), places);
+  return value === null ? { stage, metric, value: null, unit, n: 0, counts, thin: false, basis, missing: `No ${counts} hold this.` } : { stage, metric, value, unit, n: values.length, counts, thin: values.length < THIN_SAMPLE_BELOW, basis };
+};
+var gap = (stage, metric, why) => ({ stage, metric, value: null, unit: "", n: 0, counts: "", thin: false, basis: "", missing: why });
+var matches = (p, k) => [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k));
+function estimateGroup(all, scope, keyword) {
+  const db = scopedDb(all, scope);
+  const k = keyword?.trim().toLowerCase();
+  let projects = db.projects.filter((p) => !k || matches(p, k));
+  let note;
+  if (k && projects.length === 0 && db.projects.length > 0) {
+    projects = db.projects;
+    note = `No ${scope} project matches "${keyword}", so all ${projects.length} ${scope} projects are used. Treat the figures as general, not sector-specific.`;
+  }
+  const ids = new Set(projects.map((p) => p.project_id));
+  const label = scope === "real" ? "Real World Bank projects" : "Mock demonstration projects (illustrative, not market benchmarks)";
+  if (projects.length === 0) return { scope, label, projects: [], note: `There are no ${scopeLabel(scope)} to estimate from.`, rows: [] };
+  const plans = db.plans.filter((x) => ids.has(x.project_id));
+  const drafts = db.tender_drafts.filter((d) => ids.has(d.project_id));
+  const contracts = db.contracts.filter((c) => ids.has(c.project_id));
+  const reports = db.supervision_reports.filter((r) => ids.has(r.project_id));
+  const completion = db.completion_reports.filter((r) => !k || ids.has(r.project_id) || r.project_name.toLowerCase().includes(k) || r.lessons.some((l) => l.text.toLowerCase().includes(k)));
+  const rows = [];
+  const eff = (p) => p.effectiveness_actual ?? p.effectiveness_planned;
+  rows.push(row("planning", "Approval to effectiveness", projects.filter((p) => valid(p.approval_date) && valid(eff(p))).map((p) => days(p.approval_date, eff(p))), "days", "projects", "Median of the days between board approval and the project becoming effective."));
+  rows.push(row("planning", "Planned project length (approval to planned closing)", projects.filter((p) => valid(p.approval_date) && valid(p.closing_date_planned)).map((p) => days(p.approval_date, p.closing_date_planned) / 30.44), "months", "projects", "Median planned length from approval to the originally planned closing date.", 0));
+  rows.push(row("planning", "Closing extension beyond the original plan", projects.filter((p) => valid(p.closing_date_planned) && valid(p.closing_date_revised)).map((p) => days(p.closing_date_planned, p.closing_date_revised) / 30.44), "months", "projects", "Median months the closing date moved from the original plan (0 when it did not move).", 0));
+  if (plans.length > 0) {
+    rows.push(row("planning", "Bidding period (advertisement to bid opening)", plans.map((x) => days(x.planned_advertisement, x.planned_bid_opening)), "days", "plans", "Median of the planned gap between advertisement and bid opening."));
+    rows.push(row("planning", "Evaluation period (bid opening to evaluation complete)", plans.map((x) => days(x.planned_bid_opening, x.planned_evaluation_complete)), "days", "plans", "Median of the planned gap between bid opening and the end of evaluation."));
+    rows.push(row("planning", "Award to signing (evaluation complete to signing)", plans.map((x) => days(x.planned_evaluation_complete, x.planned_signing)), "days", "plans", "Median of the planned gap between the end of evaluation and signing."));
+    rows.push(row("planning", "Advertisement to signing, in total", plans.map((x) => days(x.planned_advertisement, x.planned_signing)), "days", "plans", "Median of the whole planned procurement time."));
+  } else {
+    rows.push(gap("planning", "Bidding, evaluation and signing periods", "No advertisement, bid-opening or evaluation dates exist in the public sources for these projects, so they cannot be estimated from them."));
+  }
+  for (const [category] of Object.entries(tally(contracts, (c) => c.procurement_category)).sort((a, b) => b[1] - a[1]).slice(0, 3)) {
+    rows.push(row("planning", `Typical ${category} contract size`, contracts.filter((c) => c.procurement_category === category && c.supplier_contract_amount_usd > 0).map((c) => c.supplier_contract_amount_usd), "USD", "contracts", `Median amount of the ${category} contracts.`));
+  }
+  if (contracts.length > 0) {
+    const [method, count] = Object.entries(tally(contracts, (c) => c.procurement_method)).sort((a, b) => b[1] - a[1])[0];
+    rows.push({ stage: "planning", metric: "Most common procurement method", value: method, unit: "", n: contracts.length, counts: "contracts", thin: contracts.length < THIN_SAMPLE_BELOW, basis: `${Math.round(count / contracts.length * 100)}% of the contracts used it.` });
+  }
+  if (drafts.length > 0) {
+    const clause = (metric, unit, pick, places = 0) => row("tender-design", metric, drafts.map(pick), unit, "drafts", "Median of the saved tender drafts.", places);
+    rows.push(clause("Contract duration", "months", (d) => d.duration_months));
+    rows.push(clause("Bid validity", "days", (d) => d.bid_validity_days));
+    rows.push(clause("Performance security", "%", (d) => d.performance_security_pct, 1));
+    rows.push(clause("Minimum similar contracts", "", (d) => d.min_similar_contracts));
+    rows.push(clause("Minimum similar contract value", "USD", (d) => d.min_similar_value_usd));
+    const [method, count] = Object.entries(tally(drafts, (d) => d.evaluation_method)).sort((a, b) => b[1] - a[1])[0];
+    rows.push({ stage: "tender-design", metric: "Evaluation method", value: method, unit: "", n: drafts.length, counts: "drafts", thin: drafts.length < THIN_SAMPLE_BELOW, basis: `Most common: ${count} of ${drafts.length} drafts.` });
+  } else {
+    rows.push(gap("tender-design", "Bid validity, contract duration, security, qualification, evaluation method", "No tender drafts or clause values exist in the public sources for these projects."));
+  }
+  const byProject = /* @__PURE__ */ new Map();
+  for (const r of reports) byProject.set(r.project_id, [...byProject.get(r.project_id) ?? [], r].sort((a, b) => a.date.localeCompare(b.date)));
+  const intervals = [...byProject.values()].flatMap((rs) => rs.slice(1).map((r, i) => days(rs[i].date, r.date)));
+  rows.push(row("monitoring", "Time between supervision reports", intervals, "days", "report intervals", "Median days between one supervision report and the next."));
+  const to50 = projects.flatMap((p) => {
+    const first = byProject.get(p.project_id)?.find((r) => r.disbursed_pct >= 50);
+    return first && valid(eff(p)) ? [days(eff(p), first.date) / 30.44] : [];
+  });
+  rows.push(row("monitoring", "Time from effectiveness to 50% disbursed", to50, "months", "projects", "Median months until a supervision report first shows half the money disbursed. Only projects that got there count.", 0));
+  if (byProject.size > 0) {
+    const restructured = [...byProject.values()].filter((rs) => rs.some((r) => r.restructurings.length > 0)).length;
+    rows.push({ stage: "monitoring", metric: "Projects restructured", value: Math.round(restructured / byProject.size * 100), unit: "%", n: byProject.size, counts: "projects", thin: byProject.size < THIN_SAMPLE_BELOW, basis: `${restructured} of ${byProject.size} projects with reports had at least one restructuring.` });
+  }
+  const lessons = completion.reduce((n, r) => n + r.lessons.length, 0);
+  rows.push(lessons > 0 ? { stage: "learning", metric: "Lessons on record from completion reports", value: lessons, unit: "lessons", n: completion.length, counts: "completion reports", thin: completion.length < THIN_SAMPLE_BELOW, basis: "Count of lessons; ask for the tender draft to see them with their sources." } : gap("learning", "Lessons from completion reports", "No completion-report lessons have been read for these projects yet."));
+  return { scope, label, projects: [...ids], ...note ? { note } : {}, rows };
+}
+function estimateLifecycle(db, keyword) {
+  return {
+    keyword: keyword?.trim() || null,
+    groups: ["real", "mock"].map((scope) => estimateGroup(db, scope, keyword)),
+    how_to_read: "Each figure is a median of similar stored projects with the number it rests on. Real and mock groups are separate and never combined. A row marked missing means the data holds nothing for it."
+  };
 }
 
 // packages/data/src/assistantData.ts
@@ -243,13 +336,13 @@ function searchDocuments(db, query, projectId, limit = 5) {
     })
   };
 }
-var median = (xs) => {
+var median2 = (xs) => {
   if (xs.length === 0) return null;
   const s = [...xs].sort((a, b) => a - b);
   return s.length % 2 ? s[(s.length - 1) / 2] : Math.round((s[s.length / 2 - 1] + s[s.length / 2]) / 2 * 10) / 10;
 };
 var daysBetween = (a, b) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
-var tally = (rows, key) => rows.reduce((n, r) => ({ ...n, [key(r)]: (n[key(r)] ?? 0) + 1 }), {});
+var tally2 = (rows, key) => rows.reduce((n, r) => ({ ...n, [key(r)]: (n[key(r)] ?? 0) + 1 }), {});
 function referencePractice(db, keyword) {
   const k = keyword?.trim().toLowerCase();
   const projects = db.projects.filter((p) => !k || [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k)));
@@ -266,15 +359,15 @@ function referencePractice(db, keyword) {
         sector: p.project_global_practice,
         kind: kindOf(p),
         tender_draft: draft ? { id: draft.id, duration_months: draft.duration_months, bid_validity_days: draft.bid_validity_days, performance_security_pct: draft.performance_security_pct, min_similar_contracts: draft.min_similar_contracts, min_similar_value_usd: draft.min_similar_value_usd, evaluation_method: draft.evaluation_method } : "missing: no tender draft saved for this project",
-        plans: plans.length ? { count: plans.length, median_days_advertisement_to_signing: median(plans.map((x) => daysBetween(x.planned_advertisement, x.planned_signing))), by_method: tally(plans, (x) => x.method) } : "missing: no procurement plans",
-        contracts: contracts.length ? { count: contracts.length, total_amount_usd: Math.round(contracts.reduce((n, c) => n + c.supplier_contract_amount_usd, 0)), by_category: tally(contracts, (c) => c.procurement_category), by_method: tally(contracts, (c) => c.procurement_method) } : "missing: no contracts"
+        plans: plans.length ? { count: plans.length, median_days_advertisement_to_signing: median2(plans.map((x) => daysBetween(x.planned_advertisement, x.planned_signing))), by_method: tally2(plans, (x) => x.method) } : "missing: no procurement plans",
+        contracts: contracts.length ? { count: contracts.length, total_amount_usd: Math.round(contracts.reduce((n, c) => n + c.supplier_contract_amount_usd, 0)), by_category: tally2(contracts, (c) => c.procurement_category), by_method: tally2(contracts, (c) => c.procurement_method) } : "missing: no contracts"
       };
     }),
     lessons: lessons.length ? lessons : "missing: no completion report lessons match"
   };
 }
 var addDays = (iso, n) => new Date(Date.parse(iso) + n * 864e5).toISOString().slice(0, 10);
-var medianInt = (xs) => Math.round(median(xs) ?? 0);
+var medianInt = (xs) => Math.round(median2(xs) ?? 0);
 var matchesKeyword = (p, k) => !k || [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k.trim().toLowerCase()));
 function proposePlan(db, raw) {
   const input = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? void 0 : v]));
@@ -282,30 +375,30 @@ function proposePlan(db, raw) {
   const cat = input.category?.trim().toLowerCase();
   const refs = db.plans.filter((x) => ids.has(x.project_id) && (!cat || x.category.toLowerCase().includes(cat)));
   if (refs.length === 0) return { missing: "No reference plans match this sector and category, so no plan is suggested." };
-  const gap = {
+  const gap2 = {
     to_bid_opening: medianInt(refs.map((x) => daysBetween(x.planned_advertisement, x.planned_bid_opening))),
     to_evaluation_complete: medianInt(refs.map((x) => daysBetween(x.planned_bid_opening, x.planned_evaluation_complete))),
     to_signing: medianInt(refs.map((x) => daysBetween(x.planned_evaluation_complete, x.planned_signing)))
   };
-  const total = gap.to_bid_opening + gap.to_evaluation_complete + gap.to_signing;
+  const total = gap2.to_bid_opening + gap2.to_evaluation_complete + gap2.to_signing;
   const startIgnored = !!input.start_date && !!input.signing_by && input.start_date >= input.signing_by;
   const given = startIgnored ? void 0 : input.start_date;
   const start = given ?? (input.signing_by ? addDays(input.signing_by, -total) : void 0);
   if (!start) return { missing: "Give a start date (advertisement) or a date the contract must be signed by." };
-  const bid = addDays(start, gap.to_bid_opening);
-  const evalc = addDays(bid, gap.to_evaluation_complete);
-  const sign = addDays(evalc, gap.to_signing);
+  const bid = addDays(start, gap2.to_bid_opening);
+  const evalc = addDays(bid, gap2.to_evaluation_complete);
+  const sign = addDays(evalc, gap2.to_signing);
   return {
     plan: {
       name: input.name?.trim() || "Your procurement",
       category: input.category?.trim() || refs[0].category,
-      method: input.method?.trim() || [...Object.entries(tally(refs, (x) => x.method))].sort((a, b) => b[1] - a[1])[0][0],
+      method: input.method?.trim() || [...Object.entries(tally2(refs, (x) => x.method))].sort((a, b) => b[1] - a[1])[0][0],
       planned_advertisement: start,
       planned_bid_opening: bid,
       planned_evaluation_complete: evalc,
       planned_signing: sign
     },
-    basis: { sample_size: refs.length, projects: [...new Set(refs.map((x) => x.project_id))], median_gap_days: gap, median_total_days: total, filtered_by: [input.keyword, input.category].filter(Boolean).join(" \xB7 ") || "all stored plans" },
+    basis: { sample_size: refs.length, projects: [...new Set(refs.map((x) => x.project_id))], median_gap_days: gap2, median_total_days: total, filtered_by: [input.keyword, input.category].filter(Boolean).join(" \xB7 ") || "all stored plans" },
     ...startIgnored ? { note: "The start date was on or after the signing deadline, so the plan was worked back from the deadline." } : {},
     deadline_check: input.signing_by ? sign <= input.signing_by ? { fits: true, spare_days: daysBetween(sign, input.signing_by) } : { fits: false, days_over: daysBetween(input.signing_by, sign) } : "No signing deadline was given."
   };
@@ -326,7 +419,7 @@ function proposeTenderDraft(db, keyword) {
     const values = drafts.map((d) => d[c.field]);
     return { field: c.field, label: c.label, unit: c.unit, value: medianInt(values), sample_size: values.length, from };
   });
-  const methods = Object.entries(tally(drafts, (d) => d.evaluation_method)).sort((a, b) => b[1] - a[1]);
+  const methods = Object.entries(tally2(drafts, (d) => d.evaluation_method)).sort((a, b) => b[1] - a[1]);
   clauses.push({ field: "evaluation_method", label: "Evaluation method", unit: "", value: methods[0][0], sample_size: drafts.length, from });
   const lessons = db.completion_reports.flatMap((r) => r.lessons.map((l) => ({ report: r.id, project: r.project_name, lesson: l.text, chunk_id: l.chunk_id })));
   return { clauses, lessons, filtered_by: keyword?.trim() || "all stored drafts" };
@@ -340,7 +433,9 @@ A. Show the view, do not retell it. For any request about suppliers, contracts, 
 
 B. Real or mock, never both. Projects with ids like P158504 are REAL World Bank projects, ingested as stored snapshots. Projects with ids like P-MOCK-001 are MOCK demonstration data made up for this demo. Always say which kind you are talking about. If the user asks about real or World Bank projects, use only real projects and real data and offer only real-world options. Use mock data only when the user says mock or demo, or names a P-MOCK id. Never put a mock figure beside a real one, never use a mock plan or tender draft as a benchmark for a real project, and never offer a mixture. If the user asks to compare, combine or total mock and real data, do not put their figures side by side: explain in one sentence that one is demonstration data and the other is real, and offer to show each on its own. When a project id or name is unknown or unclear, do NOT list projects of both kinds: say it was not found and ask whether they mean a real World Bank project or a mock one, and list only that kind once they answer. When the user has not said which kind and no project is selected, ask one short question: real World Bank projects or the mock ones? When a project is selected, its kind is the kind. Tools take a scope argument: pass the kind the user asked for. When the real data has nothing for the request (for example the real projects have no saved plans or tender drafts), say it is missing and offer, as a separate choice the user must accept, to use the mock projects clearly labelled as mock.
 
-C. Be honest. If you do not know, say "I don't know" or "The data does not say". If a question is unclear or could mean two things, ask one short clarifying question and wait; do not guess. If a tool returns an error, a "missing" value or nothing, say so plainly and do not fill the gap. Never invent a figure, name, id, date, chunk id or citation. Say so when something is outside what this app does.
+C. Two modes, never mixed. REVIEW: the user asks about a project that exists (its planning, tender design, monitoring, learning, suppliers, contracts, documents). Show what that project HAS on record with find_views and the view, and describe only recorded facts. Do not propose, suggest, estimate or draft anything for it; if it holds nothing for a stage, say it is missing. SUGGEST: the user asks you to propose, plan, estimate or advise for THEIR OWN procurement (for example "propose a lifecycle for my road", "how long should bidding take", "how long should the contract be valid"). Do not ask for a reference project and do not refuse for lack of one. Call propose_lifecycle (whole lifecycle), propose_plan (dated timeline) or propose_tender_draft (clauses), and give the estimates: medians of similar stored projects, each with how many it rests on. Real and mock results are separate groups: say which group a figure comes from, never blend them, and say that mock figures are illustrative. Where a group is missing a figure, say so plainly instead of inventing one. Do not ask clarifying questions before estimating: call the tool with what you have. After a proposal card is on screen, reply with at most two short sentences (what it rests on and what is missing, naming the group) and do not repeat the figures it shows. Estimates are suggestions for the user's team to review, never promises. When the user asked only about real data, lead with the real group and what it is missing, and bring in the mock group only if they ask for it or accept it.
+
+D. Be honest. If you do not know, say "I don't know" or "The data does not say". If a question is unclear or could mean two things, ask one short clarifying question and wait; do not guess. If a tool returns an error, a "missing" value or nothing, say so plainly and do not fill the gap. Never invent a figure, name, id, date, chunk id or citation. Say so when something is outside what this app does.
 
 You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
@@ -353,7 +448,7 @@ Rules you always follow:
 6. Keep answers short and in plain language. Offer a natural next step when it helps.
 
 You are also a procurement strategy ADVISOR. The user often brings their OWN procurement (a road, a water scheme, a clinic programme, anything) and wants to plan and draft tenders for it. The stored projects are your reference material, not the user's project:
-- Start from what the user wants to procure. If you do not know the sector, rough size, works/goods/consultancy and country, ask for them in one short question. Do not invent them.
+- Start from what the user wants to procure. If they have not said the sector, size, category or country, do NOT ask first: give general estimates right away (leave the keyword out) and say which details would narrow them. Do not invent details.
 - Call get_reference_practice (with a sector keyword when you can) and base advice on what the stored projects did: plan durations, methods, tender clauses, completion-report lessons. Say which project each point comes from, by id, and cite lessons by chunk id.
 - When the user asks for a plan, schedule or timeline (especially with a date), call propose_plan with their start date or signing deadline, and a sector keyword. The chat draws the timeline from the result: reply with one or two sentences (the basis, whether a deadline fits) and do not repeat the dates. A signing deadline alone is enough (pass signing_by only, and the plan is worked back from it); so is a start date alone. Ask only when the user gave neither, and in that case do not call the tool yet. Pass only what the user said; never invent a signing deadline, method or category.
 - When the user asks for a tender draft or clauses, call propose_tender_draft with a sector keyword. The chat draws the clause table and lessons: reply with one or two sentences on what the data cannot answer, and do not list the clause values again.
@@ -422,6 +517,12 @@ function buildTools(loadDb) {
       description: "What the stored projects did that a NEW procurement can learn from: each project's tender draft clauses (duration, bid validity, performance security, similar-contract requirement, evaluation method), how many days its plans take from advertisement to signing, the mix of contract categories and methods, and the lessons from completion reports (with chunk ids). Optional keyword narrows by sector, name or country, for example road, water, health.",
       parameters: z2.object({ scope: scopeParam, keyword: z2.string().optional().describe("Sector, name or country to narrow by") }),
       execute: guard(({ scope, keyword }) => ({ data_kind: scopeLabel(scope), ...referencePractice(scopedDb(loadDb(), scope), keyword) }))
+    }),
+    defineTool({
+      name: "propose_lifecycle",
+      description: "ESTIMATES for the USER's OWN new procurement across all four stages (planning, tender design, monitoring, learning), as medians of similar stored projects: project length, bidding and evaluation periods, bid validity, contract duration, security, reporting rhythm, disbursement pace, contract sizes. Each figure carries how many projects, plans, contracts or reports it rests on. Real and mock projects come back as two separate groups, never blended; what a group does not hold is marked missing with the reason. It does not need a matching reference project: if the sector keyword matches nothing it uses all projects and says so. The chat draws the table from the result, so call this instead of working out values yourself.",
+      parameters: z2.object({ keyword: z2.string().optional().describe("Sector, name or country to narrow by, for example road, water, health") }),
+      execute: guard(({ keyword }) => estimateLifecycle(loadDb(), keyword))
     }),
     defineTool({
       name: "propose_plan",

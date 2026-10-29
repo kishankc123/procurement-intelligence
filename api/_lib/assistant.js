@@ -244,7 +244,7 @@ function stageIntro(db, project, step) {
   }
   if (step === "tender-design") {
     const draft = db.tender_drafts.find((d) => d.project_id === project.project_id);
-    return draft ? `A tender draft is already saved for ${name}. I show your figures with my suggestion beside each one, so you can compare and save changes.` : `There is no tender draft for ${name} yet, so I prepared a suggested one from its plans and contract data. Anything I cannot support with data is left for you to fill in.`;
+    return draft ? `A tender draft is on record for ${name}. Below are its clauses as entered.` : `There is no tender draft on record for ${name}, and nothing is made up for an existing project. Ask me to suggest clauses for your own procurement if that is what you need.`;
   }
   if (step === "monitoring") {
     const reports = db.supervision_reports.filter((r) => r.project_id === project.project_id);

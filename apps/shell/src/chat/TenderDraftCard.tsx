@@ -26,10 +26,10 @@ const toForm = (v: Partial<Record<DraftField, number | string | null>>): Form =>
 })
 
 /**
- * The Tender design stage as a chat card: a draft the assistant suggests from the plan and the contract data, one hint per clause
+ * The editor behind "Edit this draft" or "Enter a draft": a draft the assistant suggests from the plan and the contract data, one hint per clause
  * with how it was worked out (or why there is none). The user edits, and Save draft keeps it; the same draft feeds the rest of the app.
  */
-export function TenderDraftCard({ projectId }: { projectId: string }) {
+function TenderDraftEditor({ projectId }: { projectId: string }) {
   const fiscalYear = useUiStore((s) => s.fiscalYear)
   const { role } = useCurrentUser()
   const project = useProject(projectId).data?.[0]
@@ -150,5 +150,57 @@ export function TenderDraftCard({ projectId }: { projectId: string }) {
         </section>
       )}
     </div>
+  )
+}
+
+/**
+ * The Tender design stage for a project that exists: what its tender draft HAS on record, read only. Nothing is suggested or crafted here.
+ * With no draft it says so; the editor (which does suggest) opens only when someone chooses to enter or edit one, and a draft for the
+ * user's own procurement is asked for in the chat.
+ */
+export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSend: (text: string) => void }) {
+  const { role } = useCurrentUser()
+  const project = useProject(projectId).data?.[0]
+  const stored = useTenderDraft(projectId)
+  const [editing, setEditing] = useState(false)
+  if (!project || !stored.isSuccess) return <Card state="loading">{null}</Card>
+  const draft = stored.data[0]
+  const allowed = can(role, 'edit_tender_draft')
+
+  if (editing) {
+    return (
+      <div className={styles.card}>
+        <TenderDraftEditor projectId={projectId} />
+        <div className={styles.actions}><Button onClick={() => setEditing(false)}>Back to the draft on record</Button></div>
+      </div>
+    )
+  }
+  if (!draft) {
+    return (
+      <Card title="Tender draft on record" aside={<ProvenanceChip kind="missing" />}>
+        <EmptyState title={`No tender draft on record for ${project.project_name}`} text="Nothing is made up for an existing project. Tender clauses are not in the public sources, so they appear only when someone enters them." />
+        <div className={styles.actions}>
+          <Button variant="primary" onClick={() => onSend('Suggest tender clauses for my own procurement')}>Suggest a draft for my own procurement</Button>
+          <Button onClick={() => setEditing(true)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Enter a draft for this project</Button>
+        </div>
+      </Card>
+    )
+  }
+  return (
+    <Card title="Tender draft on record" aside={<ProvenanceChip kind="entered" />}>
+      <p className={styles.lead}>The draft saved for {project.project_name}. These are the clauses it has, as entered.</p>
+      <table className={styles.table}>
+        <tbody>
+          {NUMERIC.map(({ field, label, unit }) => (
+            <tr key={field}><th scope="row">{label}</th><td>{Number(draft[field]).toLocaleString('en-US')}{unit ? ` ${unit}` : ''}</td></tr>
+          ))}
+          <tr><th scope="row">Evaluation method</th><td>{draft.evaluation_method}</td></tr>
+        </tbody>
+      </table>
+      <div className={styles.actions}>
+        <Button onClick={() => setEditing(true)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Edit this draft</Button>
+        <Button onClick={() => onSend('Suggest tender clauses for my own procurement')}>Suggest a draft for my own procurement</Button>
+      </div>
+    </Card>
   )
 }

@@ -74,7 +74,7 @@ function Stage({ step, projectId, onSend }: { step: LifecycleStage; projectId: s
       {step === 'planning' ? (
         <RemoteBoundary name="Planning"><PlanningCard projectId={projectId} /></RemoteBoundary>
       ) : step === 'tender-design' ? (
-        <TenderDraftCard projectId={projectId} />
+        <TenderDraftCard projectId={projectId} onSend={onSend} />
       ) : step === 'monitoring' ? (
         <RemoteBoundary name="Monitoring"><MonitoringCard projectId={projectId} /></RemoteBoundary>
       ) : step === 'learning' ? (

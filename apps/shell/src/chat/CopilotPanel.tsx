@@ -4,7 +4,7 @@ import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdat
 import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, Block, projectScope, scopeLabel } from '@pi/data'
 import { BlockView } from './ChatBlocks'
-import { PlanProposal, TenderProposal } from './ProposalCards'
+import { LifecycleProposal, PlanProposal, TenderProposal } from './ProposalCards'
 import styles from './CopilotPanel.module.css'
 
 const STAGE = z.enum(['planning', 'tender-design', 'monitoring', 'learning'])
@@ -70,6 +70,10 @@ function useCardTools() {
 
 /** The suggestions the server works out (dates, clauses) are drawn with the app's own components. The model only chooses to call the tool; the numbers come from its result. */
 function useProposalTools() {
+  useRenderTool({
+    name: 'propose_lifecycle', parameters: z.object({}).passthrough(),
+    render: (p) => (p.status === 'complete' ? <div className={styles.cards}><LifecycleProposal result={p.result} /></div> : <p>Working out estimates from the stored projects…</p>),
+  }, [])
   useRenderTool({
     name: 'propose_plan', parameters: z.object({}).passthrough(),
     render: (p) => (p.status === 'complete' ? <div className={styles.cards}><PlanProposal result={p.result} /></div> : <p>Working out a plan from the stored plans…</p>),

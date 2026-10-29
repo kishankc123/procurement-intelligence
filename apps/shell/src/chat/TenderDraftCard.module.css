@@ -13,3 +13,8 @@
 .checks { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
 .checks h4 { font-size: 14px; }
 .counts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+.table th, .table td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
+.table th { color: var(--muted); width: 55%; }
+.table td { font-variant-numeric: tabular-nums; }
