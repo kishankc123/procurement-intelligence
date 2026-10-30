@@ -76,6 +76,10 @@ export function StageDetail({ stage, run }: { stage: IngestStage; run: RunView }
   if (stage === 'parse' && items.length) {
     return <section className={styles.detail}>{head}<ul className={styles.rows}>{items.map((r) => <li key={r.id}>{r.ok ? <Check size={14} aria-label="read" /> : <CircleAlert size={14} aria-label="needs a second look" />} {r.label}</li>)}</ul></section>
   }
+  // The newest tenders as they were read, and the plan the package rows came from.
+  if ((stage === 'notices' || stage === 'plans') && items.length) {
+    return <section className={styles.detail}>{head}<ul className={styles.rows}>{items.map((r) => <li key={r.id}>{r.group && <span className={styles.chip}>{r.group}</span>} {r.label}</li>)}</ul></section>
+  }
   if (stage === 'chunk' && items.length) {
     const types = [...new Set(items.map((i) => i.group ?? ''))]
     return (

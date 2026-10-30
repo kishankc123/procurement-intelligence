@@ -58,6 +58,8 @@ function Summary({ summary, onSend }: { summary: IngestSummary; onSend: (text: s
         <li><strong>{nf(c.documents)}</strong> documents ({nf(c.documents_with_text)} with text)</li>
         <li><strong>{nf(c.chunks)}</strong> chunks</li>
         <li><strong>{nf(c.supervision_reports)}</strong> supervision reports read</li>
+        {c.tender_notices !== undefined && <li><strong>{nf(c.tender_notices)}</strong> tenders</li>}
+        {c.plan_packages !== undefined && <li><strong>{nf(c.plan_packages)}</strong> plan package rows</li>}
       </ul>
       {e?.status === 'done'
         ? <p className={styles.caption}>Embedded {nf(e.vectors ?? 0)} chunks with <span className="mono">{e.model}</span> ({e.dimensions} numbers each){e.reused ? `, ${nf(e.reused)} reused from an earlier run` : ''} · {nf(e.tokens ?? 0)} tokens, about ${(e.costUsd ?? 0).toFixed(4)} · {(summary.durationMs / 1000).toFixed(1)} s in all</p>
@@ -68,6 +70,8 @@ function Summary({ summary, onSend }: { summary: IngestSummary; onSend: (text: s
       <div className={styles.actions}>
         <Button variant="primary" onClick={() => onSend(`Show the lifecycle for ${about}`)}>Show lifecycle</Button>
         <Button onClick={() => onSend(`Show the documents for ${about}`)}>Show documents</Button>
+        <Button onClick={() => onSend(`Show the planning for ${about}`)}>Show planning</Button>
+        <Button onClick={() => onSend(`Show the tenders for ${about}`)}>Show tenders</Button>
         {e?.status === 'done' && <Button onClick={() => onSend(`What lessons or risks do the documents of ${about} record?`)}>Ask about the documents</Button>}
       </div>
     </section>

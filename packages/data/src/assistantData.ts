@@ -24,9 +24,53 @@ export function projectOverview(db: AssistantDb, projectId: string) {
     kind: kindOf(project),
     dates: { approval: project.approval_date, effectiveness: project.effectiveness_actual ?? project.effectiveness_planned, closing_planned: project.closing_date_planned, closing_revised: project.closing_date_revised },
     counts: dossier.counts,
+    planning_and_tenders: { procurement_plan_package_rows: db.plan_packages.filter((r) => r.project_id === projectId).length, tenders_published: db.tender_notices.filter((t) => t.project_id === projectId).length },
     latest_supervision_report: latest
       ? { date: latest.date, sequence: latest.sequence, progress_rating: latest.progress_rating, progress_rating_previous: latest.progress_rating_prev, implementation_rating: latest.implementation_rating, overall_risk: latest.overall_risk, fiduciary_risk: latest.fiduciary_risk, disbursed_pct: latest.disbursed_pct }
       : 'missing: no supervision reports',
+  }
+}
+
+const wordsOf = (s?: string) => (s ?? '').toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 2)
+/** True when every word of the needle is somewhere in the haystack (an empty needle matches everything). */
+const hasAll = (hay: string, needle?: string) => { const h = hay.toLowerCase(); return wordsOf(needle).every((w) => h.includes(w)) }
+
+export interface PlanQuery { project_id: string; keyword?: string; category?: string; method?: string; limit?: number }
+
+/**
+ * The package rows read from the project's World Bank procurement plan: reference, description, estimated cost (as written, in `cost_unit`), method, review and expected
+ * bid opening. Only the first rows of one plan document are stored, so this is not the whole plan; the result says so.
+ */
+export function planPackages(db: AssistantDb, q: PlanQuery) {
+  if (!db.projects.some((p) => p.project_id === q.project_id)) return { error: `No project with id ${q.project_id}.` }
+  const all = db.plan_packages.filter((r) => r.project_id === q.project_id)
+  if (all.length === 0) return { packages: 'missing: no procurement plan package rows are stored for this project (its plan was not read, or no plan document with a readable package table was found). Do not estimate them.' }
+  const rows = all.filter((r) => hasAll(`${r.ref_no ?? ''} ${r.description}`, q.keyword) && hasAll(r.category ?? '', q.category) && hasAll(r.method ?? '', q.method))
+  const limit = Math.min(Math.max(q.limit ?? 10, 1), 25)
+  const first = all[0]!
+  return {
+    plan_document: first.plan_doc, plan_date: first.plan_date, source_url: first.source_url, cost_unit: first.cost_unit,
+    note: `Only the first ${all.length} package rows of this one plan document are stored, not the whole plan. Costs and dates are copied as the document writes them, in ${first.cost_unit ?? 'an unstated unit'}.`,
+    stored: all.length, matched: rows.length, shown: Math.min(limit, rows.length),
+    packages: rows.slice(0, limit).map((r) => ({ id: r.id, reference: r.ref_no, description: r.description, category: r.category, estimated_cost: r.estimated_cost, packages: r.packages, method: r.method, review: r.review, expected_bid_opening: r.expected_bid_opening })),
+  }
+}
+
+export interface TenderQuery { project_id: string; keyword?: string; category?: string; method?: string; status?: string; posted_from?: string; posted_to?: string; limit?: number }
+
+/** The tenders (Invitation for Bids notices) the project published, newest first. Only the newest 60 are stored, and contact details are never stored. */
+export function tenderNotices(db: AssistantDb, q: TenderQuery) {
+  if (!db.projects.some((p) => p.project_id === q.project_id)) return { error: `No project with id ${q.project_id}.` }
+  const all = db.tender_notices.filter((t) => t.project_id === q.project_id)
+  if (all.length === 0) return { tenders: 'missing: no tender notices are stored for this project (the notices API had none, or they were not read). Do not estimate them.' }
+  const rows = all.filter((t) => hasAll(`${t.reference} ${t.description}`, q.keyword) && hasAll(t.category, q.category) && hasAll(t.method, q.method) && hasAll(t.status, q.status)
+    && (!q.posted_from || t.posted >= q.posted_from) && (!q.posted_to || t.posted <= q.posted_to)).sort((a, b) => b.posted.localeCompare(a.posted))
+  const by = (key: 'category' | 'method' | 'status') => Object.fromEntries([...new Set(rows.map((t) => t[key]))].map((v) => [v, rows.filter((t) => t[key] === v).length]))
+  const limit = Math.min(Math.max(q.limit ?? 10, 1), 25)
+  return {
+    note: 'Invitation for Bids notices only, newest first; the newest 60 are stored. Contact names, e-mails and phone numbers are not stored.',
+    stored: all.length, matched: rows.length, shown: Math.min(limit, rows.length), by_category: by('category'), by_method: by('method'), by_status: by('status'),
+    tenders: rows.slice(0, limit).map((t) => ({ id: t.id, reference: t.reference, description: t.description.slice(0, 220), category: t.category, method: t.method, posted: t.posted, deadline: t.deadline, status: t.status, organization: t.organization, url: t.url })),
   }
 }
 

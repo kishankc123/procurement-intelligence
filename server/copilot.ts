@@ -13,7 +13,7 @@ import { potentialSuppliers } from '../packages/data/src/potentialSuppliers'
 import { LEARNING_OPTIONS, MONITORING_OPTIONS } from '../packages/data/src/lifecycleOptions'
 import type { ProjectCandidate } from '../packages/data/src/ingestEvents'
 import { semanticSearch, type SemanticDeps } from './semantic'
-import { listProjects, projectOverview, proposePlan, proposeTenderDraft, queryContracts, referencePractice, searchDocuments, supervisionSeries } from '../packages/data/src/assistantData'
+import { listProjects, planPackages, projectOverview, proposePlan, proposeTenderDraft, queryContracts, referencePractice, searchDocuments, supervisionSeries, tenderNotices } from '../packages/data/src/assistantData'
 
 export const COPILOT_BASE_PATH = '/api/copilotkit'
 
@@ -42,6 +42,8 @@ J. Editing the user's own plan and tender clauses. A plan or tender clauses the 
 K. Projects that are not stored yet. When the user asks about a World Bank project that the stored list does not hold (they name it, or give an id like P158504 that is not in the context projects), call find_world_bank_project with their words. It searches the public World Bank Projects API and returns candidates, each with a stored flag. The chat draws the candidates with an "Ingest this project" button: only the USER can press it, you cannot ingest, fetch or start anything, and you must never say you did. After the result, reply with at most two sentences: which project matched (or ask which, when several), and that pressing the button reads its contracts and documents, chunks them and makes it available (the first run can take several minutes because the public contract list is large). If a candidate is already stored, do not offer to ingest it: show it with find_views and the matching show_ tool. If nothing matched, say so and ask for another name or the project id (the letter P and six digits). Ingested projects are real World Bank data. Once the user says it is done, the project is in the context projects list: use the normal views for it.
 
 L. Searching document text. For a question the document text may answer (why something was delayed, lessons, risks, what a report says), call semantic_search_documents (it ranks by meaning and by keywords) with the project id when there is one, and cite the chunk ids it returns. If it returns "No supporting evidence found", say that and nothing more. Never present the similarity figure as a probability or a confidence. If its method is "keywords only", say meaning search was not available and why (its note). search_documents is the older keyword-only tool; prefer the semantic one.
+
+M. Plans and tenders on record. When the user asks about a project's procurement PLAN (its packages, estimated costs, methods, expected bid openings) call get_plan_packages; when they ask about the TENDERS it published (what was tendered, when, by whom, open or closed) call find_tender_notices. Both read what is stored for that one project; pass its project id and filters. Quote figures exactly as the result gives them: an estimated cost is the document's text, in the result's cost_unit, and you never convert, add up or compare costs across rows unless the user asks and the unit is the same. Say that only the first rows of one plan document are stored (the result's note), that tenders are Invitation for Bids notices (the newest 60), and name the plan document and date. If a result says missing, say it is missing and why; never estimate a plan row or a tender. These are not the project's own tender draft or lifecycle suggestion: those come from the show_ and propose_ tools. For what the plan or tender documents say in prose, use semantic_search_documents.
 
 You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
@@ -98,6 +100,16 @@ function buildTools(loadDb: () => AssistantDb, extras: CopilotExtras = {}) {
     defineTool({
       name: 'get_project_overview', description: 'Counts of what exists for one project (contracts, plans, tender drafts, supervision reports, documents), its key dates and its latest supervision ratings.',
       parameters: z.object({ project_id: jsonSchemaId }), execute: guard(({ project_id }: { project_id: string }) => withKind(project_id, projectOverview(loadDb(), project_id))),
+    }),
+    defineTool({
+      name: 'get_plan_packages', description: 'The package rows of a project\'s World Bank procurement plan (reference, description, estimated cost with its unit, method, review, expected bid opening), optionally filtered. Only the first rows of one plan document are stored; the result says which document and date. Use it for questions about planned packages and their estimated costs.',
+      parameters: z.object({ project_id: jsonSchemaId, keyword: z.string().optional().describe('Words of the description or the package reference'), category: z.string().optional().describe('For example Civil Works, Goods'), method: z.string().optional().describe('For example NCB, ICB, RFB'), limit: z.number().optional() }),
+      execute: guard((args: Parameters<typeof planPackages>[1]) => withKind(args.project_id, planPackages(loadDb(), args))),
+    }),
+    defineTool({
+      name: 'find_tender_notices', description: 'The tenders (Invitation for Bids notices) a project published, newest first, with counts by category, method and status. Filter by words, category, method, status or posting dates (YYYY-MM-DD). Use it for questions about what was tendered and when.',
+      parameters: z.object({ project_id: jsonSchemaId, keyword: z.string().optional(), category: z.string().optional().describe('Works, Goods, Consulting services or Non-consulting services'), method: z.string().optional(), status: z.string().optional().describe('For example Published or Closed'), posted_from: z.string().optional(), posted_to: z.string().optional(), limit: z.number().optional() }),
+      execute: guard((args: Parameters<typeof tenderNotices>[1]) => withKind(args.project_id, tenderNotices(loadDb(), args))),
     }),
     defineTool({
       name: 'find_contracts', description: 'Find the contracts of a project, with optional filters. Returns how many matched, their total, and up to 25 rows.',

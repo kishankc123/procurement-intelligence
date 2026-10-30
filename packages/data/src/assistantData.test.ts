@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { listProjects, projectOverview, proposePlan, proposeTenderDraft, referencePractice, queryContracts, searchDocuments, supervisionSeries } from './assistantData'
+import { listProjects, planPackages, projectOverview, proposePlan, proposeTenderDraft, referencePractice, queryContracts, searchDocuments, supervisionSeries, tenderNotices } from './assistantData'
 import { withDefaults } from './assistant'
 import type { Chunk, Contract, Doc, Project, SupervisionReport } from './schemas'
 
@@ -119,5 +119,52 @@ describe('proposals', () => {
     const d = proposeTenderDraft(base) as { clauses: { field: string; value: number | string; sample_size: number; from: string[] }[] }
     expect(d.clauses.find((c) => c.field === 'bid_validity_days')).toMatchObject({ value: 75, sample_size: 2, from: ['P-MOCK-001', 'P-MOCK-002'] })
     expect(d.clauses.find((c) => c.field === 'evaluation_method')?.value).toBe('Lowest evaluated price')
+  })
+})
+
+describe('plans and tenders on record', () => {
+  const pp = (id: string, ref: string, description: string, cost: string, method = 'NCB', category = 'Civil Works') => ({ id, project_id: 'P1', plan_doc: 'DOC-WB-7', plan_date: '2018-03-01', ref_no: ref, description, category, estimated_cost: cost, cost_unit: 'USD million', packages: null, method, review: 'Prior', expected_bid_opening: 'Mar. 2019', source_url: 'https://example.org/plan.pdf' })
+  const tn = (id: string, posted: string, description: string, category = 'Works', status = 'Published') => ({ id, project_id: 'P1', reference: `REF-${id}`, description, category, method: 'Request for Bids', posted, deadline: null, status, organization: 'Ministry', url: `https://example.org/${id}` })
+  const withPT = withDefaults({
+    projects: [project('P1', 'Real Road'), project('P2', 'Other Road')],
+    plan_packages: [pp('PP1', 'CW-01', 'Rehabilitation of Section A', '1.250'), pp('PP2', 'GO-01', 'Supply of road signs', '0.150', 'Shopping', 'Goods')],
+    tender_notices: [tn('T1', '2019-02-10', 'Rehabilitation of Section A'), tn('T2', '2020-05-20', 'Supply of road signs', 'Goods', 'Closed'), tn('T3', '2018-01-05', 'Bridge repair')],
+  })
+  it('returns the plan package rows with their unit, source and a warning that they are only the first rows', () => {
+    const r = planPackages(withPT, { project_id: 'P1' }) as { cost_unit: string; stored: number; matched: number; note: string; source_url: string; packages: { reference: string; estimated_cost: string }[] }
+    expect(r).toMatchObject({ cost_unit: 'USD million', stored: 2, matched: 2, source_url: 'https://example.org/plan.pdf' })
+    expect(r.note).toContain('Only the first 2 package rows')
+    expect(r.packages[0]).toMatchObject({ reference: 'CW-01', estimated_cost: '1.250' })
+  })
+  it('filters plan rows by every word of a keyword, a category and a method', () => {
+    const ref = (q: object) => (planPackages(withPT, { project_id: 'P1', ...q }) as { packages: { reference: string }[] }).packages.map((p) => p.reference)
+    expect(ref({ keyword: 'road signs' })).toEqual(['GO-01'])
+    expect(ref({ keyword: 'gO-01' })).toEqual(['GO-01'])
+    expect(ref({ category: 'goods' })).toEqual(['GO-01'])
+    expect(ref({ method: 'ncb' })).toEqual(['CW-01'])
+    expect(ref({ keyword: 'bridge' })).toEqual([])
+    expect(ref({ limit: 1 })).toEqual(['CW-01'])
+  })
+  it('lists tenders newest first with counts by category, method and status, and filters by text and date', () => {
+    const r = tenderNotices(withPT, { project_id: 'P1' }) as { stored: number; by_category: Record<string, number>; by_status: Record<string, number>; tenders: { id: string }[]; note: string }
+    expect(r.tenders.map((t) => t.id)).toEqual(['T2', 'T1', 'T3'])
+    expect(r.by_category).toEqual({ Goods: 1, Works: 2 })
+    expect(r.by_status).toEqual({ Closed: 1, Published: 2 })
+    expect(r.note).toContain('Contact names')
+    const ids = (q: object) => (tenderNotices(withPT, { project_id: 'P1', ...q }) as { tenders: { id: string }[] }).tenders.map((t) => t.id)
+    expect(ids({ keyword: 'sign' })).toEqual(['T2'])
+    expect(ids({ posted_from: '2019-01-01', posted_to: '2019-12-31' })).toEqual(['T1'])
+    expect(ids({ status: 'closed' })).toEqual(['T2'])
+    expect(ids({ category: 'works', limit: 1 })).toEqual(['T1'])
+  })
+  it('says plainly when a project has no plan rows or no tenders, and when it is unknown; it never invents them', () => {
+    expect((planPackages(withPT, { project_id: 'P2' }) as { packages: string }).packages).toMatch(/^missing:/)
+    expect((tenderNotices(withPT, { project_id: 'P2' }) as { tenders: string }).tenders).toMatch(/^missing:/)
+    expect(planPackages(withPT, { project_id: 'P9' })).toEqual({ error: 'No project with id P9.' })
+    expect(tenderNotices(withPT, { project_id: 'P9' })).toEqual({ error: 'No project with id P9.' })
+  })
+  it('shows the counts in the project overview', () => {
+    expect((projectOverview(withPT, 'P1') as { planning_and_tenders: unknown }).planning_and_tenders).toEqual({ procurement_plan_package_rows: 2, tenders_published: 3 })
+    expect((projectOverview(withPT, 'P2') as { planning_and_tenders: unknown }).planning_and_tenders).toEqual({ procurement_plan_package_rows: 0, tenders_published: 0 })
   })
 })

@@ -309,7 +309,50 @@ function projectOverview(db, projectId) {
     kind: kindOf(project),
     dates: { approval: project.approval_date, effectiveness: project.effectiveness_actual ?? project.effectiveness_planned, closing_planned: project.closing_date_planned, closing_revised: project.closing_date_revised },
     counts: dossier.counts,
+    planning_and_tenders: { procurement_plan_package_rows: db.plan_packages.filter((r) => r.project_id === projectId).length, tenders_published: db.tender_notices.filter((t) => t.project_id === projectId).length },
     latest_supervision_report: latest ? { date: latest.date, sequence: latest.sequence, progress_rating: latest.progress_rating, progress_rating_previous: latest.progress_rating_prev, implementation_rating: latest.implementation_rating, overall_risk: latest.overall_risk, fiduciary_risk: latest.fiduciary_risk, disbursed_pct: latest.disbursed_pct } : "missing: no supervision reports"
+  };
+}
+var wordsOf = (s) => (s ?? "").toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 2);
+var hasAll = (hay, needle) => {
+  const h = hay.toLowerCase();
+  return wordsOf(needle).every((w) => h.includes(w));
+};
+function planPackages(db, q) {
+  if (!db.projects.some((p) => p.project_id === q.project_id)) return { error: `No project with id ${q.project_id}.` };
+  const all = db.plan_packages.filter((r) => r.project_id === q.project_id);
+  if (all.length === 0) return { packages: "missing: no procurement plan package rows are stored for this project (its plan was not read, or no plan document with a readable package table was found). Do not estimate them." };
+  const rows = all.filter((r) => hasAll(`${r.ref_no ?? ""} ${r.description}`, q.keyword) && hasAll(r.category ?? "", q.category) && hasAll(r.method ?? "", q.method));
+  const limit = Math.min(Math.max(q.limit ?? 10, 1), 25);
+  const first = all[0];
+  return {
+    plan_document: first.plan_doc,
+    plan_date: first.plan_date,
+    source_url: first.source_url,
+    cost_unit: first.cost_unit,
+    note: `Only the first ${all.length} package rows of this one plan document are stored, not the whole plan. Costs and dates are copied as the document writes them, in ${first.cost_unit ?? "an unstated unit"}.`,
+    stored: all.length,
+    matched: rows.length,
+    shown: Math.min(limit, rows.length),
+    packages: rows.slice(0, limit).map((r) => ({ id: r.id, reference: r.ref_no, description: r.description, category: r.category, estimated_cost: r.estimated_cost, packages: r.packages, method: r.method, review: r.review, expected_bid_opening: r.expected_bid_opening }))
+  };
+}
+function tenderNotices(db, q) {
+  if (!db.projects.some((p) => p.project_id === q.project_id)) return { error: `No project with id ${q.project_id}.` };
+  const all = db.tender_notices.filter((t) => t.project_id === q.project_id);
+  if (all.length === 0) return { tenders: "missing: no tender notices are stored for this project (the notices API had none, or they were not read). Do not estimate them." };
+  const rows = all.filter((t) => hasAll(`${t.reference} ${t.description}`, q.keyword) && hasAll(t.category, q.category) && hasAll(t.method, q.method) && hasAll(t.status, q.status) && (!q.posted_from || t.posted >= q.posted_from) && (!q.posted_to || t.posted <= q.posted_to)).sort((a, b) => b.posted.localeCompare(a.posted));
+  const by = (key) => Object.fromEntries([...new Set(rows.map((t) => t[key]))].map((v) => [v, rows.filter((t) => t[key] === v).length]));
+  const limit = Math.min(Math.max(q.limit ?? 10, 1), 25);
+  return {
+    note: "Invitation for Bids notices only, newest first; the newest 60 are stored. Contact names, e-mails and phone numbers are not stored.",
+    stored: all.length,
+    matched: rows.length,
+    shown: Math.min(limit, rows.length),
+    by_category: by("category"),
+    by_method: by("method"),
+    by_status: by("status"),
+    tenders: rows.slice(0, limit).map((t) => ({ id: t.id, reference: t.reference, description: t.description.slice(0, 220), category: t.category, method: t.method, posted: t.posted, deadline: t.deadline, status: t.status, organization: t.organization, url: t.url }))
   };
 }
 function queryContracts(db, q) {
@@ -698,6 +741,8 @@ K. Projects that are not stored yet. When the user asks about a World Bank proje
 
 L. Searching document text. For a question the document text may answer (why something was delayed, lessons, risks, what a report says), call semantic_search_documents (it ranks by meaning and by keywords) with the project id when there is one, and cite the chunk ids it returns. If it returns "No supporting evidence found", say that and nothing more. Never present the similarity figure as a probability or a confidence. If its method is "keywords only", say meaning search was not available and why (its note). search_documents is the older keyword-only tool; prefer the semantic one.
 
+M. Plans and tenders on record. When the user asks about a project's procurement PLAN (its packages, estimated costs, methods, expected bid openings) call get_plan_packages; when they ask about the TENDERS it published (what was tendered, when, by whom, open or closed) call find_tender_notices. Both read what is stored for that one project; pass its project id and filters. Quote figures exactly as the result gives them: an estimated cost is the document's text, in the result's cost_unit, and you never convert, add up or compare costs across rows unless the user asks and the unit is the same. Say that only the first rows of one plan document are stored (the result's note), that tenders are Invitation for Bids notices (the newest 60), and name the plan document and date. If a result says missing, say it is missing and why; never estimate a plan row or a tender. These are not the project's own tender draft or lifecycle suggestion: those come from the show_ and propose_ tools. For what the plan or tender documents say in prose, use semantic_search_documents.
+
 You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
 Rules you always follow:
@@ -750,6 +795,18 @@ function buildTools(loadDb, extras = {}) {
       description: "Counts of what exists for one project (contracts, plans, tender drafts, supervision reports, documents), its key dates and its latest supervision ratings.",
       parameters: z2.object({ project_id: jsonSchemaId }),
       execute: guard(({ project_id }) => withKind(project_id, projectOverview(loadDb(), project_id)))
+    }),
+    defineTool({
+      name: "get_plan_packages",
+      description: "The package rows of a project's World Bank procurement plan (reference, description, estimated cost with its unit, method, review, expected bid opening), optionally filtered. Only the first rows of one plan document are stored; the result says which document and date. Use it for questions about planned packages and their estimated costs.",
+      parameters: z2.object({ project_id: jsonSchemaId, keyword: z2.string().optional().describe("Words of the description or the package reference"), category: z2.string().optional().describe("For example Civil Works, Goods"), method: z2.string().optional().describe("For example NCB, ICB, RFB"), limit: z2.number().optional() }),
+      execute: guard((args) => withKind(args.project_id, planPackages(loadDb(), args)))
+    }),
+    defineTool({
+      name: "find_tender_notices",
+      description: "The tenders (Invitation for Bids notices) a project published, newest first, with counts by category, method and status. Filter by words, category, method, status or posting dates (YYYY-MM-DD). Use it for questions about what was tendered and when.",
+      parameters: z2.object({ project_id: jsonSchemaId, keyword: z2.string().optional(), category: z2.string().optional().describe("Works, Goods, Consulting services or Non-consulting services"), method: z2.string().optional(), status: z2.string().optional().describe("For example Published or Closed"), posted_from: z2.string().optional(), posted_to: z2.string().optional(), limit: z2.number().optional() }),
+      execute: guard((args) => withKind(args.project_id, tenderNotices(loadDb(), args)))
     }),
     defineTool({
       name: "find_contracts",
