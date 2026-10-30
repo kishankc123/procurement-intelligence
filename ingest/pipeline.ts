@@ -176,7 +176,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
         const ok = p.sequence !== null && code(p.progress.current) && code(p.implementation.current) && p.risk.current && p.disbursedPct !== null
         if (!ok) {
           unparsed.push({ doc_id: `DOC-WB-${d.id}`, date: apiDateToIso(d.docdt) ?? '', problems: p.problems })
-          emit({ type: 'item', stage: 'parse', id: `DOC-WB-${d.id}`, label: `Report ${p.sequence ?? '?'} needs a second look`, ok: false })
+          emit({ type: 'item', stage: 'parse', id: `DOC-WB-${d.id}`, label: `${p.sequence ? `Report ${p.sequence}` : 'A report'} could not be fully read (${p.problems[0] ?? 'unknown layout'})`, ok: false })
         } else {
           // Two documents can carry the same sequence number (a re-issued report); keep the first id as it is and make later ones unique.
           const baseId = `ISR-WB-${projectId}-${p.sequence}`
@@ -249,6 +249,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
     let embeddings: EmbeddedSet | null = null
     let embedding: IngestSummary['embedding'] = null
     let map: IngestSummary['map'] = null
+    let sample: IngestSummary['sample'] = null
     alive(); current = 'embed'
     const embedder = opts.embedder
     const cap = opts.maxEmbedChunks ?? 3000
@@ -286,7 +287,9 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
       const costUsd = (tokens / 1_000_000) * embedder.usdPer1MTokens
       embeddings = { model: embedder.model, dimensions: embedder.dimensions, chunk_ids: targets.map((c) => c.chunk_id), hashes, bytes: packed.bytes, tokens, costUsd, reused }
       targets.forEach((c) => { c.embedding_status = 'embedded' })
-      const points = pca2(unpackVectors(packed.bytes, packed.count, packed.dimensions))
+      const stored = unpackVectors(packed.bytes, packed.count, packed.dimensions)
+      const points = pca2(stored)
+      sample = { chunk_id: targets[0]!.chunk_id, total: embedder.dimensions, values: Array.from(stored[0]!.slice(0, 32), (x) => Math.round(x * 1e4) / 1e4) }
       map = points.map(([x, y], i) => ({ chunk_id: targets[i]!.chunk_id, doc_type: docTypeOf.get(targets[i]!.doc_id) ?? 'Document', x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000 }))
       embedding = { status: 'done', model: embedder.model, dimensions: embedder.dimensions, vectors: targets.length, tokens, costUsd, reused }
       emit({ type: 'stage', stage: 'embed', status: 'done', detail: `${targets.length} vectors (${reused} reused)` })
@@ -322,7 +325,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
       },
       collections: { projects: [projectRecord], contracts, documents, chunks, supervision_reports: supervisionReports, sources } as Record<string, unknown[]>,
     }
-    const summary: IngestSummary = { projectId, projectName: projectRecord.project_name, counts, embedding, map, notes, durationMs: Date.now() - t0 }
+    const summary: IngestSummary = { projectId, projectName: projectRecord.project_name, counts, embedding, map, sample, notes, durationMs: Date.now() - t0 }
     return { snapshot, embeddings, summary }
   } catch (e) {
     if (e instanceof Cancelled) { emit({ type: 'error', stage: current, message: 'Cancelled by the user', cancelled: true }); throw e }

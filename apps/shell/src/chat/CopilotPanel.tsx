@@ -4,6 +4,7 @@ import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdat
 import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
+import { IngestCandidates } from './IngestCard'
 import { MapBlock } from './MapBlock'
 import { CompareProjectsCard } from './CompareCard'
 import { planEditCommand } from './lifecycleEdit'
@@ -207,6 +208,15 @@ function ForOwnProcurement({ id, result, children }: { id: string; result?: stri
   return <>{children}</>
 }
 
+/** The projects the public World Bank API matched for a name. The Ingest button is the user's: the model only runs the search. */
+function useIngestTool() {
+  const send = useSendToChat()
+  useRenderTool({
+    name: 'find_world_bank_project', parameters: z.object({}).passthrough(),
+    render: (p) => (p.status === 'complete' ? <div className={styles.cards}><IngestCandidates result={p.result} onSend={send} /></div> : <p>Searching the World Bank projects…</p>),
+  }, [])
+}
+
 function useProposalTools() {
   useRenderTool({
     name: 'propose_suppliers', parameters: z.object({}).passthrough(),
@@ -242,6 +252,7 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   useCompareTool()
   useEditLifecycleTool()
   useProposalTools()
+  useIngestTool()
   // Once anyone has said anything, the page gives the chat the room (same as the rule-based chat).
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
   const spoken = agent.messages.length > 0

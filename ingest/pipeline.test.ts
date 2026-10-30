@@ -34,6 +34,8 @@ describe('ingestProject on fixtures', () => {
     expect(seq.find((e) => e.stage === 'embed')).toMatchObject({ status: 'skipped', detail: 'no key' })
     expect(result.summary.embedding).toEqual({ status: 'skipped', reason: 'no key' })
     expect(result.embeddings).toBeNull()
+    expect(result.summary.map).toBeNull()
+    expect(result.summary.sample).toBeNull()
     expect(result.snapshot.collections.chunks!.every((ch) => (ch as { embedding_status: string }).embedding_status === 'none')).toBe(true)
   })
 
@@ -55,6 +57,8 @@ describe('ingestProject on fixtures', () => {
     expect(unpackVectors(result.embeddings!.bytes, n, 16)).toHaveLength(n)
     expect(result.snapshot.collections.chunks!.every((ch) => (ch as { embedding_status: string }).embedding_status === 'embedded')).toBe(true)
     expect(result.summary.map).toHaveLength(n)
+    expect(result.summary.sample).toMatchObject({ chunk_id: result.embeddings!.chunk_ids[0], total: 16 })
+    expect(result.summary.sample!.values).toHaveLength(16)
     expect(result.summary.embedding).toMatchObject({ status: 'done', model: 'fake-embedding', vectors: n, reused: 0 })
     expect(result.summary.embedding!.costUsd).toBeCloseTo((result.summary.embedding!.tokens! / 1e6) * 0.02, 10)
     const last = events.filter((e) => e.type === 'progress' && e.stage === 'embed').at(-1)

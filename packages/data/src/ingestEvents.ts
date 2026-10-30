@@ -30,6 +30,8 @@ export interface IngestSummary {
   embedding: { status: 'done' | 'skipped'; reason?: string; model?: string; dimensions?: number; vectors?: number; tokens?: number; costUsd?: number; reused?: number } | null
   /** 2D positions of the embedded chunks (PCA), each [x, y] in 0..1, with the document type for colour. Null when nothing was embedded. */
   map: { chunk_id: string; doc_type: string; x: number; y: number }[] | null
+  /** The first values of one stored (unit-length) vector, so the card can show what an embedding looks like. Null when nothing was embedded. */
+  sample: { chunk_id: string; total: number; values: number[] } | null
   notes: string[]
   durationMs: number
 }
