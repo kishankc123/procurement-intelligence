@@ -22,6 +22,8 @@ describe('breadcrumbTrail', () => {
   it('names the other pages and falls back for unknown ones', () => {
     expect(labels('/project')).toEqual(['Home→/', 'Project overview'])
     expect(labels('/work-with-ai')).toEqual(['Home→/', 'Work with AI'])
+    expect(labels('/assistant')).toEqual(['Home→/', 'Learn about the assistant'])
+    expect(labels('/chat')).toEqual(['Home→/', 'Chat'])
     expect(labels('/nope')).toEqual(['Home→/', 'Page not found'])
   })
 })

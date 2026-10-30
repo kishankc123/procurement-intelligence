@@ -1,36 +1,46 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
 :root {
+  /* Default: a light, blue-and-teal identity (white surfaces, deep blue for action, teal as the accent). Dark is opt-in with <html data-theme="dark">. */
+  color-scheme: light;
+  --bg: #F4F8FB; --surface: #FFFFFF; --border: #D3DFEA; --text: #0F2230; --muted: #4F647A;
+  --nav: #0B2E4F; --nav-active: #123F6B; --primary: #0A5DA8;
+  /* Brand accents for the wordmark, the header line and the map backdrop. The teal passes 4.5:1 on white, so it is safe for text. */
+  --brand-navy: #0B2E4F; --brand-blue: #0A5DA8; --brand-teal: #0B7C84;
+  --brand-gradient: linear-gradient(90deg, var(--brand-blue), var(--brand-teal));
+  --hero-glow: radial-gradient(ellipse 60% 70% at 50% 55%, #E2F1F6 0%, rgba(244, 248, 251, 0) 72%);
+  --map-land: color-mix(in srgb, var(--brand-teal) 7%, transparent);
+  /* Action colours: blue = edit/primary, green = save/confirm, red = close/delete. Solid fills carry white text. */
+  --success: #1E7B4B; --danger: #B3261E; --on-solid: #FFFFFF;
+  --prov-public-bg: #E6EDF4; --prov-public-fg: #34495E;
+  --prov-entered-bg: #FEF0D6; --prov-entered-fg: #7A4A06;
+  --prov-derived-bg: #DDF3E6; --prov-derived-fg: #14603A;
+  --prov-missing-border: #B3261E; --prov-missing-fg: #8A1C14;
+  --sev-high-bg: #FDE7E5; --sev-high-fg: #8A1C14; --sev-med-bg: #FEF0D6; --sev-med-fg: #7A4A06; --sev-low-bg: #DDF3E6; --sev-low-fg: #14603A;
+  --cite-bg: #E1EEF9; --cite-fg: #0A4A85;
+  /* Lifecycle step colours (Home donut). Distinct from the provenance and severity colours. */
+  --step-planning: #0A5DA8; --step-tender: #0B7C84; --step-monitoring: #A35A14; --step-learning: #6A4FBF;
+  /* Extra surfaces so screens never hard-code a colour. */
+  --link: #0A5DA8; --selected: #E1EEF9; --banner-bg: #FFF6DB; --banner-border: #F0DFA8;
+  --radius-card: 12px; --radius-ctl: 8px;
+  --font: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+/* The earlier dark palette, kept as an option (the toggle in the top bar). */
+:root[data-theme='dark'] {
   color-scheme: dark;
   --bg: #0A1322; --surface: #121E32; --border: #25354D; --text: #E6EDF5; --muted: #9DB0C7;
   --nav: #0A1322; --nav-active: #1B3A5C; --primary: #3F73CC;
-  /* Action colours: blue = edit/primary, green = save/confirm, red = close/delete. Solid fills carry white text. */
-  --success: #1E7B4B; --danger: #C4392F; --on-solid: #FFFFFF;
+  --brand-navy: #E6EDF5; --brand-blue: #6FA8EE; --brand-teal: #4FC3C3;
+  --hero-glow: radial-gradient(ellipse 60% 70% at 50% 55%, #17305A 0%, rgba(10, 19, 34, 0) 70%);
+  --map-land: color-mix(in srgb, var(--brand-teal) 6%, transparent);
+  --success: #1E7B4B; --danger: #C4392F;
   --prov-public-bg: #26323F; --prov-public-fg: #C3CFDB;
   --prov-entered-bg: #3A2D12; --prov-entered-fg: #F2C879;
   --prov-derived-bg: #14301F; --prov-derived-fg: #8BD9AB;
   --prov-missing-border: #FF9C94; --prov-missing-fg: #FFB4AD;
   --sev-high-bg: #3B1A17; --sev-high-fg: #FFB4AD; --sev-med-bg: #3A2D12; --sev-med-fg: #F2C879; --sev-low-bg: #14301F; --sev-low-fg: #8BD9AB;
   --cite-bg: #1C2F4D; --cite-fg: #A9C6F5;
-  /* Lifecycle step colours (Home donut). Distinct from the provenance and severity colours. */
   --step-planning: #3568C0; --step-tender: #0B7A7A; --step-monitoring: #A35A14; --step-learning: #7557C9;
-  /* Extra surfaces so screens never hard-code a colour. */
   --link: #8DB6F5; --selected: #1C2F4D; --banner-bg: #2B2410; --banner-border: #4A3D1A;
-  --radius-card: 12px; --radius-ctl: 8px;
-  --font: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace;
-}
-/* Light palette, opt-in with <html data-theme="light">. */
-:root[data-theme='light'] {
-  color-scheme: light;
-  --bg: #F4F6F8; --surface: #FFFFFF; --border: #DDE3EA; --text: #14202B; --muted: #566678;
-  --nav: #0E2238; --nav-active: #1B3A5C; --primary: #2456A6;
-  --success: #1E7B4B; --danger: #B3261E; --on-solid: #FFFFFF;
-  --prov-public-bg: #E8ECF1; --prov-public-fg: #3C4B5C;
-  --prov-entered-bg: #FEF0D6; --prov-entered-fg: #7A4A06;
-  --prov-derived-bg: #DDF3E6; --prov-derived-fg: #14603A;
-  --prov-missing-border: #B3261E; --prov-missing-fg: #8A1C14;
-  --sev-high-bg: #FDE7E5; --sev-high-fg: #8A1C14; --sev-med-bg: #FEF0D6; --sev-med-fg: #7A4A06; --sev-low-bg: #DDF3E6; --sev-low-fg: #14603A;
-  --cite-bg: #E2ECFB; --cite-fg: #1B4586;
-  --link: #1B4586; --selected: #E2ECFB; --banner-bg: #FFF6DB; --banner-border: #F0DFA8;
 }
 * { box-sizing: border-box; }
 /* Safety net: one stray wide element must not make a phone zoom out the whole page. */

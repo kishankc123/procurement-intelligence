@@ -8,7 +8,7 @@ export interface Crumb {
 
 /**
  * The breadcrumb trail for an address, always starting at Home. `names` supplies labels the address alone cannot give,
- * such as the name of the plan in /planning/full-details/<id>. The dashboard itself has no trail.
+ * such as the name of the plan in /planning/full-details/<id>. The landing page itself has no trail.
  */
 export function breadcrumbTrail(pathname: string, names: { plan?: string } = {}): Crumb[] {
   if (pathname === '/') return []
@@ -27,6 +27,8 @@ export function breadcrumbTrail(pathname: string, names: { plan?: string } = {})
   const area = PLATFORM_AREAS.find((a) => pathname === a.to)
   if (area) return [home, { label: 'Tools' }, { label: area.label }]
   if (pathname === '/project') return [home, { label: 'Project overview' }]
+  if (pathname === '/assistant') return [home, { label: 'Learn about the assistant' }]
+  if (pathname === '/chat') return [home, { label: 'Chat' }]
   if (pathname === '/work-with-ai') return [home, { label: 'Work with AI' }]
   return [home, { label: 'Page not found' }]
 }

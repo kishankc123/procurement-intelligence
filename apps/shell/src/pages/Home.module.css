@@ -3,10 +3,13 @@
    The donut takes the rest of the screen height (so the whole hero fits one laptop screen) and the info box takes the donut's width. */
 .hero { --chrome: 300px; --donut: max(280px, min(640px, calc(100vh - var(--chrome)), 92vw));
   margin: -24px -24px 0; padding: 20px 24px 16px; display: grid; justify-items: center; text-align: center; gap: 8px;
-  background: radial-gradient(ellipse 60% 70% at 50% 55%, #17305A 0%, rgba(10, 19, 34, 0) 70%); }
+  position: relative; overflow: hidden; justify-self: stretch; background: var(--hero-glow); }
+.hero > * { position: relative; z-index: 1; }
+.hero > svg:first-child { position: absolute; z-index: 0; }
 @supports (height: 100dvh) { .hero { --donut: max(280px, min(640px, calc(100dvh - var(--chrome)), 92vw)); } }
-.eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.title { font-size: clamp(28px, 6.2vw, 44px); line-height: 1.1; font-weight: 600; letter-spacing: -.015em; max-width: 30ch; }
+.eyebrow { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--brand-teal); font-weight: 500; }
+.title { font-size: clamp(28px, 6.2vw, 44px); line-height: 1.1; font-weight: 600; letter-spacing: -.015em; max-width: 30ch; color: var(--brand-navy); }
+.title::after { content: ''; display: block; width: 56px; height: 4px; margin: 12px auto 0; border-radius: 2px; background: var(--brand-gradient); }
 .sub { font-size: 15px; color: var(--muted); max-width: 60ch; margin-bottom: 4px; }
 .info { margin-top: 8px; width: min(max(var(--donut), 480px), 100%); min-height: 132px; padding: 10px 16px 12px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: var(--radius-card); background: var(--surface); display: grid; align-content: center; justify-items: center; gap: 4px; }
 .infoHead { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -42,7 +45,9 @@
 
 /* Landing: the donut section, then the chat. Once the chat is used the donut section is gone and the chat is the page. */
 .landing { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; justify-items: center; }
-.heroTitle { font-size: clamp(24px, 5vw, 36px); line-height: 1.15; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+.heroTitle { font-size: clamp(24px, 5vw, 36px); line-height: 1.15; font-weight: 600; letter-spacing: -.01em; margin: 0; color: var(--brand-navy); }
+/* A short blue-to-teal bar under the title, the same two colours as the line under the top bar. */
+.heroTitle::after { content: ''; display: block; width: 56px; height: 4px; margin: 10px auto 0; border-radius: 2px; background: var(--brand-gradient); }
 .chatWrap { width: 100%; display: grid; justify-items: center; }
 
 .modelNote {
@@ -64,3 +69,10 @@
 
 /* Room under the chat for the lifecycle bubble fixed to the corner, so it never covers the last line or the input. */
 .landing { padding-bottom: 72px; }
+
+/* The chat page holds only the chat. */
+.chatPage { width: 100%; display: grid; gap: 8px; justify-items: center; }
+/* A link that looks like the primary button. */
+.cta { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 20px; border-radius: var(--radius-ctl); background: var(--primary); color: var(--on-solid); text-decoration: none; font-weight: 500; }
+.cta:hover { filter: brightness(0.92); }
+.cta:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
