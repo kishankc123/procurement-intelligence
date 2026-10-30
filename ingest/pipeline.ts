@@ -9,7 +9,13 @@ import { apiDateToIso, chunkText, dmyToIso, parseIsr, RATING_CODE } from './pars
 export interface PipelineIo {
   getJson(url: string): Promise<any>
   getText(url: string): Promise<string>
-  cache: { get<T>(key: string): T | undefined; put(key: string, value: unknown): void }
+  /** A key-value cache for API responses and finished work. May be async: on Vercel it is the store, and it is what carries a run across requests. */
+  cache: { get<T>(key: string): T | undefined | Promise<T | undefined>; put(key: string, value: unknown): void | Promise<void> }
+}
+
+/** Where a project's contract awards come from when the whole public list need not be scanned (a prebuilt index). Returns null when there is no index. */
+export interface ContractSource {
+  forProject(projectId: string): Promise<{ rows: RawContract[]; builtAt: string } | null>
 }
 
 export interface Embedder {
@@ -41,8 +47,13 @@ export interface PipelineOptions {
   noEmbedderReason?: string
   /** Vectors from an earlier run, by chunk id, so unchanged chunks are not paid for twice. */
   previous?: Map<string, { hash: string; vector: number[] }>
+  /** Contract awards from a prebuilt index; without it the whole public list is read page by page. */
+  contractSource?: ContractSource
+  /** Asked at safe points. When it returns true the run stops with `Paused` and can be started again: finished work is in the cache. */
+  shouldPause?: () => boolean
   contractPageSize?: number
   contractConcurrency?: number
+  textConcurrency?: number
   embedBatch?: number
   /** Upper bound on chunks sent to the embedding model for one project. */
   maxEmbedChunks?: number
@@ -59,7 +70,7 @@ const CONTRACTS_API = 'https://datacatalogapi.worldbank.org/dexapps/fone/api/api
 export const projectsApiUrl = (id: string) => `https://search.worldbank.org/api/v2/projects?format=json&rows=1&id=${id}&fl=*`
 const docsApiUrl = (id: string) => `https://search.worldbank.org/api/v3/wds?format=json&rows=500&proid=${id}&fl=id,docty,docdt,display_title,txturl,pdfurl`
 
-interface RawContract {
+export interface RawContract {
   borrower_contract_reference_number: string; wb_contract_number: string; project_id: string; supplier: string; supplier_id: string | number | null
   supplier_country: string; procurement_category: string; procurement_method: string; review_type: string; supplier_contract_amount_usd: number | string
   contract_signing_date: string; fiscal_year: number; contract_description: string; project_global_practice: string; borrower_country: string; borrower_country_code: string; region: string
@@ -67,6 +78,8 @@ interface RawContract {
 interface RawDoc { id: string; docty?: string; docdt?: string; display_title?: string; txturl?: string; pdfurl?: string }
 
 export class Cancelled extends Error { constructor() { super('Cancelled'); this.name = 'Cancelled' } }
+/** The run ran out of time at a safe point. Not a failure: start it again and it continues from the cache. */
+export class Paused extends Error { constructor() { super('Paused'); this.name = 'Paused' } }
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40)
 export const hashText = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 16)
@@ -77,7 +90,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
   const emit = (e: IngestEvent) => opts.onEvent?.(e)
   const now = opts.now ?? (() => new Date())
   const t0 = Date.now()
-  const alive = () => { if (signal?.aborted) throw new Cancelled() }
+  const alive = () => { if (signal?.aborted) throw new Cancelled(); if (opts.shouldPause?.()) throw new Paused() }
   let current: IngestStage = 'find'
   const stage = async <T,>(id: IngestStage, work: () => Promise<T>, detail?: (r: T) => string): Promise<T> => {
     alive(); current = id
@@ -87,10 +100,10 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
     return r
   }
   const cached = async <T,>(key: string, load: () => Promise<T>): Promise<T> => {
-    const hit = io.cache.get<T>(key)
+    const hit = await io.cache.get<T>(key)
     if (hit !== undefined) return hit
     const value = await load()
-    io.cache.put(key, value)
+    await io.cache.put(key, value)
     return value
   }
   const notes: string[] = []
@@ -106,8 +119,18 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
 
     // 3. Contract awards. The API ignores filters, so every page is read and this project's rows are kept; pages are cached, so only the first project pays.
     const pageSize = opts.contractPageSize ?? 1000
-    const raw = await stage('contracts', () => cached(`contracts-${projectId}`, () => scanContracts(projectId, io, pageSize, opts.contractConcurrency ?? 5, emit, alive)),
-      (rows) => `${rows.length} contract awards`)
+    const raw = await stage('contracts', () => cached(`contracts-${projectId}`, async () => {
+      const indexed = await opts.contractSource?.forProject(projectId)
+      if (indexed) {
+        emit({ type: 'progress', stage: 'contracts', done: 1, total: 1, found: indexed.rows.length, note: `from the contract index built ${indexed.builtAt.slice(0, 10)}` })
+        await io.cache.put(`contracts-source-${projectId}`, { builtAt: indexed.builtAt })
+        return indexed.rows
+      }
+      return scanContracts(projectId, io, pageSize, opts.contractConcurrency ?? 5, emit, alive)
+    }), (rows) => `${rows.length} contract awards`)
+    // Kept in the cache beside the rows, so a run that resumes (and finds the rows cached) still says where they came from.
+    const source = await io.cache.get<{ builtAt: string }>(`contracts-source-${projectId}`)
+    if (source) notes.push(`Contract awards were read from an index of the public contract list built on ${source.builtAt.slice(0, 10)}; awards published since then are not in it.`)
     const contracts = raw.map((r) => ({
       borrower_contract_reference_number: String(r.borrower_contract_reference_number),
       wb_contract_number: String(r.wb_contract_number ?? ''),
@@ -153,12 +176,17 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
     // 5. Document texts
     const texts = new Map<string, string>()
     await stage('texts', async () => {
-      let n = 0
-      for (const d of withText) {
-        alive()
-        texts.set(d.id, await cached(`text-${d.id}`, () => io.getText(d.txturl!)))
-        emit({ type: 'progress', stage: 'texts', done: ++n, total: withText.length, found: texts.size })
+      let n = 0, next = 0
+      // A few at a time: each text is a separate download. The map is filled by document, so the order of what follows does not depend on which finished first.
+      const worker = async () => {
+        while (next < withText.length) {
+          alive()
+          const d = withText[next++]!
+          texts.set(d.id, await cached(`text-${d.id}`, () => io.getText(d.txturl!)))
+          emit({ type: 'progress', stage: 'texts', done: ++n, total: withText.length, found: texts.size })
+        }
       }
+      await Promise.all(Array.from({ length: Math.min(opts.textConcurrency ?? 4, withText.length) }, worker))
     }, () => `${texts.size} document texts read`)
 
     // 6. Supervision reports, read without a model
@@ -277,7 +305,11 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
       for (let b = 0; b < batches; b++) {
         alive()
         const idx = todo.slice(b * size, (b + 1) * size)
-        const out = await embedder.embed(idx.map((i) => targets[i]!.text))
+        const texts = idx.map((i) => targets[i]!.text)
+        // A batch already paid for (an earlier request of the same run) is read back instead of sent again.
+        const batchKey = `emb-${embedder.model}-${embedder.dimensions}-${hashText(texts.join('\u0001'))}`
+        let out = await io.cache.get<{ vectors: number[][]; tokens: number }>(batchKey)
+        if (!out) { out = await embedder.embed(texts); await io.cache.put(batchKey, out) }
         if (out.vectors.length !== idx.length) throw new Error(`The embedding model returned ${out.vectors.length} vectors for ${idx.length} texts`)
         idx.forEach((i, k) => { vectors[i] = out.vectors[k]! })
         tokens += out.tokens
@@ -328,6 +360,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
     const summary: IngestSummary = { projectId, projectName: projectRecord.project_name, counts, embedding, map, sample, notes, durationMs: Date.now() - t0 }
     return { snapshot, embeddings, summary }
   } catch (e) {
+    if (e instanceof Paused) throw e
     if (e instanceof Cancelled) { emit({ type: 'error', stage: current, message: 'Cancelled by the user', cancelled: true }); throw e }
     emit({ type: 'error', stage: current, message: e instanceof Error ? e.message : String(e) })
     throw e
@@ -337,10 +370,11 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
 async function scanContracts(projectId: string, io: PipelineIo, pageSize: number, concurrency: number, emit: (e: IngestEvent) => void, alive: () => void): Promise<RawContract[]> {
   const url = (skip: number) => `${CONTRACTS_API}&top=${pageSize}&skip=${skip}`
   const key = (n: number) => `contracts-page-${pageSize}-${n}`
-  const first = await io.getJson(url(0))
+  // Page 0 also says how many records there are, so it is cached with the count and a resumed scan does not read it again.
+  let first = await io.cache.get<{ count?: number; data: RawContract[] }>(key(0))
+  if (first?.count === undefined) { const page0 = await io.getJson(url(0)); first = { count: Number(page0.count), data: page0.data }; await io.cache.put(key(0), first) }
   const total = Number(first.count)
   const pages = Math.max(1, Math.ceil(total / pageSize))
-  io.cache.put(key(0), { data: first.data })
   emit({ type: 'log', text: `Contract awards: ${total.toLocaleString('en-US')} records in ${pages} pages; reading them all to find this project` })
   // Rows are kept per page and joined in page order, so the result does not depend on which page finished first.
   const found: RawContract[][] = Array.from({ length: pages }, () => [])
@@ -351,9 +385,9 @@ async function scanContracts(projectId: string, io: PipelineIo, pageSize: number
     while (next < pages) {
       alive()
       const n = next++
-      const hit = io.cache.get<{ data: RawContract[] }>(key(n))
+      const hit = await io.cache.get<{ data: RawContract[] }>(key(n))
       const rows = hit ? hit.data : ((await io.getJson(url(n * pageSize))).data as RawContract[])
-      if (!hit) io.cache.put(key(n), { data: rows })
+      if (!hit) await io.cache.put(key(n), { data: rows })
       found[n] = rows.filter((r) => r.project_id === projectId)
       count += found[n]!.length
       emit({ type: 'progress', stage: 'contracts', done: ++done, total: pages, found: count })

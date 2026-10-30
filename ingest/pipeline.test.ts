@@ -4,7 +4,8 @@ import type { IngestEvent } from '../packages/data/src/ingestEvents'
 import { applyEvent, emptyRun } from '../packages/data/src/ingestEvents'
 import { unpackVectors } from '../packages/data/src/vectors'
 import { fakeEmbedder, fixtureIo, FIXTURE_ID } from './fixtures'
-import { Cancelled, ingestProject } from './pipeline'
+import { Cancelled, ingestProject, Paused } from './pipeline'
+import { memoryStore, storeCache } from './store'
 
 const run = async (over: Partial<Parameters<typeof ingestProject>[1]> = {}) => {
   const events: IngestEvent[] = []
@@ -109,4 +110,82 @@ describe('ingestProject on fixtures', () => {
   it('refuses an id that is not a World Bank project id', async () => {
     await expect(ingestProject('../etc/passwd', { io: fixtureIo() })).rejects.toThrow('not a World Bank project id')
   })
+})
+
+describe('a run split over several requests', () => {
+  const FIXED = () => new Date('2026-01-02T03:04:05Z')
+  const strip = (r: Awaited<ReturnType<typeof ingestProject>>) => JSON.parse(JSON.stringify(r.snapshot))
+
+  /**
+   * Runs again and again, as the hosted function does, until the run finishes. The budget is "new work": a run may write `budget` cache entries
+   * (downloads, batches) and then stops at the next safe point. Time is not modelled by counting safe points, because a resumed run passes through
+   * many safe points on cached stages in no time at all.
+   */
+  async function inPieces(budget: number, io = fixtureIo(), extra: Partial<Parameters<typeof ingestProject>[1]> = {}) {
+    let pieces = 0, puts = 0
+    const real = io.cache.put.bind(io.cache)
+    const counted = { ...io, cache: { get: io.cache.get.bind(io.cache), put: async (k: string, v: unknown) => { puts++; await real(k, v) } } }
+    while (pieces < 80) {
+      pieces++; puts = 0
+      try { return { result: await ingestProject(FIXTURE_ID, { io: counted as typeof io, now: FIXED, shouldPause: () => puts >= budget, ...extra }), pieces, io } } catch (e) { if (!(e instanceof Paused)) throw e }
+    }
+    throw new Error('never finished')
+  }
+
+  it('finishes with the same data as one uninterrupted run, however small the budget', async () => {
+    const whole = await ingestProject(FIXTURE_ID, { io: fixtureIo(), now: FIXED, embedder: fakeEmbedder(16) })
+    for (const checks of [1, 3, 6]) {
+      const split = await inPieces(checks, fixtureIo(), { embedder: fakeEmbedder(16), embedBatch: 4 })
+      expect(split.pieces, `budget ${checks}`).toBeGreaterThan(1)
+      expect(strip(split.result)).toEqual(strip(whole))
+      expect([...split.result.embeddings!.bytes]).toEqual([...whole.embeddings!.bytes])
+    }
+  })
+
+  it('does not repeat a download or a paid embedding batch in a later piece', async () => {
+    const embedder = fakeEmbedder(16)
+    const { io } = await inPieces(2, fixtureIo(), { embedder, embedBatch: 4 })
+    const texts = io.calls.filter((c) => c.includes('/t/'))
+    expect(new Set(texts).size).toBe(texts.length)
+    const total = embedder.calls.reduce((a, b) => a + b, 0)
+    const whole = await ingestProject(FIXTURE_ID, { io: fixtureIo(), embedder: fakeEmbedder(16) })
+    expect(total).toBe(whole.embeddings!.chunk_ids.length)
+  })
+
+  it('works with an async cache (the hosted store)', async () => {
+    const io = fixtureIo()
+    const store = memoryStore()
+    const asyncIo = { ...io, cache: storeCache(store) }
+    const { result, pieces } = await inPieces(2, asyncIo as never)
+    expect(pieces).toBeGreaterThan(1)
+    expect(result.snapshot.collections.contracts).toHaveLength(3)
+    expect([...store.data.keys()].some((k) => k.startsWith('cache/text-'))).toBe(true)
+  })
+
+  it('is not an error event when it pauses', async () => {
+    const events: IngestEvent[] = []
+    await expect(ingestProject(FIXTURE_ID, { io: fixtureIo(), shouldPause: () => true, onEvent: (e) => events.push(e) })).rejects.toBeInstanceOf(Paused)
+    expect(events.some((e) => e.type === 'error')).toBe(false)
+  })
+
+  it('uses a contract index when given one, scans nothing, and says where the awards came from, also when resumed', async () => {
+    const rows = [{ ...contractRowForTest(1) }, { ...contractRowForTest(2) }]
+    const source = { forProject: async () => ({ rows, builtAt: '2026-05-06T00:00:00Z' }) }
+    const { result, io } = await inPieces(2, fixtureIo(), { contractSource: source })
+    expect(io.calls.some((c) => c.includes('apiservice'))).toBe(false)
+    expect(result.snapshot.collections.contracts).toHaveLength(2)
+    expect((result.snapshot.manifest.notes as string[]).some((n) => n.includes('index of the public contract list built on 2026-05-06'))).toBe(true)
+  })
+
+  it('treats an index that has no entry for the project as a scan', async () => {
+    const { result, io } = await inPieces(50, fixtureIo(), { contractSource: { forProject: async () => null } })
+    expect(io.calls.some((c) => c.includes('apiservice'))).toBe(true)
+    expect(result.snapshot.collections.contracts).toHaveLength(3)
+  })
+})
+
+const contractRowForTest = (n: number) => ({
+  borrower_contract_reference_number: `IDX-${n}`, wb_contract_number: `WB-${n}`, project_id: FIXTURE_ID, supplier: 'Idx Co', supplier_id: `S${n}`, supplier_country: 'Laos',
+  procurement_category: 'Works', procurement_method: 'Open', review_type: 'Prior', supplier_contract_amount_usd: 1000 * n, contract_signing_date: '10-Jan-2019', fiscal_year: 2019,
+  contract_description: 'x', project_global_practice: 'Transport', borrower_country: 'Lao PDR', borrower_country_code: 'LA', region: 'EAP',
 })
