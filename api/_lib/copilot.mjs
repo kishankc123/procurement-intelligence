@@ -590,6 +590,11 @@ import { join as join2 } from "node:path";
 // ingest/nodeIo.ts
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+
+// ingest/pipeline.ts
+var REFUSAL_MS = 24 * 3600 * 1e3;
+
+// ingest/nodeIo.ts
 var ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 var CACHE_DIR = join(ROOT, "ingest", "cache");
 

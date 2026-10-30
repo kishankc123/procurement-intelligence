@@ -1,6 +1,6 @@
 // Offline fixtures for the pipeline tests: a made-up project (P999001) served by a fake `PipelineIo`. Nothing here is stored in the app or
 // shown as data. The supervision report texts are trimmed from real P158504 reports so the real parser is exercised; the rest is invented.
-import type { PipelineIo } from './pipeline'
+import { HttpError, type PipelineIo } from './pipeline'
 
 export const FIXTURE_ID = 'P999001'
 const ISR_NEW = `The World Bank Implementation Status & Results Report ... FY 2017 | Seq No: 17 | Archived on 29-Sep-2025 | ISR05203
@@ -53,7 +53,8 @@ export const FIXTURE_PROJECT = { projects: { [FIXTURE_ID]: {
 } } }
 
 /** A fake network and cache. `calls` lists every URL that was fetched, so a test can see what the cache saved. */
-export function fixtureIo(over: { fail?: (url: string) => boolean } = {}): PipelineIo & { calls: string[]; store: Map<string, unknown> } {
+/** `status` makes the text of the given documents (by id) fail with that HTTP status. */
+export function fixtureIo(over: { fail?: (url: string) => boolean; status?: Record<string, number> } = {}): PipelineIo & { calls: string[]; store: Map<string, unknown> } {
   const calls: string[] = []
   const store = new Map<string, unknown>()
   return {
@@ -70,6 +71,7 @@ export function fixtureIo(over: { fail?: (url: string) => boolean } = {}): Pipel
     async getText(url) {
       calls.push(url)
       const id = /\/t\/(\d+)\.txt/.exec(url)?.[1] ?? ''
+      if (over.status?.[id]) throw new HttpError(over.status[id]!, `${over.status[id]} refused`)
       const text = FIXTURE_TEXTS[id]
       if (text === undefined) throw new Error(`no text for ${url}`)
       return text

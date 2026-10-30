@@ -228,88 +228,6 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync as gunzipSync3, gzipSync as gzipSync3 } from "node:zlib";
-var ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-var CACHE_DIR = join(ROOT, "ingest", "cache");
-var isAllowedUrl = (raw) => {
-  try {
-    const u = new URL(raw);
-    return u.protocol === "https:" && (u.hostname === "worldbank.org" || u.hostname.endsWith(".worldbank.org"));
-  } catch {
-    return false;
-  }
-};
-var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function withRetries(url, read, tries = 4, timeoutMs = 6e4) {
-  if (!isAllowedUrl(url)) throw new Error(`Refused to fetch ${url.slice(0, 80)}: only worldbank.org over https is allowed`);
-  for (let i = 1; ; i++) {
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      return await read(res);
-    } catch (e) {
-      if (i >= tries) throw new Error(`Could not read ${url.slice(0, 90)}: ${e instanceof Error ? e.message : e}`);
-      await sleep(1500 * i);
-    }
-  }
-}
-function fileCache(dir = CACHE_DIR, fresh = false) {
-  return {
-    get(key) {
-      if (fresh) return void 0;
-      const gz = join(dir, `${key}.json.gz`), plain = join(dir, `${key}.json`);
-      if (existsSync(gz)) return JSON.parse(gunzipSync3(readFileSync(gz)).toString("utf8"));
-      if (existsSync(plain)) return JSON.parse(readFileSync(plain, "utf8"));
-      return void 0;
-    },
-    put(key, value) {
-      mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, `${key}.json.gz`), gzipSync3(JSON.stringify(value)));
-    }
-  };
-}
-function nodeIo(opts = {}) {
-  return {
-    getJson: (url) => withRetries(url, (r) => r.json(), opts.tries, opts.timeoutMs),
-    getText: (url) => withRetries(url.replace("http://", "https://"), (r) => r.text(), opts.tries, opts.timeoutMs),
-    cache: opts.cache ?? fileCache(opts.cacheDir, opts.fresh)
-  };
-}
-var EMBED_MODEL = "text-embedding-3-small";
-var EMBED_DIMENSIONS = 512;
-var OPENAI_URL = "https://api.openai.com/v1/embeddings";
-function openAiEmbedder(env = process.env) {
-  const key = env.OPENAI_API_KEY;
-  if (!key) return { embedder: null, reason: "OPENAI_API_KEY is not set (put it in .env.local), so the chunks were not embedded" };
-  return {
-    embedder: {
-      model: EMBED_MODEL,
-      dimensions: EMBED_DIMENSIONS,
-      usdPer1MTokens: 0.02,
-      async embed(texts) {
-        return embedWith(key, texts);
-      }
-    }
-  };
-}
-async function embedWith(key, texts, tries = 3) {
-  for (let i = 1; ; i++) {
-    try {
-      const res = await fetch(OPENAI_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ model: EMBED_MODEL, input: texts, dimensions: EMBED_DIMENSIONS, encoding_format: "float" }),
-        signal: AbortSignal.timeout(6e4)
-      });
-      if (res.status === 429 || res.status >= 500) throw new Error(`${res.status} ${res.statusText}`);
-      if (!res.ok) throw new Error(`The embedding request was refused (${res.status}): ${(await res.text()).slice(0, 200)}`);
-      const body = await res.json();
-      return { vectors: [...body.data].sort((a, b) => a.index - b.index).map((d) => d.embedding), tokens: body.usage?.total_tokens ?? 0 };
-    } catch (e) {
-      if (i >= tries || e instanceof Error && e.message.startsWith("The embedding request was refused")) throw e;
-      await sleep(1e3 * i);
-    }
-  }
-}
 
 // ingest/pipeline.ts
 import { createHash } from "node:crypto";
@@ -415,6 +333,16 @@ function chunkText(raw, size = 1500) {
 var CONTRACTS_API = "https://datacatalogapi.worldbank.org/dexapps/fone/api/apiservice?datasetId=DS00005&resourceId=RS00005&type=json";
 var projectsApiUrl = (id) => `https://search.worldbank.org/api/v2/projects?format=json&rows=1&id=${id}&fl=*`;
 var docsApiUrl = (id) => `https://search.worldbank.org/api/v3/wds?format=json&rows=500&proid=${id}&fl=id,docty,docdt,display_title,txturl,pdfurl`;
+var HttpError = class extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+    this.name = "HttpError";
+  }
+  status;
+};
+var SKIPPABLE = /* @__PURE__ */ new Set([401, 403, 404, 410, 451]);
+var REFUSAL_MS = 24 * 3600 * 1e3;
 var Cancelled = class extends Error {
   constructor() {
     super("Cancelled");
@@ -518,18 +446,33 @@ async function ingestProject(projectId, opts) {
     if (plans.length > 1) notes.push(`${plans.length - 1} older procurement plan versions exist and were not ingested; only the latest is.`);
     notes.push(`${docsRaw.length - listed.length} other documents exist for this project (other types and older versions) and were not ingested.`);
     const texts = /* @__PURE__ */ new Map();
+    const unavailable = /* @__PURE__ */ new Map();
     await stage("texts", async () => {
       let n = 0, next = 0;
       const worker = async () => {
         while (next < withText.length) {
           alive();
           const d = withText[next++];
-          texts.set(d.id, await cached(`text-${d.id}`, () => io.getText(d.txturl)));
+          const title = String(d.display_title ?? d.docty).replace(/\s+/g, " ").trim();
+          const refused = await io.cache.get(`text-refused-${d.id}`);
+          if (refused && now().getTime() - refused.at < REFUSAL_MS) unavailable.set(d.id, { title, message: refused.message });
+          else {
+            try {
+              texts.set(d.id, await cached(`text-${d.id}`, () => io.getText(d.txturl)));
+            } catch (e) {
+              if (!(e instanceof HttpError) || !SKIPPABLE.has(e.status)) throw e;
+              const message = `HTTP ${e.status}`;
+              await io.cache.put(`text-refused-${d.id}`, { message, at: now().getTime() });
+              unavailable.set(d.id, { title, message });
+            }
+          }
+          if (unavailable.has(d.id)) emit({ type: "item", stage: "texts", id: `DOC-WB-${d.id}`, label: `${title}: not available (${unavailable.get(d.id).message})`, ok: false });
           emit({ type: "progress", stage: "texts", done: ++n, total: withText.length, found: texts.size });
         }
       };
       await Promise.all(Array.from({ length: Math.min(opts.textConcurrency ?? 4, withText.length) }, worker));
-    }, () => `${texts.size} document texts read`);
+    }, () => `${texts.size} document texts read${unavailable.size ? `, ${unavailable.size} not available` : ""}`);
+    if (unavailable.size) notes.push(`${unavailable.size} document texts could not be read because the World Bank site refused or did not have them (${[...unavailable.values()].map((u) => `${u.title}: ${u.message}`).join("; ")}). Those documents are listed without text, so nothing is parsed or searchable from them.`);
     const supervisionReports = [];
     const unparsed = [];
     const usedIsrIds = /* @__PURE__ */ new Set();
@@ -538,6 +481,10 @@ async function ingestProject(projectId, opts) {
       let n = 0;
       for (const d of isrs) {
         alive();
+        if (unavailable.has(d.id)) {
+          emit({ type: "progress", stage: "parse", done: ++n, total: isrs.length, found: supervisionReports.length });
+          continue;
+        }
         const p = parseIsr(texts.get(d.id) ?? "");
         parsedIsrs.push({ doc: d, parse: p });
         const code = (name) => name ? RATING_CODE[name] ?? null : null;
@@ -618,7 +565,7 @@ async function ingestProject(projectId, opts) {
           title: String(d.display_title ?? d.docty).replace(/\s+/g, " ").trim(),
           date: apiDateToIso(d.docdt) ?? "",
           pages,
-          parse_status: text ? "parsed" : "pending"
+          parse_status: text ? "parsed" : unavailable.has(d.id) ? "failed" : "pending"
         });
         emit({ type: "item", stage: "chunk", id: docId, label: String(d.display_title ?? d.docty).replace(/\s+/g, " ").trim(), group: d.docty, count: made });
         emit({ type: "progress", stage: "chunk", done: documents.length, total: listed.length, found: chunks.length });
@@ -693,7 +640,7 @@ async function ingestProject(projectId, opts) {
       { id: "SRC-WB-CONTRACTS", name: "Contract Awards in Investment Project Financing (Finances One, DS00005)", publisher: "World Bank", kind: "Contract awards", status: "fetched", last_fetched: day, simulated: false },
       { id: "SRC-WB-DOCUMENTS", name: "World Bank Documents & Reports API", publisher: "World Bank", kind: "Project documents", status: "fetched", last_fetched: day, simulated: false }
     ];
-    const counts = { contracts: contracts.length, documents: documents.length, documents_with_text: withText.length, chunks: chunks.length, supervision_reports: supervisionReports.length };
+    const counts = { contracts: contracts.length, documents: documents.length, documents_with_text: texts.size, chunks: chunks.length, supervision_reports: supervisionReports.length };
     const snapshot = {
       manifest: {
         project_id: projectId,
@@ -759,6 +706,94 @@ async function scanContracts(projectId, io, pageSize, concurrency, emit, alive) 
   };
   await Promise.all(Array.from({ length: Math.min(concurrency, pages) }, worker));
   return found.flat();
+}
+
+// ingest/nodeIo.ts
+var ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+var CACHE_DIR = join(ROOT, "ingest", "cache");
+var isAllowedUrl = (raw) => {
+  try {
+    const u = new URL(raw);
+    return u.protocol === "https:" && (u.hostname === "worldbank.org" || u.hostname.endsWith(".worldbank.org"));
+  } catch {
+    return false;
+  }
+};
+var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function withRetries(url, read, tries = 4, timeoutMs = 6e4) {
+  if (!isAllowedUrl(url)) throw new Error(`Refused to fetch ${url.slice(0, 80)}: only worldbank.org over https is allowed`);
+  for (let i = 1; ; i++) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+      if (!res.ok) throw new HttpError(res.status, `${res.status} ${res.statusText}`);
+      return await read(res);
+    } catch (e) {
+      const final = e instanceof HttpError && e.status >= 400 && e.status < 500 && e.status !== 429 && e.status !== 408;
+      if (final || i >= tries) {
+        const reason = `Could not read ${url.slice(0, 90)}: ${e instanceof Error ? e.message : e}`;
+        throw e instanceof HttpError ? new HttpError(e.status, reason) : new Error(reason);
+      }
+      await sleep(1500 * i);
+    }
+  }
+}
+function fileCache(dir = CACHE_DIR, fresh = false) {
+  return {
+    get(key) {
+      if (fresh) return void 0;
+      const gz = join(dir, `${key}.json.gz`), plain = join(dir, `${key}.json`);
+      if (existsSync(gz)) return JSON.parse(gunzipSync3(readFileSync(gz)).toString("utf8"));
+      if (existsSync(plain)) return JSON.parse(readFileSync(plain, "utf8"));
+      return void 0;
+    },
+    put(key, value) {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, `${key}.json.gz`), gzipSync3(JSON.stringify(value)));
+    }
+  };
+}
+function nodeIo(opts = {}) {
+  return {
+    getJson: (url) => withRetries(url, (r) => r.json(), opts.tries, opts.timeoutMs),
+    getText: (url) => withRetries(url.replace("http://", "https://"), (r) => r.text(), opts.tries, opts.timeoutMs),
+    cache: opts.cache ?? fileCache(opts.cacheDir, opts.fresh)
+  };
+}
+var EMBED_MODEL = "text-embedding-3-small";
+var EMBED_DIMENSIONS = 512;
+var OPENAI_URL = "https://api.openai.com/v1/embeddings";
+function openAiEmbedder(env = process.env) {
+  const key = env.OPENAI_API_KEY;
+  if (!key) return { embedder: null, reason: "OPENAI_API_KEY is not set (put it in .env.local), so the chunks were not embedded" };
+  return {
+    embedder: {
+      model: EMBED_MODEL,
+      dimensions: EMBED_DIMENSIONS,
+      usdPer1MTokens: 0.02,
+      async embed(texts) {
+        return embedWith(key, texts);
+      }
+    }
+  };
+}
+async function embedWith(key, texts, tries = 3) {
+  for (let i = 1; ; i++) {
+    try {
+      const res = await fetch(OPENAI_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model: EMBED_MODEL, input: texts, dimensions: EMBED_DIMENSIONS, encoding_format: "float" }),
+        signal: AbortSignal.timeout(6e4)
+      });
+      if (res.status === 429 || res.status >= 500) throw new Error(`${res.status} ${res.statusText}`);
+      if (!res.ok) throw new Error(`The embedding request was refused (${res.status}): ${(await res.text()).slice(0, 200)}`);
+      const body = await res.json();
+      return { vectors: [...body.data].sort((a, b) => a.index - b.index).map((d) => d.embedding), tokens: body.usage?.total_tokens ?? 0 };
+    } catch (e) {
+      if (i >= tries || e instanceof Error && e.message.startsWith("The embedding request was refused")) throw e;
+      await sleep(1e3 * i);
+    }
+  }
 }
 
 // ingest/hosted.ts

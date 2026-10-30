@@ -65,7 +65,14 @@ export function StageDetail({ stage, run }: { stage: IngestStage; run: RunView }
   if (stage === 'documents' && items.length) {
     return <section className={styles.detail}>{head}<ul className={styles.chips}>{items.map((d) => <li key={d.id}><span className={styles.chip}>{short(d.group)}</span> {d.label}</li>)}</ul></section>
   }
-  if (stage === 'texts' && s.total) return <section className={styles.detail}>{head}<Meter done={s.done ?? 0} total={s.total} label="Document texts read" /></section>
+  if (stage === 'texts' && s.total) {
+    const skipped = items.filter((i) => i.ok === false)
+    return (
+      <section className={styles.detail}>{head}<Meter done={s.done ?? 0} total={s.total} label="Document texts read" />
+        {skipped.length > 0 && <ul className={styles.rows}>{skipped.map((r) => <li key={r.id}><CircleAlert size={14} aria-label="not available" /> {r.label}</li>)}</ul>}
+      </section>
+    )
+  }
   if (stage === 'parse' && items.length) {
     return <section className={styles.detail}>{head}<ul className={styles.rows}>{items.map((r) => <li key={r.id}>{r.ok ? <Check size={14} aria-label="read" /> : <CircleAlert size={14} aria-label="needs a second look" />} {r.label}</li>)}</ul></section>
   }

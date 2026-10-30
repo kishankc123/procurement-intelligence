@@ -77,6 +77,15 @@ export interface RawContract {
 }
 interface RawDoc { id: string; docty?: string; docdt?: string; display_title?: string; txturl?: string; pdfurl?: string }
 
+/** A download the server answered with an HTTP error. The status tells the pipeline whether the document can be skipped (refused, gone) or the run should fail (a server fault). */
+export class HttpError extends Error {
+  constructor(readonly status: number, message: string) { super(message); this.name = 'HttpError' }
+}
+/** Statuses that mean "this document is not available to us": it is left without text and the run goes on. Anything else (a timeout, a 5xx) fails the run, so nothing is silently incomplete. */
+const SKIPPABLE = new Set([401, 403, 404, 410, 451])
+/** How long a recorded refusal is trusted before the document is tried again. */
+const REFUSAL_MS = 24 * 3600 * 1000
+
 export class Cancelled extends Error { constructor() { super('Cancelled'); this.name = 'Cancelled' } }
 /** The run ran out of time at a safe point. Not a failure: start it again and it continues from the cache. */
 export class Paused extends Error { constructor() { super('Paused'); this.name = 'Paused' } }
@@ -175,6 +184,8 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
 
     // 5. Document texts
     const texts = new Map<string, string>()
+    /** Documents whose text could not be had (refused or missing), with why. They stay in the project, marked failed, and the run goes on. */
+    const unavailable = new Map<string, { title: string; message: string }>()
     await stage('texts', async () => {
       let n = 0, next = 0
       // A few at a time: each text is a separate download. The map is filled by document, so the order of what follows does not depend on which finished first.
@@ -182,12 +193,25 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
         while (next < withText.length) {
           alive()
           const d = withText[next++]!
-          texts.set(d.id, await cached(`text-${d.id}`, () => io.getText(d.txturl!)))
+          const title = String(d.display_title ?? d.docty).replace(/\s+/g, ' ').trim()
+          // A refusal is remembered for a day, so a run continued over several requests does not ask again for what was just refused.
+          const refused = await io.cache.get<{ message: string; at: number }>(`text-refused-${d.id}`)
+          if (refused && now().getTime() - refused.at < REFUSAL_MS) unavailable.set(d.id, { title, message: refused.message })
+          else {
+            try { texts.set(d.id, await cached(`text-${d.id}`, () => io.getText(d.txturl!))) } catch (e) {
+              if (!(e instanceof HttpError) || !SKIPPABLE.has(e.status)) throw e
+              const message = `HTTP ${e.status}`
+              await io.cache.put(`text-refused-${d.id}`, { message, at: now().getTime() })
+              unavailable.set(d.id, { title, message })
+            }
+          }
+          if (unavailable.has(d.id)) emit({ type: 'item', stage: 'texts', id: `DOC-WB-${d.id}`, label: `${title}: not available (${unavailable.get(d.id)!.message})`, ok: false })
           emit({ type: 'progress', stage: 'texts', done: ++n, total: withText.length, found: texts.size })
         }
       }
       await Promise.all(Array.from({ length: Math.min(opts.textConcurrency ?? 4, withText.length) }, worker))
-    }, () => `${texts.size} document texts read`)
+    }, () => `${texts.size} document texts read${unavailable.size ? `, ${unavailable.size} not available` : ''}`)
+    if (unavailable.size) notes.push(`${unavailable.size} document texts could not be read because the World Bank site refused or did not have them (${[...unavailable.values()].map((u) => `${u.title}: ${u.message}`).join('; ')}). Those documents are listed without text, so nothing is parsed or searchable from them.`)
 
     // 6. Supervision reports, read without a model
     const supervisionReports: unknown[] = []
@@ -198,6 +222,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
       let n = 0
       for (const d of isrs) {
         alive()
+        if (unavailable.has(d.id)) { emit({ type: 'progress', stage: 'parse', done: ++n, total: isrs.length, found: supervisionReports.length }); continue } // no text to read; already noted
         const p = parseIsr(texts.get(d.id) ?? '')
         parsedIsrs.push({ doc: d, parse: p })
         const code = (name: string | null) => (name ? RATING_CODE[name] ?? null : null)
@@ -265,7 +290,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
         docTypeOf.set(docId, String(d.docty ?? 'Document'))
         documents.push({
           doc_id: docId, project_id: projectId, type: d.docty, title: String(d.display_title ?? d.docty).replace(/\s+/g, ' ').trim(),
-          date: apiDateToIso(d.docdt) ?? '', pages, parse_status: text ? 'parsed' : 'pending',
+          date: apiDateToIso(d.docdt) ?? '', pages, parse_status: text ? 'parsed' : unavailable.has(d.id) ? 'failed' : 'pending',
         })
         emit({ type: 'item', stage: 'chunk', id: docId, label: String(d.display_title ?? d.docty).replace(/\s+/g, ' ').trim(), group: d.docty, count: made })
         emit({ type: 'progress', stage: 'chunk', done: documents.length, total: listed.length, found: chunks.length })
@@ -336,7 +361,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
       { id: 'SRC-WB-CONTRACTS', name: 'Contract Awards in Investment Project Financing (Finances One, DS00005)', publisher: 'World Bank', kind: 'Contract awards', status: 'fetched', last_fetched: day, simulated: false },
       { id: 'SRC-WB-DOCUMENTS', name: 'World Bank Documents & Reports API', publisher: 'World Bank', kind: 'Project documents', status: 'fetched', last_fetched: day, simulated: false },
     ]
-    const counts = { contracts: contracts.length, documents: documents.length, documents_with_text: withText.length, chunks: chunks.length, supervision_reports: supervisionReports.length }
+    const counts = { contracts: contracts.length, documents: documents.length, documents_with_text: texts.size, chunks: chunks.length, supervision_reports: supervisionReports.length }
     const snapshot = {
       manifest: {
         project_id: projectId, project_name: projectRecord.project_name, ingested_at: fetchedAt, stage: 'structured',

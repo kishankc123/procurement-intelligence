@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gunzipSync, gzipSync } from 'node:zlib'
-import type { Embedder, PipelineIo } from './pipeline'
+import { HttpError, type Embedder, type PipelineIo } from './pipeline'
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 export const CACHE_DIR = join(ROOT, 'ingest', 'cache')
@@ -23,10 +23,15 @@ async function withRetries<T>(url: string, read: (res: Response) => Promise<T>, 
   for (let i = 1; ; i++) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
+      if (!res.ok) throw new HttpError(res.status, `${res.status} ${res.statusText}`)
       return await read(res)
     } catch (e) {
-      if (i >= tries) throw new Error(`Could not read ${url.slice(0, 90)}: ${e instanceof Error ? e.message : e}`)
+      // A refusal or a missing page will answer the same way again, so it is not retried (429 and 408 mean "try later" and are).
+      const final = e instanceof HttpError && e.status >= 400 && e.status < 500 && e.status !== 429 && e.status !== 408
+      if (final || i >= tries) {
+        const reason = `Could not read ${url.slice(0, 90)}: ${e instanceof Error ? e.message : e}`
+        throw e instanceof HttpError ? new HttpError(e.status, reason) : new Error(reason)
+      }
       await sleep(1500 * i)
     }
   }

@@ -189,3 +189,58 @@ const contractRowForTest = (n: number) => ({
   procurement_category: 'Works', procurement_method: 'Open', review_type: 'Prior', supplier_contract_amount_usd: 1000 * n, contract_signing_date: '10-Jan-2019', fiscal_year: 2019,
   contract_description: 'x', project_global_practice: 'Transport', borrower_country: 'Lao PDR', borrower_country_code: 'LA', region: 'EAP',
 })
+
+describe('documents the World Bank site refuses or does not have', () => {
+  const run2 = async (status: Record<string, number>, extra: Partial<Parameters<typeof ingestProject>[1]> = {}) => {
+    const events: IngestEvent[] = []
+    const io = fixtureIo({ status })
+    const result = await ingestProject(FIXTURE_ID, { io, onEvent: (e) => events.push(e), ...extra })
+    return { events, io, result }
+  }
+
+  it('skips a refused text, finishes the project, and says which document and why', async () => {
+    const { result, events } = await run2({ '2': 403 })
+    const c = result.snapshot.collections
+    expect(c.supervision_reports).toHaveLength(2) // report 12 had no text; the other two were read
+    expect(result.summary.counts).toMatchObject({ documents: 7, documents_with_text: 5 })
+    const doc = (c.documents as { doc_id: string; parse_status: string }[]).find((d) => d.doc_id === 'DOC-WB-2')!
+    expect(doc.parse_status).toBe('failed')
+    expect((c.documents as { doc_id: string; parse_status: string }[]).find((d) => d.doc_id === 'DOC-WB-1')!.parse_status).toBe('parsed')
+    const notes = result.snapshot.manifest.notes as string[]
+    expect(notes.some((n) => n.includes('1 document texts could not be read') && n.includes('Implementation Status and Results Report 12: HTTP 403'))).toBe(true)
+    // the unreadable report is not also reported as a parser failure
+    expect((result.snapshot.manifest.supervision_reports_unparsed as { doc_id: string }[]).map((u) => u.doc_id)).toEqual(['DOC-WB-4'])
+    expect(events.find((e) => e.type === 'item' && e.stage === 'texts' && e.ok === false)).toMatchObject({ id: 'DOC-WB-2', label: expect.stringContaining('not available (HTTP 403)') })
+    expect(events.filter((e) => e.type === 'stage' && e.stage === 'texts' && e.status === 'done')[0]).toMatchObject({ detail: '5 document texts read, 1 not available' })
+    expect(events.some((e) => e.type === 'error')).toBe(false)
+  })
+
+  it('also skips a missing text (404), and finishes with every text refused', async () => {
+    const all = await run2({ '1': 403, '2': 404, '3': 410, '4': 401, '5': 451, '7': 403 })
+    expect(all.result.summary.counts).toMatchObject({ documents_with_text: 0, supervision_reports: 0, chunks: 0 })
+    expect(all.result.snapshot.collections.contracts).toHaveLength(3)
+  })
+
+  it('fails the run for a server fault or an odd status, so nothing is left silently incomplete', async () => {
+    await expect(run2({ '2': 500 })).rejects.toMatchObject({ status: 500 })
+    await expect(run2({ '2': 429 })).rejects.toMatchObject({ status: 429 })
+  })
+
+  it('does not ask again for a text that was just refused, also in a later piece of the run', async () => {
+    const io = fixtureIo({ status: { '2': 403 } })
+    await ingestProject(FIXTURE_ID, { io })
+    const asked = () => io.calls.filter((c) => c.endsWith('/t/2.txt')).length
+    expect(asked()).toBe(1)
+    await ingestProject(FIXTURE_ID, { io })
+    expect(asked()).toBe(1)
+  })
+
+  it('tries a refused text again after a day', async () => {
+    const io = fixtureIo({ status: { '2': 403 } })
+    let t = Date.parse('2026-01-01T00:00:00Z')
+    await ingestProject(FIXTURE_ID, { io, now: () => new Date(t) })
+    t += 25 * 3600 * 1000
+    await ingestProject(FIXTURE_ID, { io, now: () => new Date(t) })
+    expect(io.calls.filter((c) => c.endsWith('/t/2.txt')).length).toBe(2)
+  })
+})
