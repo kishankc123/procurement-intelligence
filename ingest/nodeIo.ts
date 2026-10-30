@@ -18,11 +18,11 @@ export const isAllowedUrl = (raw: string): boolean => {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-async function withRetries<T>(url: string, read: (res: Response) => Promise<T>, tries = 4): Promise<T> {
+async function withRetries<T>(url: string, read: (res: Response) => Promise<T>, tries = 4, timeoutMs = 60_000): Promise<T> {
   if (!isAllowedUrl(url)) throw new Error(`Refused to fetch ${url.slice(0, 80)}: only worldbank.org over https is allowed`)
   for (let i = 1; ; i++) {
     try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(60_000) })
+      const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
       return await read(res)
     } catch (e) {
@@ -49,11 +49,12 @@ export function fileCache(dir = CACHE_DIR, fresh = false): PipelineIo['cache'] {
   }
 }
 
-export function nodeIo(opts: { fresh?: boolean; cacheDir?: string } = {}): PipelineIo {
+/** `cache` replaces the file cache (the hosted version uses the store); `tries` and `timeoutMs` shorten the waits where a request has a time limit. */
+export function nodeIo(opts: { fresh?: boolean; cacheDir?: string; cache?: PipelineIo['cache']; tries?: number; timeoutMs?: number } = {}): PipelineIo {
   return {
-    getJson: (url) => withRetries(url, (r) => r.json()),
-    getText: (url) => withRetries(url.replace('http://', 'https://'), (r) => r.text()),
-    cache: fileCache(opts.cacheDir, opts.fresh),
+    getJson: (url) => withRetries(url, (r) => r.json(), opts.tries, opts.timeoutMs),
+    getText: (url) => withRetries(url.replace('http://', 'https://'), (r) => r.text(), opts.tries, opts.timeoutMs),
+    cache: opts.cache ?? fileCache(opts.cacheDir, opts.fresh),
   }
 }
 

@@ -14,9 +14,9 @@ export const MIN_SIMILARITY = 0.3
 export interface SemanticDeps {
   /** Embeds the question; throws when the model cannot be reached. */
   embedQuery: (text: string) => Promise<number[]>
-  loadIndex?: (projectId: string) => EmbeddingIndex | null
-  /** Projects that have vectors on disk. */
-  indexedProjects?: () => string[]
+  loadIndex?: (projectId: string) => EmbeddingIndex | null | Promise<EmbeddingIndex | null>
+  /** Projects that have vectors (on disk, or in the store when hosted). */
+  indexedProjects?: () => string[] | Promise<string[]>
   minSimilarity?: number
 }
 
@@ -35,8 +35,8 @@ export async function semanticSearch(db: AssistantDb, query: string, deps: Seman
   const keyword = searchDocuments(db, query, projectId, limit * 3)
   const keywordHits = typeof keyword.results === 'string' ? [] : keyword.results
   const load = deps.loadIndex ?? ((id: string) => loadEmbeddings(id))
-  const candidates = projectId ? [projectId] : (deps.indexedProjects ?? indexedProjectIds)().filter((id) => db.projects.some((p) => p.project_id === id))
-  const indexes = candidates.map((id) => ({ id, index: load(id) })).filter((x): x is { id: string; index: EmbeddingIndex } => x.index !== null)
+  const candidates = projectId ? [projectId] : (await (deps.indexedProjects ?? indexedProjectIds)()).filter((id) => db.projects.some((p) => p.project_id === id))
+  const indexes = (await Promise.all(candidates.map(async (id) => ({ id, index: await load(id) })))).filter((x): x is { id: string; index: EmbeddingIndex } => x.index !== null)
 
   if (indexes.length === 0) {
     return { results: keyword.results, method: 'keywords only', note: projectId ? `${projectId} has no embedded chunks, so only keywords were used.` : 'No project has embedded chunks yet, so only keywords were used.' }

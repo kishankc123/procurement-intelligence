@@ -75,8 +75,12 @@ export function applyEvent(run: RunView, e: IngestEvent): RunView {
     case 'job': return { ...run, jobId: e.jobId, projectId: e.projectId }
     case 'stage': return { ...run, stages: { ...run.stages, [e.stage]: { ...run.stages[e.stage], status: e.status, detail: e.detail ?? run.stages[e.stage].detail } } }
     case 'progress': return { ...run, stages: { ...run.stages, [e.stage]: { ...run.stages[e.stage], done: e.done, total: e.total, found: e.found ?? run.stages[e.stage].found, note: e.note ?? run.stages[e.stage].note } } }
-    case 'item': return { ...run, items: [...run.items, e].slice(-MAX_ITEMS) }
-    case 'log': return { ...run, log: [...run.log, e.text].slice(-MAX_LOG) }
+    // A run that is continued in a later request repeats the events of the work already done; the same item or line is shown once.
+    case 'item': {
+      const at = run.items.findIndex((i) => i.stage === e.stage && i.id === e.id)
+      return { ...run, items: (at >= 0 ? run.items.map((i, k) => (k === at ? e : i)) : [...run.items, e]).slice(-MAX_ITEMS) }
+    }
+    case 'log': return run.log.includes(e.text) ? run : { ...run, log: [...run.log, e.text].slice(-MAX_LOG) }
     case 'done': return { ...run, summary: e.summary }
     case 'error': {
       const stages = e.stage ? { ...run.stages, [e.stage]: { ...run.stages[e.stage], status: 'failed' as StageStatus, detail: e.message } } : run.stages

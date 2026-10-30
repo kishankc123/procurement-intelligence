@@ -22,6 +22,15 @@ describe('applyEvent', () => {
     expect(v.stages.texts).toMatchObject({ status: 'failed', detail: 'boom' })
     expect(v.error).toEqual({ stage: 'texts', message: 'boom', cancelled: undefined })
   })
+  it('shows an item or a log line once when a continued run repeats it, and updates the item', () => {
+    let v = emptyRun()
+    v = applyEvent(v, { type: 'item', stage: 'chunk', id: 'D1', label: 'Doc', count: 1 })
+    v = applyEvent(v, { type: 'item', stage: 'chunk', id: 'D1', label: 'Doc', count: 4 })
+    v = applyEvent(applyEvent(v, { type: 'log', text: 'a' }), { type: 'log', text: 'a' })
+    expect(v.items).toHaveLength(1)
+    expect(v.items[0]!.count).toBe(4)
+    expect(v.log).toEqual(['a'])
+  })
   it('keeps the item list and the log bounded', () => {
     let v = emptyRun()
     for (let i = 0; i < 500; i++) v = applyEvent(applyEvent(v, { type: 'item', stage: 'chunk', id: String(i), label: 'x' }), { type: 'log', text: String(i) })

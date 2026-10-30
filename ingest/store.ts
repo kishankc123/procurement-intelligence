@@ -55,33 +55,32 @@ export function fileStore(root: string): Store {
   }
 }
 
-/** The parts of @vercel/blob used here. */
+/** The parts of @vercel/blob (2.x) used here, with the options this code passes. The real SDK is assigned to this without a cast (see hosted.ts), so the compiler checks it. */
 export interface BlobSdk {
-  put(pathname: string, body: Uint8Array | string, opts: Record<string, unknown>): Promise<{ url: string }>
-  head(pathname: string, opts: Record<string, unknown>): Promise<{ url: string }>
-  list(opts: Record<string, unknown>): Promise<{ blobs: { pathname: string; size: number; uploadedAt: Date | string }[]; cursor?: string; hasMore?: boolean }>
+  put(pathname: string, body: string | Buffer, opts: { token: string; access: 'private' | 'public'; addRandomSuffix: boolean; allowOverwrite: boolean; cacheControlMaxAge: number; contentType: string }): Promise<unknown>
+  /** Resolves to null when the blob does not exist. The stream is null when the server answers "not modified". */
+  get(pathname: string, opts: { token: string; access: 'private' | 'public'; useCache: boolean }): Promise<{ stream: ReadableStream<Uint8Array> | null } | null>
+  list(opts: { token: string; prefix: string; cursor?: string; limit: number }): Promise<{ blobs: { pathname: string; size: number; uploadedAt: Date | string }[]; cursor?: string; hasMore?: boolean }>
 }
 
 /**
- * Vercel Blob as a Store. Blobs are written at the exact key and overwritten in place. They are public (the URL is not guessable but is not a
- * secret): everything stored here is World Bank open data. Reads go through head() to find the URL and add a changing query value, because the
- * CDN may otherwise return an older copy of a blob that was just overwritten.
+ * Vercel Blob as a Store. Blobs are written at the exact key and overwritten in place, and read with the CDN cache off, so a blob that was just
+ * overwritten (a job's cache entry, the index of ingested projects) is never read back stale. `access` must match how the Blob store was created in
+ * the Vercel dashboard: a private store needs 'private' (the default here; nothing is world-readable), a public one needs 'public'.
  */
-export function blobStore(sdk: BlobSdk, token: string, fetchFn: typeof fetch = fetch, now: () => number = Date.now): Store {
+export function blobStore(sdk: BlobSdk, token: string, access: 'private' | 'public' = 'private'): Store {
   return {
     async get(key) {
-      let url: string
-      try { url = (await sdk.head(checkKey(key), { token })).url } catch (e) {
+      let r
+      try { r = await sdk.get(checkKey(key), { token, access, useCache: false }) } catch (e) {
         if (e instanceof Error && (e.name === 'BlobNotFoundError' || /not exist|not found/i.test(e.message))) return null
         throw e
       }
-      const res = await fetchFn(`${url}${url.includes('?') ? '&' : '?'}t=${now()}`, { cache: 'no-store' })
-      if (res.status === 404) return null
-      if (!res.ok) throw new Error(`Blob read failed for ${key}: ${res.status}`)
-      return new Uint8Array(await res.arrayBuffer())
+      if (!r?.stream) return null
+      return new Uint8Array(await new Response(r.stream).arrayBuffer())
     },
     async put(key, data) {
-      await sdk.put(checkKey(key), data, { token, access: 'public', addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60, contentType: key.endsWith('.json') ? 'application/json' : 'application/octet-stream' })
+      await sdk.put(checkKey(key), typeof data === 'string' ? data : Buffer.from(data), { token, access, addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60, contentType: key.endsWith('.json') ? 'application/json' : 'application/octet-stream' })
     },
     async list(prefix) {
       const out: StoreEntry[] = []

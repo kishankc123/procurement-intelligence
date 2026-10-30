@@ -63,33 +63,40 @@ describe('blobStore (against a fake SDK)', () => {
     const blobs = new Map<string, { body: Uint8Array; at: Date }>()
     const calls: { fn: string; args: unknown[] }[] = []
     const sdk: BlobSdk = {
-      async put(path, body, opts) { calls.push({ fn: 'put', args: [path, opts] }); blobs.set(path, { body: typeof body === 'string' ? new TextEncoder().encode(body) : body, at: new Date(1000 + blobs.size) }); return { url: `https://store.test/${path}` } },
-      async head(path) { calls.push({ fn: 'head', args: [path] }); if (!blobs.has(path)) { const e = new Error('The requested blob does not exist'); e.name = 'BlobNotFoundError'; throw e } return { url: `https://store.test/${path}` } },
+      async put(path, body, opts) { calls.push({ fn: 'put', args: [path, opts] }); blobs.set(path, { body: typeof body === 'string' ? new TextEncoder().encode(body) : new Uint8Array(body), at: new Date(1000 + blobs.size) }) },
+      async get(path, opts) { calls.push({ fn: 'get', args: [path, opts] }); const b = blobs.get(path); return b ? { stream: new Response(b.body as BodyInit).body } : null },
       async list(opts) {
         const all = [...blobs].filter(([p]) => p.startsWith(String(opts.prefix))).map(([pathname, v]) => ({ pathname, size: v.body.length, uploadedAt: v.at }))
         const from = opts.cursor ? Number(opts.cursor) : 0, size = 2
         return { blobs: all.slice(from, from + size), hasMore: from + size < all.length, cursor: String(from + size) }
       },
     }
-    const fetched: string[] = []
-    const fetchFn = (async (url: string) => { fetched.push(url); const path = new URL(url).pathname.slice(1); const b = blobs.get(path); return b ? new Response(b.body as BodyInit) : new Response('', { status: 404 }) }) as unknown as typeof fetch
-    return { sdk, calls, fetched, fetchFn, blobs }
+    return { sdk, calls, blobs }
   }
-  it('writes at the exact key, overwriting, and reads back through head and a cache-busted URL', async () => {
-    const f = fake(); const s = blobStore(f.sdk, 'tok', f.fetchFn, () => 42)
+  it('writes at the exact key, overwriting, and reads the latest content with the CDN cache off', async () => {
+    const f = fake(); const s = blobStore(f.sdk, 'tok')
     await s.put('ingested/P1.json', '{"a":1}'); await s.put('ingested/P1.json', '{"a":2}')
-    expect(f.calls[0]).toMatchObject({ fn: 'put', args: ['ingested/P1.json', expect.objectContaining({ token: 'tok', access: 'public', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' })] })
+    expect(f.calls[0]).toMatchObject({ fn: 'put', args: ['ingested/P1.json', expect.objectContaining({ token: 'tok', access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' })] })
     expect(await getJson(s, 'ingested/P1.json')).toEqual({ a: 2 })
-    expect(f.fetched).toEqual(['https://store.test/ingested/P1.json?t=42'])
+    expect(f.calls.at(-1)).toMatchObject({ fn: 'get', args: ['ingested/P1.json', { token: 'tok', access: 'private', useCache: false }] })
   })
-  it('returns null for a blob that does not exist, and passes other errors on', async () => {
-    const f = fake(); const s = blobStore(f.sdk, 'tok', f.fetchFn)
+  it('uses the access mode of the store it was given', async () => {
+    const f = fake(); const s = blobStore(f.sdk, 'tok', 'public')
+    await s.put('a.json', '1'); await s.get('a.json')
+    expect(f.calls.map((c) => (c.args[1] as { access: string }).access)).toEqual(['public', 'public'])
+  })
+  it('returns null for a blob that does not exist or has no body, and passes other errors on', async () => {
+    const f = fake(); const s = blobStore(f.sdk, 'tok')
     expect(await s.get('nope.json')).toBeNull()
-    f.sdk.head = async () => { throw new Error('rate limited') }
+    f.sdk.get = async () => ({ stream: null })
+    expect(await s.get('x.json')).toBeNull()
+    f.sdk.get = async () => { const e = new Error('The requested blob does not exist'); e.name = 'BlobNotFoundError'; throw e }
+    expect(await s.get('x.json')).toBeNull()
+    f.sdk.get = async () => { throw new Error('rate limited') }
     await expect(s.get('x.json')).rejects.toThrow('rate limited')
   })
   it('lists across pages', async () => {
-    const f = fake(); const s = blobStore(f.sdk, 'tok', f.fetchFn)
+    const f = fake(); const s = blobStore(f.sdk, 'tok')
     for (const n of [1, 2, 3, 4, 5]) await s.put(`ingested/P${n}.json`, 'x')
     await s.put('cache/other.json.gz', 'x')
     const l = await s.list('ingested/')
