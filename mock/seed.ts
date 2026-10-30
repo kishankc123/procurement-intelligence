@@ -5,6 +5,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { fiscalYearOf } from '../packages/config/src/index'
 import { buildCountryYears } from './import-gppd'
+import { mergeSnapshot, type Snapshot } from '../ingest/publish'
 import * as X from './seed-extra'
 
 const P = 'P-MOCK-001'
@@ -255,12 +256,7 @@ const ingested: string[] = []
 if (existsSync(ingestedDir)) {
   for (const file of readdirSync(ingestedDir).filter((f: string) => f.endsWith('.json')).sort()) {
     const snapshot = JSON.parse(readFileSync(ingestedDir + file, 'utf8')) as { manifest: { project_id: string; ingested_at: string }; collections: Record<string, unknown[]> }
-    for (const [name, rows] of Object.entries(snapshot.collections)) {
-      const target = (db as unknown as Record<string, unknown[]>)[name]
-      // Every snapshot lists the same three public sources; a row whose id is already there (for example SRC-WB-PROJECTS) is not added twice.
-      const known = new Set((target as { id?: string }[]).map((r) => r.id))
-      if (Array.isArray(target)) target.push(...rows.filter((r) => name !== 'sources' || !known.has((r as { id: string }).id)))
-    }
+    mergeSnapshot(db as unknown as Record<string, unknown>, snapshot as unknown as Snapshot)
     ingested.push(`${snapshot.manifest.project_id} (ingested ${snapshot.manifest.ingested_at.slice(0, 10)})`)
   }
 }

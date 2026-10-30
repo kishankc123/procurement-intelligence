@@ -5,6 +5,9 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { AssistantRequest, answer, type AssistantDb } from '../packages/data/src/assistant'
 import { COPILOT_BASE_PATH, createCopilotListener } from './copilot'
+import { createIngestRoutes } from './ingestRoutes'
+import { createJobRunner } from '../ingest/jobs'
+import { EMBED_DIMENSIONS, EMBED_MODEL, nodeIo, openAiEmbedder } from '../ingest/nodeIo'
 
 // The model key lives in .env.local (git-ignored). Without it the rule-based assistant is used and CopilotKit is not started.
 try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))) } catch { /* no key file */ }
@@ -42,10 +45,20 @@ function readBody(req: IncomingMessage): Promise<string> {
 
 const copilot = createCopilotListener(() => loadDb())
 
+// Live ingestion: the chat finds a World Bank project, the user presses a button, and this runner reads, parses, chunks and embeds it.
+const ingestIo = nodeIo()
+const ingest = createIngestRoutes({
+  runner: createJobRunner({ io: () => ingestIo, embedder: () => openAiEmbedder() }),
+  io: ingestIo,
+  storedProjectIds: () => new Set(loadDb().projects.map((p) => p.project_id)),
+  embeddingInfo: () => { const { embedder, reason } = openAiEmbedder(); return embedder ? { available: true, model: EMBED_MODEL, dimensions: EMBED_DIMENSIONS } : { available: false, reason } },
+})
+
 createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', `http://localhost:${PORT}`)
   // CopilotKit (model-backed chat) owns everything under its base path; it answers its own CORS preflight.
   if (copilot && url.pathname.startsWith(COPILOT_BASE_PATH)) return copilot(req, res)
+  if (await ingest(req, res, url)) return
   if (req.method === 'OPTIONS') return send(res, 204, {})
   if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { ok: true, simulated: true })
   if (req.method === 'POST' && url.pathname === '/chat') {
