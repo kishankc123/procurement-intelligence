@@ -55,6 +55,17 @@ describe('driveSteps', () => {
     const out = await driveSteps(base(dead))
     expect(out).toMatchObject({ ok: false, message: expect.stringContaining('is kept') })
   })
+  it('asks a step again when the host cut it off (504) or turned it away (429), but not a refusal', async () => {
+    const cut = server([json(504, { error: 'timeout' }), json(429, {}), { status: 'done', events: [] }])
+    expect(await driveSteps(base(cut))).toEqual({ ok: true, status: 'done' })
+    expect(cut.calls.filter((c) => c.path === 'step')).toHaveLength(3)
+    const down = server([json(504, {})])
+    expect(await driveSteps(base(down))).toMatchObject({ ok: false, message: 'The server answered 504.' })
+    expect(down.calls.filter((c) => c.path === 'step')).toHaveLength(3)
+    const refused = server([json(401, { error: 'wrong token' })])
+    expect(await driveSteps(base(refused))).toMatchObject({ ok: false, needsToken: true })
+    expect(refused.calls.filter((c) => c.path === 'step')).toHaveLength(1)
+  })
   it('stops when it is cancelled, and when a run never finishes', async () => {
     const ctl = new AbortController()
     const s = server([{ status: 'paused', events: [] }])

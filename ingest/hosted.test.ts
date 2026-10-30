@@ -2,14 +2,14 @@
 import { describe, expect, it } from 'vitest'
 import type { IngestEvent } from '../packages/data/src/ingestEvents'
 import { buildContractIndex } from './contractIndex'
-import { fakeEmbedder, fixtureIo, FIXTURE_ID } from './fixtures'
+import { fakeEmbedder, fakePlanExtractor, fixtureIo, FIXTURE_ID } from './fixtures'
 import { blobStoreFromEnv, createHosted, createIngestedSync, hasBlobStore, indexedProjectsInStore, loadEmbeddingsFromStore, type HostedResponse } from './hosted'
 import { memoryStore, putJson, type Store } from './store'
 
 const TOKEN = 'secret-token'
 
 /** A memory store that counts writes, and a clock that moves one second per write: so "time" passes only when work is done. */
-function world(over: { env?: Record<string, string | undefined>; noIndex?: boolean; embedder?: boolean; failDocs?: boolean } = {}) {
+function world(over: { env?: Record<string, string | undefined>; noIndex?: boolean; embedder?: boolean; failDocs?: boolean; plans?: boolean } = {}) {
   let writes = 0
   const mem = memoryStore(() => writes)
   const store: Store = { ...mem, put: async (k, d) => { writes++; await mem.put(k, d) } }
@@ -18,6 +18,7 @@ function world(over: { env?: Record<string, string | undefined>; noIndex?: boole
   const hosted = createHosted({
     env, store: async () => store, now: () => writes * 1000, io,
     embedder: over.embedder === false ? { embedder: null, reason: 'no key' } : { embedder: fakeEmbedder(16) },
+    planExtractor: over.plans ? { extractor: fakePlanExtractor() } : { extractor: null, reason: 'no plan model' },
   })
   /** `token: null` sends no token at all. */
   const req = (method: string, path: string, body?: unknown, token: string | null = TOKEN) => hosted.handle({ method, path, headers: token === null ? {} : { 'x-ingest-token': token }, body })
@@ -136,6 +137,28 @@ describe('hosted ingestion: a run over several requests', () => {
     const again = await runToEnd(w)
     const done = again.all.find((e) => e.type === 'done') as Extract<IngestEvent, { type: 'done' }>
     expect(done.summary.embedding).toMatchObject({ status: 'done', reused: done.summary.embedding!.vectors, tokens: 0 })
+  })
+})
+
+describe('tenders and plan packages on the hosted site', () => {
+  it('publishes them with the project and merges them into the data the site answers from', async () => {
+    const w = world({ plans: true, env: { INGEST_STEP_BUDGET_MS: '1000' } }); await w.ready()
+    const { all, statuses } = await runToEnd(w)
+    expect(statuses.filter((s) => s === 'paused').length).toBeGreaterThan(0) // the model call and the notices are carried across steps
+    expect(all.find((e) => e.type === 'done')).toMatchObject({ summary: { counts: { tender_notices: 2, plan_packages: 3 } } })
+    const snap = JSON.parse(new TextDecoder().decode(w.mem.data.get(`ingested/${FIXTURE_ID}.json`)!.bytes))
+    expect(snap.collections.plan_packages).toHaveLength(3)
+    expect(snap.collections.tender_notices).toHaveLength(2)
+    const db: Record<string, any> = { meta: { dataset_label: '' }, projects: [], contracts: [], documents: [], chunks: [], sources: [], supervision_reports: [], plan_packages: [], tender_notices: [] }
+    await createIngestedSync(async () => w.store, 0).sync(db)
+    expect(db.plan_packages.map((r: any) => r.ref_no)).toEqual(['CW-FIX-01', 'CW-FIX-02', 'GO-FIX-01'])
+    expect(db.tender_notices.map((r: any) => r.id)).toEqual(['OP002', 'OP001'])
+  })
+  it('publishes without plan rows, and says why, when the plan model is not available', async () => {
+    const w = world({ env: { INGEST_STEP_BUDGET_MS: '600000' } }); await w.ready()
+    const { all } = await runToEnd(w)
+    expect(all.find((e) => e.type === 'stage' && e.stage === 'plans')).toMatchObject({ status: 'skipped', detail: 'no plan model' })
+    expect(all.find((e) => e.type === 'done')).toMatchObject({ summary: { counts: { plan_packages: 0, tender_notices: 2 } } })
   })
 })
 

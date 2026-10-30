@@ -4,7 +4,12 @@
 import { createHash } from 'node:crypto'
 import { INGEST_STAGE_LABEL, isProjectId, type IngestEvent, type IngestStage, type IngestSummary } from '../packages/data/src/ingestEvents'
 import { packVectors, pca2, unpackVectors } from '../packages/data/src/vectors'
+import { HttpError, isSkippable } from './errors'
+import { KEEP_NOTICES, noticesSource, readNotices, tenderRows } from './noticeRows'
 import { apiDateToIso, chunkText, dmyToIso, parseIsr, RATING_CODE } from './parse'
+import { planSource, readPlanPackages, type PlanExtractor } from './planRows'
+
+export { HttpError }
 
 export interface PipelineIo {
   getJson(url: string): Promise<any>
@@ -47,6 +52,9 @@ export interface PipelineOptions {
   noEmbedderReason?: string
   /** Vectors from an earlier run, by chunk id, so unchanged chunks are not paid for twice. */
   previous?: Map<string, { hash: string; vector: number[] }>
+  /** The model that reads a procurement plan's package table (see planRows.ts). Without one the plans stage is skipped. */
+  planExtractor?: PlanExtractor | null
+  noPlanExtractorReason?: string
   /** Contract awards from a prebuilt index; without it the whole public list is read page by page. */
   contractSource?: ContractSource
   /** Asked at safe points. When it returns true the run stops with `Paused` and can be started again: finished work is in the cache. */
@@ -77,12 +85,6 @@ export interface RawContract {
 }
 interface RawDoc { id: string; docty?: string; docdt?: string; display_title?: string; txturl?: string; pdfurl?: string }
 
-/** A download the server answered with an HTTP error. The status tells the pipeline whether the document can be skipped (refused, gone) or the run should fail (a server fault). */
-export class HttpError extends Error {
-  constructor(readonly status: number, message: string) { super(message); this.name = 'HttpError' }
-}
-/** Statuses that mean "this document is not available to us": it is left without text and the run goes on. Anything else (a timeout, a 5xx) fails the run, so nothing is silently incomplete. */
-const SKIPPABLE = new Set([401, 403, 404, 410, 451])
 /** How long a recorded refusal is trusted before the document is tried again. */
 const REFUSAL_MS = 24 * 3600 * 1000
 
@@ -117,6 +119,20 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
   }
   const notes: string[] = []
   const fetchedAt = now().toISOString()
+  /**
+   * The text of a document, from the cache or the World Bank. A refusal or a missing page (401, 403, 404, 410, 451) comes back as `refused` and is remembered for a
+   * day, so a run continued over several requests does not ask again for what was just refused. Any other failure is thrown.
+   */
+  const fetchText = async (d: RawDoc): Promise<{ text: string } | { refused: string }> => {
+    const refused = await io.cache.get<{ message: string; at: number }>(`text-refused-${d.id}`)
+    if (refused && now().getTime() - refused.at < REFUSAL_MS) return { refused: refused.message }
+    try { return { text: await cached(`text-${d.id}`, () => io.getText(d.txturl!)) } } catch (e) {
+      if (!isSkippable(e)) throw e
+      const message = `HTTP ${e.status}`
+      await io.cache.put(`text-refused-${d.id}`, { message, at: now().getTime() })
+      return { refused: message }
+    }
+  }
 
   try {
     // 1-2. Project record
@@ -163,6 +179,21 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
     const repeated = [...refCounts.values()].filter((n) => n > 1).length
     if (repeated > 0) notes.push(`${repeated} contract reference numbers appear more than once in the source (joint ventures are split into one row per member).`)
 
+    // 3b. Tenders: the "Invitation for Bids" notices of the project (public API, no model)
+    const noticeData = await stage('notices', async () => {
+      try {
+        const notices = await readNotices(projectId, io, alive)
+        const t = tenderRows(projectId, notices)
+        for (const r of t.rows.slice(0, 12)) emit({ type: 'item', stage: 'notices', id: r.id, label: `${r.posted} · ${r.category} · ${r.description.slice(0, 90)}`, group: r.status })
+        return { total: notices.length, ...t }
+      } catch (e) {
+        if (!isSkippable(e)) throw e
+        notes.push(`The Procurement Notices API refused the request (HTTP ${e.status}), so no tenders were read for this project.`)
+        return { total: 0, rows: [] as ReturnType<typeof tenderRows>['rows'], tenders: 0, byType: {} as Record<string, number> }
+      }
+    }, (r) => `${r.rows.length} tenders${r.tenders > r.rows.length ? ` (the newest ${r.rows.length} of ${r.tenders})` : ''}`)
+    if (noticeData.tenders > KEEP_NOTICES) notes.push(`${noticeData.tenders} tenders are on record for this project; the newest ${KEEP_NOTICES} are kept.`)
+
     // 4. Documents: the supervision reports, the completion report(s), the appraisal document, and the latest procurement plan
     const plan = await stage('documents', async () => {
       const docsRaw = await cached(`documents-${projectId}`, async () => Object.values((await io.getJson(docsApiUrl(projectId))).documents as Record<string, RawDoc>))
@@ -194,17 +225,8 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
           alive()
           const d = withText[next++]!
           const title = String(d.display_title ?? d.docty).replace(/\s+/g, ' ').trim()
-          // A refusal is remembered for a day, so a run continued over several requests does not ask again for what was just refused.
-          const refused = await io.cache.get<{ message: string; at: number }>(`text-refused-${d.id}`)
-          if (refused && now().getTime() - refused.at < REFUSAL_MS) unavailable.set(d.id, { title, message: refused.message })
-          else {
-            try { texts.set(d.id, await cached(`text-${d.id}`, () => io.getText(d.txturl!))) } catch (e) {
-              if (!(e instanceof HttpError) || !SKIPPABLE.has(e.status)) throw e
-              const message = `HTTP ${e.status}`
-              await io.cache.put(`text-refused-${d.id}`, { message, at: now().getTime() })
-              unavailable.set(d.id, { title, message })
-            }
-          }
+          const got = await fetchText(d)
+          if ('text' in got) texts.set(d.id, got.text); else unavailable.set(d.id, { title, message: got.refused })
           if (unavailable.has(d.id)) emit({ type: 'item', stage: 'texts', id: `DOC-WB-${d.id}`, label: `${title}: not available (${unavailable.get(d.id)!.message})`, ok: false })
           emit({ type: 'progress', stage: 'texts', done: ++n, total: withText.length, found: texts.size })
         }
@@ -267,6 +289,28 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
     }
     if (!dates) notes.push('No supervision report gave the key dates, so effectiveness and original closing dates are missing.')
     else notes.push('The planned effectiveness date is not published; the actual effectiveness date is used for both. Original and revised closing dates come from the newest supervision report.')
+
+    // 6b. Procurement plan: the package table of the newest plan documents that have one, read by a model and checked against the text
+    let planRows: unknown[] = []
+    let planNoteSource: ReturnType<typeof planSource> | null = null
+    alive(); current = 'plans'
+    if (!opts.planExtractor || plans.length === 0) {
+      const reason = plans.length === 0 ? 'This project has no procurement plan document on record' : (opts.noPlanExtractorReason ?? 'No model is configured to read plan tables')
+      emit({ type: 'stage', stage: 'plans', status: 'skipped', detail: reason })
+      if (plans.length > 0) notes.push(`Procurement plan packages were not read: ${reason}.`)
+    } else {
+      emit({ type: 'stage', stage: 'plans', status: 'running' })
+      const reading = await readPlanPackages({
+        projectId, docs: plans, extractor: opts.planExtractor, io, alive,
+        getText: async (doc) => { const got = await fetchText(doc as RawDoc); return 'text' in got ? got.text : null },
+      })
+      planRows = reading.rows
+      if (reading.chosen && reading.rows.length > 0) {
+        planNoteSource = planSource(reading.chosen, reading.rows.length, opts.planExtractor.model, plans.length, reading.dropped)
+        emit({ type: 'item', stage: 'plans', id: `DOC-WB-${reading.chosen.id}`, label: `Plan of ${String(reading.chosen.docdt).slice(0, 10)}: ${reading.rows.length} package rows kept${reading.dropped ? `, ${reading.dropped} dropped (not found in the text)` : ''}`, count: reading.rows.length, ok: true })
+      } else notes.push(`No procurement plan package rows were kept: of the newest ${reading.looked} plan documents, ${reading.withTable} had a readable package table${reading.withTable ? ' but no row could be checked against its text' : ''}.`)
+      emit({ type: 'stage', stage: 'plans', status: 'done', detail: reading.rows.length ? `${reading.rows.length} package rows from the plan of ${String(reading.chosen!.docdt).slice(0, 10)}` : 'no readable package table' })
+    }
 
     // 7. Documents and chunks
     const documents: unknown[] = []
@@ -361,7 +405,7 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
       { id: 'SRC-WB-CONTRACTS', name: 'Contract Awards in Investment Project Financing (Finances One, DS00005)', publisher: 'World Bank', kind: 'Contract awards', status: 'fetched', last_fetched: day, simulated: false },
       { id: 'SRC-WB-DOCUMENTS', name: 'World Bank Documents & Reports API', publisher: 'World Bank', kind: 'Project documents', status: 'fetched', last_fetched: day, simulated: false },
     ]
-    const counts = { contracts: contracts.length, documents: documents.length, documents_with_text: texts.size, chunks: chunks.length, supervision_reports: supervisionReports.length }
+    const counts = { contracts: contracts.length, documents: documents.length, documents_with_text: texts.size, chunks: chunks.length, supervision_reports: supervisionReports.length, plan_packages: planRows.length, tender_notices: noticeData.rows.length }
     const snapshot = {
       manifest: {
         project_id: projectId, project_name: projectRecord.project_name, ingested_at: fetchedAt, stage: 'structured',
@@ -369,18 +413,23 @@ export async function ingestProject(projectId: string, opts: PipelineOptions): P
           { name: 'Projects API', url: projectsApiUrl(projectId), records: 1 },
           { name: 'Contract Awards API (DS00005)', url: `${CONTRACTS_API}&top=${pageSize}&skip=<page>`, records: contracts.length, note: 'All pages read; rows for this project kept.' },
           { name: 'Documents & Reports API', url: docsApiUrl(projectId), records: docsRaw.length, note: `${listed.length} ingested.` },
+          ...(noticeData.total > 0 ? [noticesSource(projectId, noticeData.total, noticeData.rows.length, noticeData.tenders, noticeData.byType)] : []),
+          ...(planNoteSource ? [planNoteSource] : []),
         ],
         counts,
         not_done: [
           'Completion report lessons (needs a model): lessons are not extracted yet.',
-          'Procurement plan packages (needs a model): plans are not extracted yet.',
+          planRows.length > 0
+            ? 'Procurement plan: only the first package rows of one plan document are read; other plan versions and later tables (consultants, training) are not.'
+            : 'Procurement plan packages: none were read (see the notes); the plan documents that have text are still searchable.',
           'Tender drafts, bidder counts, bid dates and amendments are not in any public structured source.',
         ],
         supervision_reports_unparsed: unparsed,
         notes,
         license: 'World Bank open data (CC BY 4.0) with attribution to the World Bank. The completion report text may be a disclosed draft; check its status before sharing.',
       },
-      collections: { projects: [projectRecord], contracts, documents, chunks, supervision_reports: supervisionReports, sources } as Record<string, unknown[]>,
+      // plan_packages and tender_notices are set only when there are rows, so an earlier snapshot's rows are kept (carryOver) when this run found none.
+      collections: { projects: [projectRecord], contracts, documents, chunks, supervision_reports: supervisionReports, sources, ...(planRows.length ? { plan_packages: planRows } : {}), ...(noticeData.rows.length ? { tender_notices: noticeData.rows } : {}) } as Record<string, unknown[]>,
     }
     const summary: IngestSummary = { projectId, projectName: projectRecord.project_name, counts, embedding, map, sample, notes, durationMs: Date.now() - t0 }
     return { snapshot, embeddings, summary }

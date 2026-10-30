@@ -9,7 +9,7 @@ import { unpackVectors } from '../packages/data/src/vectors'
 import { contractSourceFromStore, readIndexMeta } from './contractIndex'
 import { findProjects } from './discover'
 import { carryOver, embeddingManifest, embeddingNote, labelWithProject, mergeSnapshot, type EmbeddingManifest, type Snapshot } from './merge'
-import { EMBED_DIMENSIONS, EMBED_MODEL, embedWith, nodeIo, openAiEmbedder } from './nodeIo'
+import { EMBED_DIMENSIONS, EMBED_MODEL, embedWith, nodeIo, openAiEmbedder, openAiPlanExtractor } from './nodeIo'
 import { ingestProject, Paused, type PipelineResult } from './pipeline'
 import { blobStore, getJson, putJson, storeCache, type BlobSdk, type Store } from './store'
 
@@ -110,6 +110,7 @@ export interface HostedDeps {
   /** Replaces the network and model access (tests). */
   io?: ReturnType<typeof nodeIo>
   embedder?: ReturnType<typeof openAiEmbedder>
+  planExtractor?: ReturnType<typeof openAiPlanExtractor>
 }
 
 const sha = (s: string) => createHash('sha256').update(s).digest()
@@ -119,7 +120,7 @@ const today = (now: number) => new Date(now).toISOString().slice(0, 10)
 export function createHosted(deps: HostedDeps) {
   const now = deps.now ?? Date.now
   const env = deps.env
-  const budgetMs = Number(env.INGEST_STEP_BUDGET_MS) || 40_000
+  const budgetMs = Number(env.INGEST_STEP_BUDGET_MS) || 30_000
   const dailyLimit = Number(env.INGEST_DAILY_LIMIT ?? 5)
   const maxChunks = Number(env.INGEST_MAX_CHUNKS) || 3000
   const inFlight = new Set<string>()
@@ -180,9 +181,10 @@ export function createHosted(deps: HostedDeps) {
     const started = now()
     try {
       const { embedder, reason } = embedderInfo()
+      const plan = deps.planExtractor ?? openAiPlanExtractor(env)
       const io = { ...(deps.io ?? nodeIo({ tries: 2, timeoutMs: 20_000 })), cache: storeCache(store) }
       const result = await ingestProject(projectId, {
-        io, contractSource: contractSourceFromStore(store), embedder, noEmbedderReason: reason, maxEmbedChunks: maxChunks,
+        io, contractSource: contractSourceFromStore(store), embedder, noEmbedderReason: reason, maxEmbedChunks: maxChunks, planExtractor: plan.extractor, noPlanExtractorReason: plan.reason,
         shouldPause: () => now() - started > budgetMs,
         previous: await previousFromStore(store, projectId),
         onEvent: (e) => { if (events.length < 2000) events.push(e) },

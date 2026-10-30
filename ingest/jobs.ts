@@ -3,6 +3,7 @@
 import { randomUUID } from 'node:crypto'
 import { isProjectId, type IngestEvent } from '../packages/data/src/ingestEvents'
 import { Cancelled, ingestProject, type Embedder, type PipelineIo } from './pipeline'
+import type { PlanExtractor } from './planRows'
 import { DEFAULT_DIRS, previousVectors, publishResult, type Dirs } from './publish'
 
 export type JobStatus = 'running' | 'done' | 'failed' | 'cancelled'
@@ -19,6 +20,8 @@ export interface RunnerDeps {
   io: () => PipelineIo
   /** The embedding model, or null with the reason. Read on each start, so a key added to .env.local is seen after a restart only; the card shows the reason. */
   embedder: () => { embedder: Embedder | null; reason?: string }
+  /** The model that reads procurement plan tables, or null with the reason. Optional: without it the plans stage is skipped. */
+  planExtractor?: () => { extractor: PlanExtractor | null; reason?: string }
   dirs?: Partial<Dirs>
   /** Replaces publishResult in tests. */
   publish?: typeof publishResult
@@ -57,10 +60,11 @@ export function createJobRunner(deps: RunnerDeps) {
     let failed = false
     try {
       const { embedder, reason } = deps.embedder()
+      const plan = deps.planExtractor?.() ?? { extractor: null, reason: 'No plan-reading model is configured' }
       const io = deps.io()
       const result = await ingestProject(job.projectId, {
         io: opts.fresh ? { ...io, cache: { get: () => undefined, put: io.cache.put } } : io,
-        embedder, noEmbedderReason: reason, signal: job.ctl.signal, previous: previousVectors(job.projectId, deps.dirs?.embeddings ?? DEFAULT_DIRS.embeddings),
+        embedder, noEmbedderReason: reason, planExtractor: plan.extractor, noPlanExtractorReason: plan.reason, signal: job.ctl.signal, previous: previousVectors(job.projectId, deps.dirs?.embeddings ?? DEFAULT_DIRS.embeddings),
         onEvent: (e) => { if (e.type === 'error') failed = true; push(job, e) },
       })
       try {

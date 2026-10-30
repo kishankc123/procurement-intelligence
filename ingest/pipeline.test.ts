@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { IngestEvent } from '../packages/data/src/ingestEvents'
 import { applyEvent, emptyRun } from '../packages/data/src/ingestEvents'
 import { unpackVectors } from '../packages/data/src/vectors'
-import { fakeEmbedder, fixtureIo, FIXTURE_ID } from './fixtures'
+import { fakeEmbedder, fakePlanExtractor, fixtureIo, FIXTURE_ID } from './fixtures'
 import { Cancelled, ingestProject, Paused } from './pipeline'
 import { memoryStore, storeCache } from './store'
 
@@ -31,7 +31,8 @@ describe('ingestProject on fixtures', () => {
     const seq = events.filter((e): e is Extract<IngestEvent, { type: 'stage' }> => e.type === 'stage')
     const order = seq.filter((e) => e.status === 'running').map((e) => e.stage)
     // embed is skipped, so it never runs; publish starts last and the caller finishes it after writing the files
-    expect(order).toEqual(['find', 'project', 'contracts', 'documents', 'texts', 'parse', 'chunk', 'publish'])
+    expect(order).toEqual(['find', 'project', 'contracts', 'notices', 'documents', 'texts', 'parse', 'chunk', 'publish'])
+    expect(seq.find((e) => e.stage === 'plans')).toMatchObject({ status: 'skipped' })
     expect(seq.find((e) => e.stage === 'embed')).toMatchObject({ status: 'skipped', detail: 'no key' })
     expect(result.summary.embedding).toEqual({ status: 'skipped', reason: 'no key' })
     expect(result.embeddings).toBeNull()
@@ -242,5 +243,91 @@ describe('documents the World Bank site refuses or does not have', () => {
     t += 25 * 3600 * 1000
     await ingestProject(FIXTURE_ID, { io, now: () => new Date(t) })
     expect(io.calls.filter((c) => c.endsWith('/t/2.txt')).length).toBe(2)
+  })
+})
+
+describe('tenders and plan packages in a run', () => {
+  const full = async (over: Partial<Parameters<typeof ingestProject>[1]> = {}, ioOver: Parameters<typeof fixtureIo>[0] = {}) => {
+    const events: IngestEvent[] = []
+    const io = fixtureIo(ioOver)
+    const result = await ingestProject(FIXTURE_ID, { io, onEvent: (e) => events.push(e), now: () => new Date('2026-01-02T03:04:05Z'), ...over })
+    return { events, io, result }
+  }
+  const notes = (r: Awaited<ReturnType<typeof full>>['result']) => r.snapshot.manifest.notes as string[]
+
+  it('stores the tenders of the project, with a source entry and a count', async () => {
+    const { result, events } = await full()
+    const c = result.snapshot.collections
+    expect((c.tender_notices as { id: string }[]).map((r) => r.id)).toEqual(['OP002', 'OP001'])
+    expect(result.summary.counts).toMatchObject({ tender_notices: 2, plan_packages: 0 })
+    expect((result.snapshot.manifest.sources as { name: string; records: number }[]).find((s) => s.name === 'Procurement Notices API')).toMatchObject({ records: 3 })
+    expect(events.find((e) => e.type === 'stage' && e.stage === 'notices' && e.status === 'done')).toMatchObject({ detail: '2 tenders' })
+    expect(events.filter((e) => e.type === 'item' && e.stage === 'notices')).toHaveLength(2)
+    expect(JSON.stringify(result.snapshot)).not.toContain('jane@')
+  })
+
+  it('carries on without tenders when the notices API refuses, and fails the run on a server fault', async () => {
+    const { result } = await full({}, { noticesStatus: 403 })
+    expect(result.snapshot.collections.tender_notices).toBeUndefined()
+    expect(notes(result).some((n) => n.includes('Procurement Notices API refused the request (HTTP 403)'))).toBe(true)
+    await expect(full({}, { noticesStatus: 500 })).rejects.toMatchObject({ status: 500 })
+  })
+
+  it('reads the plan table with the model, keeps only the rows the text backs, and records where they came from', async () => {
+    const planExtractor = fakePlanExtractor()
+    const { result, events } = await full({ planExtractor })
+    const rows = result.snapshot.collections.plan_packages as { id: string; ref_no: string; estimated_cost: string; plan_doc: string; description: string }[]
+    expect(rows.map((r) => r.ref_no)).toEqual(['CW-FIX-01', 'CW-FIX-02', 'GO-FIX-01']) // the invented CW-FAKE-99 is not here
+    expect(rows[0]).toMatchObject({ plan_doc: 'DOC-WB-7', estimated_cost: '1.250' })
+    expect(JSON.stringify(rows)).not.toContain('bridge')
+    expect(result.summary.counts.plan_packages).toBe(3)
+    const source = (result.snapshot.manifest.sources as { name: string; note?: string; records: number }[]).find((s) => s.name.startsWith('Procurement Plan document'))!
+    expect(source).toMatchObject({ records: 3 })
+    expect(source.note).toContain('fake-plan-model')
+    expect(source.note).toContain('1 rows dropped')
+    expect(events.find((e) => e.type === 'stage' && e.stage === 'plans' && e.status === 'done')).toMatchObject({ detail: '3 package rows from the plan of 2018-03-01' })
+    expect(events.find((e) => e.type === 'item' && e.stage === 'plans')).toMatchObject({ ok: true, count: 3 })
+    expect((result.snapshot.manifest.not_done as string[]).some((n) => n.startsWith('Procurement plan: only the first package rows'))).toBe(true)
+    expect(planExtractor.calls).toHaveLength(1) // only one plan document has a table
+  })
+
+  it('does not call the model again for the same plan on a second run', async () => {
+    const planExtractor = fakePlanExtractor()
+    const io = fixtureIo()
+    await ingestProject(FIXTURE_ID, { io, planExtractor })
+    await ingestProject(FIXTURE_ID, { io, planExtractor })
+    expect(planExtractor.calls).toHaveLength(1)
+  })
+
+  it('skips the plans stage, and says why, when there is no model; no plan rows are stored', async () => {
+    const { result, events } = await full({ noPlanExtractorReason: 'no key for plans' })
+    expect(events.find((e) => e.type === 'stage' && e.stage === 'plans')).toMatchObject({ status: 'skipped', detail: 'no key for plans' })
+    expect(result.snapshot.collections.plan_packages).toBeUndefined()
+    expect(notes(result).some((n) => n.includes('Procurement plan packages were not read: no key for plans'))).toBe(true)
+    expect((result.snapshot.manifest.not_done as string[]).some((n) => n.startsWith('Procurement plan packages: none were read'))).toBe(true)
+  })
+
+  it('carries on when the newest plan is refused: no rows, a note, and the refused text is listed', async () => {
+    const planExtractor = fakePlanExtractor()
+    const { result } = await full({ planExtractor }, { status: { '7': 403 } })
+    expect(result.snapshot.collections.plan_packages).toBeUndefined()
+    expect(planExtractor.calls).toHaveLength(0)
+    expect(notes(result).some((n) => n.includes('No procurement plan package rows were kept: of the newest 2 plan documents, 0 had a readable package table'))).toBe(true)
+    expect(notes(result).some((n) => n.includes('Procurement Plan: HTTP 403'))).toBe(true)
+  })
+
+  it('finishes with the same plan rows however the run is split into pieces', async () => {
+    const whole = await full({ planExtractor: fakePlanExtractor() })
+    const io = fixtureIo(); const extractor = fakePlanExtractor()
+    let pieces = 0, puts = 0, result
+    const real = io.cache.put.bind(io.cache)
+    const counted = { ...io, cache: { get: io.cache.get.bind(io.cache), put: async (k: string, v: unknown) => { puts++; await real(k, v) } } }
+    while (!result && pieces++ < 80) {
+      puts = 0
+      try { result = await ingestProject(FIXTURE_ID, { io: counted as typeof io, planExtractor: extractor, now: () => new Date('2026-01-02T03:04:05Z'), shouldPause: () => puts >= 2 }) } catch (e) { if (!(e instanceof Paused)) throw e }
+    }
+    expect(pieces).toBeGreaterThan(2)
+    expect(JSON.parse(JSON.stringify(result!.snapshot))).toEqual(JSON.parse(JSON.stringify(whole.result.snapshot)))
+    expect(extractor.calls).toHaveLength(1)
   })
 })

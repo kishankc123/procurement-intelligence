@@ -33,7 +33,7 @@ export function carryOver(fresh: Snapshot, old: Snapshot): void {
     if (!old.collections[k.collection]?.length || fresh.collections[k.collection]) continue
     fresh.collections[k.collection] = old.collections[k.collection]!
     fresh.manifest.counts[k.collection] = old.manifest.counts?.[k.collection] ?? old.collections[k.collection]!.length
-    fresh.manifest.sources.push(...(old.manifest.sources as { name: string }[]).filter((s) => String(s.name).startsWith(k.source)))
+    fresh.manifest.sources = [...(fresh.manifest.sources as { name: string }[]).filter((s) => !String(s.name).startsWith(k.source)), ...(old.manifest.sources as { name: string }[]).filter((s) => String(s.name).startsWith(k.source))]
   }
 }
 

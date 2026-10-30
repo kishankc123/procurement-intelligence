@@ -7,7 +7,7 @@ import { AssistantRequest, answer, type AssistantDb } from '../packages/data/src
 import { COPILOT_BASE_PATH, createCopilotListener } from './copilot'
 import { createIngestRoutes } from './ingestRoutes'
 import { createJobRunner } from '../ingest/jobs'
-import { EMBED_DIMENSIONS, EMBED_MODEL, embedWith, nodeIo, openAiEmbedder } from '../ingest/nodeIo'
+import { EMBED_DIMENSIONS, EMBED_MODEL, embedWith, nodeIo, openAiEmbedder, openAiPlanExtractor } from '../ingest/nodeIo'
 import { findProjects } from '../ingest/discover'
 
 // The model key lives in .env.local (git-ignored). Without it the rule-based assistant is used and CopilotKit is not started.
@@ -54,7 +54,7 @@ const copilot = createCopilotListener(() => loadDb(), { findProjects: (q) => fin
 
 // Live ingestion: the chat finds a World Bank project, the user presses a button, and this runner reads, parses, chunks and embeds it.
 const ingest = createIngestRoutes({
-  runner: createJobRunner({ io: () => ingestIo, embedder: () => openAiEmbedder() }),
+  runner: createJobRunner({ io: () => ingestIo, embedder: () => openAiEmbedder(), planExtractor: () => openAiPlanExtractor() }),
   io: ingestIo,
   storedProjectIds: () => new Set(loadDb().projects.map((p) => p.project_id)),
   embeddingInfo: () => { const { embedder, reason } = openAiEmbedder(); return embedder ? { available: true, model: EMBED_MODEL, dimensions: EMBED_DIMENSIONS } : { available: false, reason } },

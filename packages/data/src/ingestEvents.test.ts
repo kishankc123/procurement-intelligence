@@ -38,5 +38,7 @@ describe('applyEvent', () => {
     expect(v.log).toHaveLength(60)
     expect(v.items.at(-1)!.id).toBe('499')
   })
-  it('lists nine stages', () => { expect(INGEST_STAGES).toHaveLength(9) })
+  it('lists eleven stages, with the tenders after the contracts and the plan packages after the reports', () => {
+    expect(INGEST_STAGES).toEqual(['find', 'project', 'contracts', 'notices', 'documents', 'texts', 'parse', 'plans', 'chunk', 'embed', 'publish'])
+  })
 })

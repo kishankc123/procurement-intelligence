@@ -1,12 +1,12 @@
 // The events an ingestion run emits, shared by the pipeline (Node) and the card that draws it (browser). Plain types, no logic beyond helpers.
 
-export const INGEST_STAGES = ['find', 'project', 'contracts', 'documents', 'texts', 'parse', 'chunk', 'embed', 'publish'] as const
+export const INGEST_STAGES = ['find', 'project', 'contracts', 'notices', 'documents', 'texts', 'parse', 'plans', 'chunk', 'embed', 'publish'] as const
 export type IngestStage = (typeof INGEST_STAGES)[number]
 
 /** Short names for the stage row of the card. */
 export const INGEST_STAGE_LABEL: Record<IngestStage, string> = {
-  find: 'Find project', project: 'Project record', contracts: 'Contract awards', documents: 'Document list', texts: 'Read texts',
-  parse: 'Parse reports', chunk: 'Chunk', embed: 'Embed', publish: 'Publish',
+  find: 'Find project', project: 'Project record', contracts: 'Contract awards', notices: 'Tenders', documents: 'Document list', texts: 'Read texts',
+  parse: 'Parse reports', plans: 'Plan packages', chunk: 'Chunk', embed: 'Embed', publish: 'Publish',
 }
 
 export type StageStatus = 'pending' | 'running' | 'done' | 'skipped' | 'failed'
@@ -25,7 +25,7 @@ export type IngestEvent =
 export interface IngestSummary {
   projectId: string
   projectName: string
-  counts: { contracts: number; documents: number; documents_with_text: number; chunks: number; supervision_reports: number }
+  counts: { contracts: number; documents: number; documents_with_text: number; chunks: number; supervision_reports: number; plan_packages?: number; tender_notices?: number }
   /** Embedding outcome. `skipped` says why nothing was embedded (no key, nothing to embed). */
   embedding: { status: 'done' | 'skipped'; reason?: string; model?: string; dimensions?: number; vectors?: number; tokens?: number; costUsd?: number; reused?: number } | null
   /** 2D positions of the embedded chunks (PCA), each [x, y] in 0..1, with the document type for colour. Null when nothing was embedded. */

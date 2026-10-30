@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gunzipSync, gzipSync } from 'node:zlib'
+import { parsePlanExtract, planRequest, type PlanExtractor } from './planRows'
 import { HttpError, type Embedder, type PipelineIo } from './pipeline'
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -96,5 +97,38 @@ export async function embedWith(key: string, texts: string[], tries = 3): Promis
       if (i >= tries || (e instanceof Error && e.message.startsWith('The embedding request was refused'))) throw e
       await sleep(1000 * i)
     }
+  }
+}
+
+/**
+ * The model that reads a procurement plan's package table, or null (with the reason) when there is no key. It uses the same OpenAI key as the chat and
+ * the embeddings, and the chat's model name when that is an OpenAI one. What it returns is checked against the document text before anything is kept.
+ */
+export function openAiPlanExtractor(env: Record<string, string | undefined> = process.env): { extractor: PlanExtractor | null; reason?: string } {
+  const key = env.OPENAI_API_KEY
+  if (!key) return { extractor: null, reason: 'OPENAI_API_KEY is not set, so plan tables were not read' }
+  const named = env.OPENAI_MODEL ?? 'openai/gpt-4.1-mini'
+  const model = named.includes('/') ? (named.startsWith('openai/') ? named.slice(7) : 'gpt-4.1-mini') : named
+  return {
+    extractor: {
+      model,
+      async extract(projectId, slice) {
+        for (let attempt = 1; ; attempt++) {
+          try {
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+              method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+              body: JSON.stringify(planRequest(projectId, slice, model)), signal: AbortSignal.timeout(45_000),
+            })
+            if (res.status === 429 || res.status >= 500) throw new Error(`${res.status} ${res.statusText}`)
+            if (!res.ok) throw new Error(`The plan-reading request was refused (${res.status}): ${(await res.text()).slice(0, 200)}`)
+            const body = (await res.json()) as { choices: { message: { content: string } }[]; usage?: { total_tokens: number } }
+            return { data: parsePlanExtract(body.choices[0]!.message.content), tokens: body.usage?.total_tokens ?? 0 }
+          } catch (e) {
+            if (attempt >= 2 || (e instanceof Error && e.message.startsWith('The plan-reading request was refused'))) throw e
+            await sleep(1500)
+          }
+        }
+      },
+    },
   }
 }

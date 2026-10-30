@@ -55,7 +55,12 @@ export async function driveSteps(o: DriveOptions): Promise<StepOutcome> {
   const headers = { 'Content-Type': 'application/json', 'X-Ingest-Token': o.token }
   const post = async (path: string): Promise<Response> => {
     for (let attempt = 1; ; attempt++) {
-      try { return await fetchFn(`${o.base}/ingest/${path}`, { method: 'POST', headers, body: JSON.stringify({ projectId: o.projectId }), signal: o.signal }) } catch (e) {
+      try {
+        const res = await fetchFn(`${o.base}/ingest/${path}`, { method: 'POST', headers, body: JSON.stringify({ projectId: o.projectId }), signal: o.signal })
+        // A step is safe to repeat (what it finished is in the store), so a step that Vercel cut off (502, 503, 504) or turned away (429) is asked again.
+        if (path === 'step' && (res.status === 429 || res.status >= 500) && attempt < 3) { await sleep(1500 * attempt); continue }
+        return res
+      } catch (e) {
         if (o.signal?.aborted) throw e
         if (attempt >= 3) throw e
         await sleep(1500 * attempt)
