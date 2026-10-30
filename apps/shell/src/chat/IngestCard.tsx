@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ASSISTANT_BASE } from '@pi/config'
-import { INGEST_STAGES, INGEST_STAGE_LABEL, type IngestSummary, type ProjectCandidate, type RunView } from '@pi/data'
-import { Badge, Button, CircleAlert, ProvenanceChip } from '@pi/ui'
+import { INGEST_STAGES, INGEST_STAGE_LABEL, useProjects, useUiStore, type IngestSummary, type ProjectCandidate, type RunView } from '@pi/data'
+import { Badge, Button, CircleAlert, CircleCheck, Info, ProvenanceChip } from '@pi/ui'
+import { notify } from '../toasts'
 import { StageDetail, StageRail, VectorMap, VectorStrip } from './IngestViz'
 import { fetchConfig, type IngestConfig } from './ingestClient'
 import { useIngestRun, type RunPhase } from './useIngestRun'
@@ -79,7 +80,7 @@ function Summary({ summary, onSend }: { summary: IngestSummary; onSend: (text: s
 }
 
 /** The live run of one project: stage rail, what each stage is doing, then the "Ready" summary. */
-function RunView_({ projectId, run, phase, problem, lost, onCancel, onRetry, onSend }: { projectId: string; run: RunView; phase: RunPhase; problem: string | null; lost: boolean; onCancel: () => void; onRetry: () => void; onSend: (t: string) => void }) {
+function RunView_({ projectId, run, phase, problem, lost, onCancel, onRetry, onSend, actions = true }: { projectId: string; run: RunView; phase: RunPhase; problem: string | null; lost: boolean; onCancel: () => void; onRetry: () => void; onSend: (t: string) => void; /** False inside the collapsed details, where the card itself offers Retry. */ actions?: boolean }) {
   const live = phase === 'starting' || phase === 'running'
   return (
     <div className={styles.run}>
@@ -88,35 +89,30 @@ function RunView_({ projectId, run, phase, problem, lost, onCancel, onRetry, onS
       {lost && live && <p className={styles.warn} role="alert">The link to the server dropped; reconnecting. If this stays, the server may have restarted. <Button onClick={onRetry}>Start again</Button></p>}
       {problem && <p className={styles.warn} role="alert">{problem}</p>}
       {INGEST_STAGES.map((s) => <StageDetail key={s} stage={s} run={run} />)}
-      {live && <div className={styles.actions}><Button onClick={onCancel}>Cancel</Button></div>}
-      {(phase === 'failed' || phase === 'cancelled') && <div className={styles.actions}><Button variant="primary" onClick={onRetry}>{phase === 'cancelled' ? 'Run again' : 'Retry'}</Button><span className={styles.caption}>Pages and documents already read are kept, so a retry continues where it stopped.</span></div>}
+      {actions && live && <div className={styles.actions}><Button onClick={onCancel}>Cancel</Button></div>}
+      {actions && (phase === 'failed' || phase === 'cancelled') && <div className={styles.actions}><Button variant="primary" onClick={onRetry}>{phase === 'cancelled' ? 'Run again' : 'Retry'}</Button><span className={styles.caption}>Pages and documents already read are kept, so a retry continues where it stopped.</span></div>}
       {run.summary && <Summary summary={run.summary} onSend={onSend} />}
       <span hidden>{projectId}</span>
     </div>
   )
 }
 
-function Candidate({ c, active, busy, blocked, onIngest, onSend, children }: { c: ProjectCandidate; active: boolean; busy: boolean; /** Why ingesting is not possible here, shown as the button's tooltip. */ blocked?: string; onIngest: () => void; onSend: (t: string) => void; children: React.ReactNode }) {
+/** What is on screen while a project is being ingested: one line of loading text. The stages are not drawn; they are in "Details of this ingestion" once it has finished. */
+function Ingesting({ name, lost, onCancel, onRetry }: { name: string; lost: boolean; onCancel: () => void; onRetry: () => void }) {
   return (
-    <li className={`${styles.cand} ${active ? styles.candActive : ''}`}>
-      <div className={styles.candHead}>
-        <div className={styles.candText}>
-          <strong>{c.project_name}</strong>
-          <span className={styles.caption}><span className="mono">{c.project_id}</span> · {c.country} · {c.status}{c.approval_date ? ` · approved ${c.approval_date}` : ''}{c.sector ? ` · ${c.sector}` : ''}</span>
-        </div>
-        {c.stored && <Badge tone="low">Already stored</Badge>}
-        {c.stored
-          ? <div className={styles.actions}><Button onClick={() => onSend(`Show the lifecycle for ${c.project_name} (${c.project_id})`)}>Show lifecycle</Button>{!active && <Button disabled={busy} disabledReason={blocked} onClick={onIngest}>Ingest again</Button>}</div>
-          : !active && <Button variant="primary" disabled={busy} disabledReason={blocked} onClick={onIngest}>Ingest this project</Button>}
-      </div>
-      {children}
-    </li>
+    <div className={styles.loading} role="status" aria-live="polite" aria-busy="true">
+      <span className={styles.spinner} aria-hidden="true" />
+      <span className={styles.loadingText}>Ingesting <strong>{name}</strong><span className={styles.dots} aria-hidden="true"><i>.</i><i>.</i><i>.</i></span> This can take a few minutes.</span>
+      <Button onClick={onCancel}>Cancel</Button>
+      {lost && <span className={styles.warn} role="alert">The link to the server dropped; reconnecting. <Button onClick={onRetry}>Start again</Button></span>}
+    </div>
   )
 }
 
 /**
- * The card for find_world_bank_project: the projects the public World Bank API matched, each with a button that only the user can press.
- * Pressing it starts the run on the assistant server and the card draws it live. The model never starts a run.
+ * The card for find_world_bank_project. It says first that a project that is not in the app has to be ingested (its record, contracts, documents, tenders
+ * and plan), and each such project has a Proceed button that only the user can press. While it runs the card shows one line of loading text; when it
+ * is done a small alert says the project's details are available, and the project becomes the one the conversation is about. The model never starts a run.
  */
 export function IngestCandidates({ result, onSend }: { result: string | undefined; onSend: (text: string) => void }) {
   const found = parse(result)
@@ -124,35 +120,82 @@ export function IngestCandidates({ result, onSend }: { result: string | undefine
   const { run, phase, problem, lost, needsToken, start, submitToken, cancel } = useIngestRun(chosen)
   const candidates = found?.candidates ?? []
   const config = useIngestConfig(candidates.length > 0)
-  const embedding = config?.embedding
+  const known = useProjects().data
+  const setChatProject = useUiStore((st) => st.setChatProject)
   const blocked = config?.mode === 'steps' && config.enabled === false ? (config.reason ?? 'Live ingestion is not switched on for this site.') : undefined
+  const nameOf = (id: string | null) => candidates.find((c) => c.project_id === id)?.project_name ?? id ?? ''
+
+  // Tell the user once when the run they started has finished or failed, wherever they have scrolled to.
+  const told = useRef('')
+  useEffect(() => {
+    if (!chosen || (phase !== 'done' && phase !== 'failed')) return
+    const key = `${chosen}:${phase}`
+    if (told.current === key) return
+    told.current = key
+    if (phase === 'done') {
+      notify({ tone: 'success', title: `${nameOf(chosen)} is ready`, text: 'Its project details, contracts, documents, tenders and plan are now available. Ask me about it.' })
+      setChatProject(chosen)
+    } else notify({ tone: 'error', title: `${nameOf(chosen)} could not be ingested`, text: problem ?? run.error?.message ?? 'Open the card for the reason.' })
+  }, [phase, chosen]) // eslint-disable-line react-hooks/exhaustive-deps -- once per outcome
+
   if (!found) return null
   if (found.error) return <p role="alert" className={styles.warn}>{found.error}</p>
   if (candidates.length === 0) return <p role="status" className={styles.caption}>{found.note ?? 'No World Bank project matched.'}</p>
   const live = phase === 'starting' || phase === 'running'
   const go = (id: string) => { setChosen(id); void start(id) }
+  const available = (c: ProjectCandidate) => c.stored || (known ?? []).some((p) => p.project_id === c.project_id)
+  // A project that has just been ingested no longer needs the explanation.
+  const missing = candidates.filter((c) => !available(c) && !(chosen === c.project_id && phase === 'done'))
   return (
     <section className={styles.card} aria-label="World Bank projects found">
       <header className={styles.cardHead}>
         <h3>World Bank projects matching “{found.query}”</h3>
         <ProvenanceChip kind="public" detail="World Bank Projects API" />
       </header>
+      {missing.length > 0 && (
+        <p className={styles.notice}>
+          <Info size={16} aria-hidden="true" />
+          <span>
+            {missing.length === 1 ? 'This project is not in the app yet.' : 'These projects are not in the app yet.'} Before I can answer questions about {missing.length === 1 ? 'it' : 'one of them'}, I need to ingest it:
+            its project record, contracts, documents (supervision reports, the final report and the procurement plan), tenders and plan. This takes a few minutes. Choose <strong>Proceed</strong> to start, and I will tell you when it is ready.
+          </span>
+        </p>
+      )}
       <ul className={styles.cands}>
-        {candidates.map((c) => (
-          <Candidate key={c.project_id} c={c} active={chosen === c.project_id && phase !== 'idle'} busy={live} blocked={blocked} onIngest={() => go(c.project_id)} onSend={onSend}>
-            {chosen === c.project_id && needsToken && <TokenPrompt projectId={c.project_id} message={problem} onSubmit={(t, id) => { setChosen(id); void submitToken(t, id) }} />}
-            {chosen === c.project_id && phase !== 'idle' && <RunView_ projectId={c.project_id} run={run} phase={phase} problem={problem} lost={lost} onCancel={() => void cancel()} onRetry={() => go(c.project_id)} onSend={onSend} />}
-          </Candidate>
-        ))}
+        {candidates.map((c) => {
+          const mine = chosen === c.project_id
+          const running = mine && live
+          const done = mine && phase === 'done'
+          const failed = mine && (phase === 'failed' || phase === 'cancelled')
+          // Just ingested counts as available at once; the project list catches up a moment later.
+          const here = available(c) || done
+          return (
+            <li key={c.project_id} className={styles.cand}>
+              <div className={styles.candHead}>
+                <div className={styles.candText}>
+                  <strong>{c.project_name}</strong>
+                  <span className={styles.caption}><span className="mono">{c.project_id}</span> · {c.country} · {c.status}{c.approval_date ? ` · approved ${c.approval_date}` : ''}{c.sector ? ` · ${c.sector}` : ''}</span>
+                </div>
+                {here && <Badge tone="low">Available</Badge>}
+                {here && !running && <Button onClick={() => onSend(`Show the lifecycle for ${c.project_name} (${c.project_id})`)}>Show details</Button>}
+                {!here && !running && !needsToken && <Button variant="primary" disabled={live} disabledReason={blocked} onClick={() => go(c.project_id)}>{failed ? 'Try again' : 'Proceed'}</Button>}
+              </div>
+              {running && <Ingesting name={c.project_name} lost={lost} onCancel={() => void cancel()} onRetry={() => go(c.project_id)} />}
+              {mine && needsToken && <TokenPrompt projectId={c.project_id} message={problem} onSubmit={(t, id) => { setChosen(id); void submitToken(t, id) }} />}
+              {done && <p className={styles.readyLine} role="status"><CircleCheck size={16} aria-hidden="true" /> <span><strong>{c.project_name}</strong> is ready. Its project details, contracts, documents, tenders and plan are available now.</span></p>}
+              {failed && <p className={styles.warn} role="alert">{problem ?? run.error?.message ?? 'The ingestion did not finish.'} What was already read is kept, so trying again continues from there.</p>}
+              {mine && (done || failed) && (
+                <details className={styles.more}>
+                  <summary>Details of this ingestion</summary>
+                  <RunView_ projectId={c.project_id} run={run} phase={phase} problem={null} lost={false} actions={false} onCancel={() => undefined} onRetry={() => go(c.project_id)} onSend={onSend} />
+                </details>
+              )}
+            </li>
+          )
+        })}
       </ul>
       {blocked && <p role="status" className={styles.warn}><CircleAlert size={14} aria-hidden="true" /> Live ingestion is not available on this site: {blocked}</p>}
-      <p className={styles.caption}>
-        Ingesting reads the project’s contract awards, documents and supervision reports, splits the document text into chunks{embedding?.available ? ` and embeds them with ${embedding.model} (${embedding.dimensions} numbers per chunk)` : ''}.
-        {config?.mode === 'steps'
-          ? ` On this site the contract awards come from a prebuilt index${config.index ? ` (built ${config.index.built_at.slice(0, 10)})` : ''}, and the run continues over several requests until it is finished; up to ${config.dailyLimit ?? 'a few'} ingestions a day.`
-          : ' The first run reads the whole public contract list and can take several minutes; later runs reuse what was read.'}
-        {embedding && !embedding.available && <> <strong>Embedding is off here:</strong> {embedding.reason}.</>}
-      </p>
+      {config && !config.embedding.available && missing.length > 0 && <p className={styles.caption}>Searching the documents by meaning is off here: {config.embedding.reason}. Keyword search still works.</p>}
     </section>
   )
 }

@@ -142,3 +142,9 @@ export const SPEC_RULES = {
   performanceSecurityPct: { min: 5, max: 10, category: 'Works' },
 } as const
 export { breadcrumbTrail, type Crumb } from './breadcrumbs'
+
+/**
+ * Whether the chat lets a user create or change anything on a project that already exists: a tender draft, the plan and tender rows, a saved plan.
+ * Off: the views of a past project only show what is on record. The editing code is kept, so turning this on brings it back.
+ */
+export const PAST_PROJECTS_EDITABLE = false

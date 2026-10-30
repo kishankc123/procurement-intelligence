@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { can, whyDisabled } from '@pi/config'
+import { PAST_PROJECTS_EDITABLE, can, whyDisabled } from '@pi/config'
 import {
   SPEC_STATUS_LABEL, countryReference, draftComplete, specificationChecks, suggestTenderDraft, tenderCandidates,
   useAllPlans, useChunks, useContracts, useCountryYears, useCreateTenderDraft, useCurrentUser, useDocs, useEnrichments, usePlan, useProject,
@@ -156,8 +156,8 @@ function TenderDraftEditor({ projectId }: { projectId: string }) {
 
 /**
  * The Tender design stage for a project that exists: what its tender draft HAS on record, read only. Nothing is suggested or crafted here.
- * With no draft it says so; the editor (which does suggest) opens only when someone chooses to enter or edit one, and a draft for the
- * user's own procurement is asked for in the chat.
+ * With no draft it says so. Entering or editing a draft for a past project (the editor above) is off while PAST_PROJECTS_EDITABLE is false; a draft for
+ * the user's own procurement is asked for in the chat.
  */
 export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSend: (text: string) => void }) {
   const { role } = useCurrentUser()
@@ -168,7 +168,7 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
   const draft = stored.data[0]
   const allowed = can(role, 'edit_tender_draft')
 
-  if (editing) {
+  if (PAST_PROJECTS_EDITABLE && editing) {
     return (
       <div className={styles.card}>
         <TenderDraftEditor projectId={projectId} />
@@ -180,10 +180,10 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
     return (
       <div className={styles.stack}>
       <Card title="Tender draft on record" aside={<ProvenanceChip kind="missing" />}>
-        <EmptyState title={`No tender draft on record for ${project.project_name}`} text="Nothing is made up for an existing project. Tender clauses are not in the public sources, so they appear only when someone enters them. Any tenders the project published are listed below." />
+        <EmptyState title={`No tender draft on record for ${project.project_name}`} text={PAST_PROJECTS_EDITABLE ? 'Nothing is made up for an existing project. Tender clauses are not in the public sources, so they appear only when someone enters them. Any tenders the project published are listed below.' : 'Tender clauses are not in the public sources, so none are on record for this project and nothing is made up. Any tenders it published are listed below.'} />
         <div className={styles.actions}>
           <Button variant="primary" onClick={() => onSend('Suggest tender clauses for my own procurement')}>Suggest a draft for my own procurement</Button>
-          <Button onClick={() => setEditing(true)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Enter a draft for this project</Button>
+          {PAST_PROJECTS_EDITABLE && <Button onClick={() => setEditing(true)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Enter a draft for this project</Button>}
         </div>
       </Card>
       <TenderNoticesOnRecord projectId={projectId} />
@@ -203,7 +203,7 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
         </tbody>
       </table>
       <div className={styles.actions}>
-        <Button onClick={() => setEditing(true)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Edit this draft</Button>
+        {PAST_PROJECTS_EDITABLE && <Button onClick={() => setEditing(true)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_draft')}>Edit this draft</Button>}
         <Button onClick={() => onSend('Suggest tender clauses for my own procurement')}>Suggest a draft for my own procurement</Button>
       </div>
     </Card>

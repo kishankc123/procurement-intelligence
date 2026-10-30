@@ -10,6 +10,7 @@ import { StepNav } from './StepNav'
 import { FilterRail } from './FilterRail'
 import { Sparkles } from '@pi/ui'
 import { ThemeToggle } from './ThemeToggle'
+import { ToastHost } from './toasts'
 import { Planned } from './pages/Planned'
 import { ProjectData } from './pages/ProjectData'
 import { TenderDesign } from './pages/TenderDesign'
@@ -31,6 +32,7 @@ export function App() {
   return (
     <div className={`${styles.layout} ${railOpen ? styles.layoutRailOpen : ''}`}>
       <FilterRail open={railOpen} onOpenChange={setRailOpen} />
+      <ToastHost />
       <div className={styles.main}>
         <header className={styles.top}>
           <Link to="/" className={styles.brand} aria-label="ProcureIntel, home">

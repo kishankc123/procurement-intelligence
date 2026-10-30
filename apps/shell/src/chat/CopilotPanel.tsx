@@ -4,6 +4,7 @@ import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdat
 import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
+import { CHAT_PANEL_ATTR, scrollChatToLatest } from './chatScroll'
 import { IngestCandidates } from './IngestCard'
 import { MapBlock } from './MapBlock'
 import { CompareProjectsCard } from './CompareCard'
@@ -38,6 +39,8 @@ function useSendToChat() {
     if (agent.isRunning) return
     agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: text })
     void copilotkit.runAgent({ agent })
+    // A click in an earlier card (a donut, a button) adds the message far above the end of the list; bring the view to it.
+    scrollChatToLatest()
   }
 }
 
@@ -256,6 +259,9 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   // Once anyone has said anything, the page gives the chat the room (same as the rule-based chat).
   const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
   const spoken = agent.messages.length > 0
+  // Whenever a message is added (yours or the answer), show it, even if the reader had scrolled up.
+  const messageCount = agent.messages.length
+  useEffect(() => { if (messageCount > 0) return scrollChatToLatest() }, [messageCount])
   useEffect(() => { if (spoken) onEngage() }, [spoken, onEngage])
   const current = (projects.data ?? []).find((p) => p.project_id === chatProjectId)
   useAgentContext({
@@ -283,7 +289,7 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   const prompts = suggestedPrompts(projects.data ?? [])
   useConfigureSuggestions({ suggestions: prompts, available: 'before-first-message' }, [prompts.map((p) => p.message).join('|')])
   return (
-    <div className={styles.panel} onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) onEngage() }}>
+    <div className={styles.panel} {...{ [CHAT_PANEL_ATTR]: '' }} onFocusCapture={(e) => { if (e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement) onEngage() }}>
       <div className={styles.lcBar}>
         <span className={styles.ctx} role="status">
           {current

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PAST_PROJECTS_EDITABLE } from '@pi/config'
 import { useDeletePlan, useMeta, usePlan, useProject } from '@pi/data'
 import { Card, ConfirmDeleteDialog, EmptyState, ProvenanceChip } from '@pi/ui'
 import { PlanAgenda } from './PlanAgenda'
@@ -34,12 +35,12 @@ export default function PlanningCard({ projectId }: { projectId: string }) {
         <ProvenanceChip kind="entered" />
       </p>
       {asOf && <PlanAgenda compact plans={plans} asOf={asOf} />}
-      <PlanList compact plans={plans} selectedId={selectedId} onSelect={setSelectedId} onEdit={setEditingId} onDelete={setDeletingId} />
-      {deleting && (
+      <PlanList compact plans={plans} selectedId={selectedId} onSelect={setSelectedId} onEdit={PAST_PROJECTS_EDITABLE ? setEditingId : undefined} onDelete={PAST_PROJECTS_EDITABLE ? setDeletingId : undefined} />
+      {PAST_PROJECTS_EDITABLE && deleting && (
         <ConfirmDeleteDialog open onOpenChange={(o) => { if (!o) setDeletingId(null) }} what="plan" detail={`${deleting.name} (${deleting.id})`} pending={remove.isPending}
           onConfirm={() => remove.mutate(deleting, { onSuccess: () => { setDeletingId(null); setSelectedId(null) } })} />
       )}
-      {editing && <EditPlanDialog plan={editing} open onOpenChange={(o) => { if (!o) setEditingId(null) }} onDeleted={() => { setEditingId(null); setSelectedId(null) }} />}
+      {PAST_PROJECTS_EDITABLE && editing && <EditPlanDialog plan={editing} open onOpenChange={(o) => { if (!o) setEditingId(null) }} onDeleted={() => { setEditingId(null); setSelectedId(null) }} />}
     </div>
   )
 }

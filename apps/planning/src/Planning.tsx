@@ -69,7 +69,7 @@ function StageTable({ plan }: { plan: Plan }) {
 }
 
 /** The dropdown under a plan row: read-only stage timeline, with Edit plan, Full details and Close at the bottom. */
-function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: () => void; onFull?: () => void; onClose: () => void }) {
+function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; /** Absent in a read-only list: there is then no Edit plan button. */ onEdit?: () => void; onFull?: () => void; onClose: () => void }) {
   const { role } = useCurrentUser()
   const allowed = can(role, 'edit_plan')
   return (
@@ -80,7 +80,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
       </div>
       <StageTable plan={plan} />
       <div className={styles.row}>
-        <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>
+        {onEdit && <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>}
         {onFull && <Button onClick={onFull}>Full details</Button>}
         <Button variant="danger" onClick={onClose}>Close</Button>
       </div>
@@ -134,14 +134,15 @@ export function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: 
 }
 
 /** The plans table. `onFull` is optional (the chat has no full-details page); `compact` drops the category and method columns for narrow places. */
-export function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete, compact }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull?: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string) => void; compact?: boolean }) {
+export function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete, compact }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull?: (id: string) => void; /** Leave out onEdit and onDelete for a read-only list: the Actions column and the Edit plan button are then not drawn. */ onEdit?: (id: string) => void; onDelete?: (id: string) => void; compact?: boolean }) {
+  const readOnly = !onEdit && !onDelete
   const { role } = useCurrentUser()
   const allowed = can(role, 'edit_plan')
   return (
     <Card title="Plans" downloadName="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
         <Paged items={plans} label="plans">{(pageRows) =><table className={`${styles.table} ${styles.plans}`}>
-          <thead><tr><th>Plan</th>{!compact && <><th>Category</th><th>Method</th></>}<th>Advertisement</th><th>Signing</th><th>Days to sign</th><th aria-label="Actions" /></tr></thead>
+          <thead><tr><th>Plan</th>{!compact && <><th>Category</th><th>Method</th></>}<th>Advertisement</th><th>Signing</th><th>Days to sign</th>{!readOnly && <th aria-label="Actions" />}</tr></thead>
           <tbody>
             {pageRows.map((p) => (
               <Fragment key={p.id}>
@@ -157,14 +158,14 @@ export function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete
                 <td className={`mono ${styles.nowrap}`} data-label="Advertisement">{p.planned_advertisement}</td>
                 <td className={`mono ${styles.nowrap}`} data-label="Signing">{p.planned_signing}</td>
                 <td className={`mono ${styles.nowrap}`} data-label="Days to sign">{plannedDurations(p).advertisementToSigning}</td>
-                <td onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                  <DeleteButton onClick={() => onDelete(p.id)} disabledReason={allowed ? undefined : whyDisabled('edit_plan')} />
-                </td>
+                {!readOnly && <td onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                  {onDelete && <DeleteButton onClick={() => onDelete(p.id)} disabledReason={allowed ? undefined : whyDisabled('edit_plan')} />}
+                </td>}
               </tr>
               {p.id === selectedId && (
                 <tr>
-                  <td colSpan={compact ? 5 : 7} className={styles.expandedCell}>
-                    <PlanTimeline plan={p} onEdit={() => onEdit(p.id)} onFull={onFull ? () => onFull(p.id) : undefined} onClose={() => onSelect(null)} />
+                  <td colSpan={(compact ? 5 : 7) - (readOnly ? 1 : 0)} className={styles.expandedCell}>
+                    <PlanTimeline plan={p} onEdit={onEdit ? () => onEdit(p.id) : undefined} onFull={onFull ? () => onFull(p.id) : undefined} onClose={() => onSelect(null)} />
                   </td>
                 </tr>
               )}

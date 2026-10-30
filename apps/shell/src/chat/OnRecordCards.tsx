@@ -1,5 +1,5 @@
 import { Fragment, useState } from 'react'
-import { can, whyDisabled } from '@pi/config'
+import { PAST_PROJECTS_EDITABLE, can, whyDisabled } from '@pi/config'
 import { useCurrentUser, usePlanPackages, useProject, useSavePlanPackage, useSaveTenderNotice, useTenderNotices, type PlanPackage, type TenderNotice } from '@pi/data'
 import { Badge, Button, Card, ProvenanceChip } from '@pi/ui'
 import { EditRowDialog, type EditField } from './EditRowDialog'
@@ -69,7 +69,7 @@ export function PlanOnRecord({ projectId }: { projectId: string }) {
                               <div className={styles.expandedHead}>
                                 <strong>{r.ref_no ?? r.id}</strong>
                                 <span>
-                                  <Button onClick={() => setEditing(r)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit</Button>{' '}
+                                  {PAST_PROJECTS_EDITABLE && <><Button onClick={() => setEditing(r)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit</Button>{' '}</>}
                                   <Button onClick={() => setSelectedId(null)}>Close</Button>
                                 </span>
                               </div>
@@ -89,9 +89,9 @@ export function PlanOnRecord({ projectId }: { projectId: string }) {
               </tbody>
             </table>
           </div>
-        <p className={styles.sub}>Each row is a package in the plan. The plan holds more packages than these first rows, and the oldest often come first. Click a row to see its details and edit it.</p>
+        <p className={styles.sub}>Each row is a package in the plan. The plan holds more packages than these first rows, and the oldest often come first. Click a row to see its details{PAST_PROJECTS_EDITABLE ? ' and edit it' : ''}.</p>
       </Card>
-      {editing && (
+      {PAST_PROJECTS_EDITABLE && editing && (
         <EditRowDialog open onOpenChange={(o) => { if (!o) setEditing(null) }} title="Edit plan row" description={`${editing.ref_no ?? 'Row'} · saved as entered by you, the document is not changed`}
           fields={PLAN_FIELDS} row={editing as unknown as Record<string, unknown>} pending={save.isPending}
           onSave={(next) => save.mutate(next as unknown as PlanPackage, { onSuccess: () => setEditing(null) })} />
@@ -142,7 +142,7 @@ export function TenderNoticesOnRecord({ projectId }: { projectId: string }) {
                               <div className={styles.expandedHead}>
                                 <strong>{n.reference || n.id}</strong>
                                 <span>
-                                  <Button onClick={() => setEditing(n)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_facts')}>Edit</Button>{' '}
+                                  {PAST_PROJECTS_EDITABLE && <><Button onClick={() => setEditing(n)} disabled={!allowed} disabledReason={allowed ? undefined : whyDisabled('edit_tender_facts')}>Edit</Button>{' '}</>}
                                   <Button onClick={() => setSelectedId(null)}>Close</Button>
                                 </span>
                               </div>
@@ -162,9 +162,9 @@ export function TenderNoticesOnRecord({ projectId }: { projectId: string }) {
               </tbody>
             </table>
           </div>
-        <p className={styles.sub}>Invitation for Bids notices. Bid validity, security and the other clauses are in the bidding documents, which are not in these notices. Click a row to see its details and edit it.</p>
+        <p className={styles.sub}>Invitation for Bids notices. Bid validity, security and the other clauses are in the bidding documents, which are not in these notices. Click a row to see its details{PAST_PROJECTS_EDITABLE ? ' and edit it' : ''}.</p>
       </Card>
-      {editing && (
+      {PAST_PROJECTS_EDITABLE && editing && (
         <EditRowDialog open onOpenChange={(o) => { if (!o) setEditing(null) }} title="Edit tender notice" description={`${editing.id} · saved as entered by you, the World Bank notice is not changed`}
           fields={TENDER_FIELDS} row={editing as unknown as Record<string, unknown>} pending={save.isPending}
           onSave={(next) => save.mutate(next as unknown as TenderNotice, { onSuccess: () => setEditing(null) })} />
