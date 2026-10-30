@@ -1,5 +1,5 @@
 // Builds the contract index (see contractIndex.ts) from the public contract-awards list.
-//   pnpm ingest:index            writes to Vercel Blob when BLOB_READ_WRITE_TOKEN is set (in .env.local or the environment), otherwise to ingest/cache/store
+//   pnpm ingest:index            writes to Vercel Blob when BLOB_READ_WRITE_TOKEN, or BLOB_STORE_ID with VERCEL_OIDC_TOKEN, is set (in .env.local or the environment), otherwise to ingest/cache/store
 //   pnpm ingest:index --files    always write to ingest/cache/store (the local server uses it to skip the scan)
 // It reads every page of the list (the first time; pages are cached in ingest/cache), so it takes a few minutes and a few hundred MB of memory.
 import { join } from 'node:path'

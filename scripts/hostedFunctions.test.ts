@@ -24,7 +24,7 @@ const serve = (handler: (req: any, res: any) => unknown) => new Promise<{ server
 })
 
 beforeAll(async () => {
-  delete process.env.INGEST_TOKEN; delete process.env.BLOB_READ_WRITE_TOKEN
+  delete process.env.INGEST_TOKEN; delete process.env.BLOB_READ_WRITE_TOKEN; delete process.env.BLOB_STORE_ID
   const ingestHandler = (await import(pathToFileURL(root + 'api/ingest/[...path].mjs').href)).default
   const jsonHandler = createRequire(import.meta.url)(root + 'api/[...path].js')
   ;({ server: ingest, base: ingestBase } = await serve(ingestHandler))

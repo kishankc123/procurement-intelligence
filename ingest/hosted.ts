@@ -15,10 +15,13 @@ import { blobStore, getJson, putJson, storeCache, type BlobSdk, type Store } fro
 
 export type Env = Record<string, string | undefined>
 
-/** Vercel Blob as a Store when a Blob store is connected to the project (BLOB_READ_WRITE_TOKEN), otherwise null. */
+/** True when a Blob store is connected: a read-write token, or a store id (the newer sign-in, used with Vercel's short-lived token). */
+export const hasBlobStore = (env: Env) => Boolean(env.BLOB_READ_WRITE_TOKEN || env.BLOB_STORE_ID)
+
+/** Vercel Blob as a Store when a Blob store is connected to the project, otherwise null. */
 export async function blobStoreFromEnv(env: Env): Promise<Store | null> {
+  if (!hasBlobStore(env)) return null
   const token = env.BLOB_READ_WRITE_TOKEN
-  if (!token) return null
   const blob = await import('@vercel/blob')
   // Assigned without a cast, so the compiler checks the SDK against the parts of it this code relies on.
   const sdk: BlobSdk = { put: blob.put, get: blob.get, list: blob.list }
@@ -143,7 +146,7 @@ export function createHosted(deps: HostedDeps) {
       storage: Boolean(store), index: index ? { built_at: index.built_at, projects: index.projects, records: index.records } : null,
       dailyLimit,
       embedding: embedder ? { available: true, model: EMBED_MODEL, dimensions: EMBED_DIMENSIONS } : { available: false, reason },
-      reason: !env.INGEST_TOKEN ? 'INGEST_TOKEN is not set.' : !store ? 'No Blob store is connected (BLOB_READ_WRITE_TOKEN is not set).' : !index ? 'The contract index has not been built (run pnpm ingest:index).' : undefined,
+      reason: !env.INGEST_TOKEN ? 'INGEST_TOKEN is not set.' : !store ? 'No Blob store is connected (neither BLOB_READ_WRITE_TOKEN nor BLOB_STORE_ID is set).' : !index ? 'The contract index has not been built (run pnpm ingest:index).' : undefined,
     } }
   }
 
@@ -153,7 +156,7 @@ export function createHosted(deps: HostedDeps) {
     const projectId = (req.body as { projectId?: unknown } | null)?.projectId
     if (typeof projectId !== 'string' || !isProjectId(projectId)) return { status: 400, body: { error: 'A World Bank project id looks like P158504 (the letter P and six digits).' } }
     const store = await deps.store()
-    if (!store) return { status: 503, body: { error: 'No Blob store is connected to this deployment (BLOB_READ_WRITE_TOKEN is not set).' } }
+    if (!store) return { status: 503, body: { error: 'No Blob store is connected to this deployment (neither BLOB_READ_WRITE_TOKEN nor BLOB_STORE_ID is set).' } }
     if (!(await readIndexMeta(store))) return { status: 409, body: { error: 'The contract index has not been built, so a project cannot be ingested here yet. Run `pnpm ingest:index` with the Blob token.' } }
     // A soft daily limit on runs started. Two starts at the same moment can both pass; the cap on chunks per project bounds what a run costs.
     const key = `quota/${today(now())}.json`

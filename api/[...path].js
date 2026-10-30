@@ -11,8 +11,8 @@ server.use(jsonServer.defaults({ logger: false, noGzip: true }))
 server.use('/api', jsonServer.router(db))
 
 module.exports = async function handler(req, res) {
-  // Without a connected Blob store (BLOB_READ_WRITE_TOKEN) there is nothing to merge, and the import is skipped.
-  if (process.env.BLOB_READ_WRITE_TOKEN) {
+  // Without a connected Blob store (BLOB_READ_WRITE_TOKEN or BLOB_STORE_ID) there is nothing to merge, and the import is skipped.
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) {
     try { await (await import('./_lib/ingest.mjs')).dbWithIngested(db) } catch (e) { console.error('Could not merge ingested projects', e) }
   }
   return server(req, res)

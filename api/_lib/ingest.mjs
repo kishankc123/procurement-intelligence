@@ -101,11 +101,12 @@ async function getJson(s, key) {
 }
 var putJson = (s, key, value) => s.put(key, JSON.stringify(value));
 function blobStore(sdk, token, access = "private") {
+  const auth = token ? { token } : {};
   return {
     async get(key) {
       let r;
       try {
-        r = await sdk.get(checkKey(key), { token, access, useCache: false });
+        r = await sdk.get(checkKey(key), { ...auth, access, useCache: false });
       } catch (e) {
         if (e instanceof Error && (e.name === "BlobNotFoundError" || /not exist|not found/i.test(e.message))) return null;
         throw e;
@@ -114,13 +115,13 @@ function blobStore(sdk, token, access = "private") {
       return new Uint8Array(await new Response(r.stream).arrayBuffer());
     },
     async put(key, data) {
-      await sdk.put(checkKey(key), typeof data === "string" ? data : Buffer.from(data), { token, access, addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60, contentType: key.endsWith(".json") ? "application/json" : "application/octet-stream" });
+      await sdk.put(checkKey(key), typeof data === "string" ? data : Buffer.from(data), { ...auth, access, addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60, contentType: key.endsWith(".json") ? "application/json" : "application/octet-stream" });
     },
     async list(prefix) {
       const out = [];
       let cursor;
       do {
-        const page = await sdk.list({ token, prefix, cursor, limit: 1e3 });
+        const page = await sdk.list({ ...auth, prefix, cursor, limit: 1e3 });
         out.push(...page.blobs.map((b) => ({ key: b.pathname, size: b.size, uploadedAt: new Date(b.uploadedAt).getTime() })));
         cursor = page.hasMore ? page.cursor : void 0;
       } while (cursor);
@@ -761,9 +762,10 @@ async function scanContracts(projectId, io, pageSize, concurrency, emit, alive) 
 }
 
 // ingest/hosted.ts
+var hasBlobStore = (env) => Boolean(env.BLOB_READ_WRITE_TOKEN || env.BLOB_STORE_ID);
 async function blobStoreFromEnv(env) {
+  if (!hasBlobStore(env)) return null;
   const token = env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return null;
   const blob = await import("@vercel/blob");
   const sdk = { put: blob.put, get: blob.get, list: blob.list };
   return blobStore(sdk, token, env.INGEST_BLOB_ACCESS === "public" ? "public" : "private");
@@ -870,7 +872,7 @@ function createHosted(deps) {
       index: index ? { built_at: index.built_at, projects: index.projects, records: index.records } : null,
       dailyLimit,
       embedding: embedder ? { available: true, model: EMBED_MODEL, dimensions: EMBED_DIMENSIONS } : { available: false, reason },
-      reason: !env.INGEST_TOKEN ? "INGEST_TOKEN is not set." : !store ? "No Blob store is connected (BLOB_READ_WRITE_TOKEN is not set)." : !index ? "The contract index has not been built (run pnpm ingest:index)." : void 0
+      reason: !env.INGEST_TOKEN ? "INGEST_TOKEN is not set." : !store ? "No Blob store is connected (neither BLOB_READ_WRITE_TOKEN nor BLOB_STORE_ID is set)." : !index ? "The contract index has not been built (run pnpm ingest:index)." : void 0
     } };
   }
   async function start(req) {
@@ -879,7 +881,7 @@ function createHosted(deps) {
     const projectId = req.body?.projectId;
     if (typeof projectId !== "string" || !isProjectId(projectId)) return { status: 400, body: { error: "A World Bank project id looks like P158504 (the letter P and six digits)." } };
     const store = await deps.store();
-    if (!store) return { status: 503, body: { error: "No Blob store is connected to this deployment (BLOB_READ_WRITE_TOKEN is not set)." } };
+    if (!store) return { status: 503, body: { error: "No Blob store is connected to this deployment (neither BLOB_READ_WRITE_TOKEN nor BLOB_STORE_ID is set)." } };
     if (!await readIndexMeta(store)) return { status: 409, body: { error: "The contract index has not been built, so a project cannot be ingested here yet. Run `pnpm ingest:index` with the Blob token." } };
     const key = `quota/${today(now())}.json`;
     const used = (await getJson(store, key))?.started ?? 0;
@@ -990,6 +992,7 @@ export {
   createIngestedSync,
   dbWithIngested,
   getHosted,
+  hasBlobStore,
   indexedProjectsInStore,
   loadEmbeddingsFromStore,
   publishToStore

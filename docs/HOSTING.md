@@ -13,16 +13,22 @@ Locally, ingestion runs inside the assistant server (`pnpm assistant`) and write
 
 ## Set-up
 
-1. In the Vercel dashboard, open the project, then **Storage**, and create or connect a **Blob** store. Note whether it is **private** or **public**. This sets `BLOB_READ_WRITE_TOKEN` for the project.
+1. In the Vercel dashboard, open the project, then **Storage**, and create or connect a **Blob** store. Note whether it is **private** or **public**. Connecting it sets either `BLOB_READ_WRITE_TOKEN` (a long-lived secret) or, on newer stores, `BLOB_STORE_ID` (the store's id, used with Vercel's short-lived sign-in token). Both work here.
 2. In **Settings, Environment Variables**, add `INGEST_TOKEN` (a long random string), keep `OPENAI_API_KEY` (already used by the chat), and add `INGEST_BLOB_ACCESS=public` only if the store is public (the default is private).
-3. Build the contract index once, from a computer with network access:
+3. Build the contract index once, from a computer with network access. `vercel env pull` replaces the whole of `.env.local`, so pull to a temporary file and copy only the lines you need:
    ```bash
-   vercel env pull .env.local
+   vercel env pull /tmp/vercel.env
+   ```
+   ```bash
+   grep -E '^(BLOB_READ_WRITE_TOKEN|BLOB_STORE_ID|VERCEL_OIDC_TOKEN)=' /tmp/vercel.env >> .env.local
+   ```
+   ```bash
+   rm /tmp/vercel.env
    ```
    ```bash
    pnpm ingest:index
    ```
-   (It writes to Blob when `BLOB_READ_WRITE_TOKEN` is in `.env.local`, otherwise to `ingest/cache/store`. It reads every page of the public list and needs a few hundred MB of memory.)
+   With a store id (no read-write token) the script signs in with `VERCEL_OIDC_TOKEN`, which lasts about 12 hours, and refreshes it itself when the project is linked (`vercel link`). If you get an authentication error, pull again and replace that line. The script writes to Blob when it finds credentials, otherwise to `ingest/cache/store`. It reads every page of the public list and needs a few hundred MB of memory.
 4. Deploy. Open the chat, ask about a World Bank project that is not stored, press **Ingest this project**, enter the token.
 
 ## Function limits to check

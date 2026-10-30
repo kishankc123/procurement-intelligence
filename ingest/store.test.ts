@@ -66,6 +66,7 @@ describe('blobStore (against a fake SDK)', () => {
       async put(path, body, opts) { calls.push({ fn: 'put', args: [path, opts] }); blobs.set(path, { body: typeof body === 'string' ? new TextEncoder().encode(body) : new Uint8Array(body), at: new Date(1000 + blobs.size) }) },
       async get(path, opts) { calls.push({ fn: 'get', args: [path, opts] }); const b = blobs.get(path); return b ? { stream: new Response(b.body as BodyInit).body } : null },
       async list(opts) {
+        calls.push({ fn: 'list', args: [opts] })
         const all = [...blobs].filter(([p]) => p.startsWith(String(opts.prefix))).map(([pathname, v]) => ({ pathname, size: v.body.length, uploadedAt: v.at }))
         const from = opts.cursor ? Number(opts.cursor) : 0, size = 2
         return { blobs: all.slice(from, from + size), hasMore: from + size < all.length, cursor: String(from + size) }
@@ -79,6 +80,11 @@ describe('blobStore (against a fake SDK)', () => {
     expect(f.calls[0]).toMatchObject({ fn: 'put', args: ['ingested/P1.json', expect.objectContaining({ token: 'tok', access: 'private', addRandomSuffix: false, allowOverwrite: true, contentType: 'application/json' })] })
     expect(await getJson(s, 'ingested/P1.json')).toEqual({ a: 2 })
     expect(f.calls.at(-1)).toMatchObject({ fn: 'get', args: ['ingested/P1.json', { token: 'tok', access: 'private', useCache: false }] })
+  })
+  it('sends no token when it has none, so the SDK signs in with the store id and Vercel\'s token', async () => {
+    const f = fake(); const s = blobStore(f.sdk, undefined)
+    await s.put('a.json', '1'); await s.get('a.json'); await s.list('a')
+    for (const c of f.calls) expect(c.args[c.fn === 'list' ? 0 : 1]).not.toHaveProperty('token')
   })
   it('uses the access mode of the store it was given', async () => {
     const f = fake(); const s = blobStore(f.sdk, 'tok', 'public')

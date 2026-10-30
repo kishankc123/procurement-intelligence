@@ -57,10 +57,10 @@ export function fileStore(root: string): Store {
 
 /** The parts of @vercel/blob (2.x) used here, with the options this code passes. The real SDK is assigned to this without a cast (see hosted.ts), so the compiler checks it. */
 export interface BlobSdk {
-  put(pathname: string, body: string | Buffer, opts: { token: string; access: 'private' | 'public'; addRandomSuffix: boolean; allowOverwrite: boolean; cacheControlMaxAge: number; contentType: string }): Promise<unknown>
+  put(pathname: string, body: string | Buffer, opts: { token?: string; access: 'private' | 'public'; addRandomSuffix: boolean; allowOverwrite: boolean; cacheControlMaxAge: number; contentType: string }): Promise<unknown>
   /** Resolves to null when the blob does not exist. The stream is null when the server answers "not modified". */
-  get(pathname: string, opts: { token: string; access: 'private' | 'public'; useCache: boolean }): Promise<{ stream: ReadableStream<Uint8Array> | null } | null>
-  list(opts: { token: string; prefix: string; cursor?: string; limit: number }): Promise<{ blobs: { pathname: string; size: number; uploadedAt: Date | string }[]; cursor?: string; hasMore?: boolean }>
+  get(pathname: string, opts: { token?: string; access: 'private' | 'public'; useCache: boolean }): Promise<{ stream: ReadableStream<Uint8Array> | null } | null>
+  list(opts: { token?: string; prefix: string; cursor?: string; limit: number }): Promise<{ blobs: { pathname: string; size: number; uploadedAt: Date | string }[]; cursor?: string; hasMore?: boolean }>
 }
 
 /**
@@ -68,11 +68,13 @@ export interface BlobSdk {
  * overwritten (a job's cache entry, the index of ingested projects) is never read back stale. `access` must match how the Blob store was created in
  * the Vercel dashboard: a private store needs 'private' (the default here; nothing is world-readable), a public one needs 'public'.
  */
-export function blobStore(sdk: BlobSdk, token: string, access: 'private' | 'public' = 'private'): Store {
+export function blobStore(sdk: BlobSdk, token: string | undefined, access: 'private' | 'public' = 'private'): Store {
+  // With no token the SDK signs in with the store id (BLOB_STORE_ID) and Vercel's short-lived token, which a Vercel function gets by itself.
+  const auth = token ? { token } : {}
   return {
     async get(key) {
       let r
-      try { r = await sdk.get(checkKey(key), { token, access, useCache: false }) } catch (e) {
+      try { r = await sdk.get(checkKey(key), { ...auth, access, useCache: false }) } catch (e) {
         if (e instanceof Error && (e.name === 'BlobNotFoundError' || /not exist|not found/i.test(e.message))) return null
         throw e
       }
@@ -80,13 +82,13 @@ export function blobStore(sdk: BlobSdk, token: string, access: 'private' | 'publ
       return new Uint8Array(await new Response(r.stream).arrayBuffer())
     },
     async put(key, data) {
-      await sdk.put(checkKey(key), typeof data === 'string' ? data : Buffer.from(data), { token, access, addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60, contentType: key.endsWith('.json') ? 'application/json' : 'application/octet-stream' })
+      await sdk.put(checkKey(key), typeof data === 'string' ? data : Buffer.from(data), { ...auth, access, addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60, contentType: key.endsWith('.json') ? 'application/json' : 'application/octet-stream' })
     },
     async list(prefix) {
       const out: StoreEntry[] = []
       let cursor: string | undefined
       do {
-        const page = await sdk.list({ token, prefix, cursor, limit: 1000 })
+        const page = await sdk.list({ ...auth, prefix, cursor, limit: 1000 })
         out.push(...page.blobs.map((b) => ({ key: b.pathname, size: b.size, uploadedAt: new Date(b.uploadedAt).getTime() })))
         cursor = page.hasMore ? page.cursor : undefined
       } while (cursor)

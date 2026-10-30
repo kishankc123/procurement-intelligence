@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     }
     // Projects ingested on the hosted site live in the Blob store; they are merged into this copy of the data before each call (at most every few seconds),
     // and the chat gets the project search and the search by meaning that use the same store.
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
+    if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) {
       const ingest = await import('../_lib/ingest.mjs')
       await ingest.dbWithIngested(loadDb())
       listener ??= (await import('../_lib/copilot.mjs')).createCopilotListener(loadDb, ingest.getHosted(process.env).copilotExtras())

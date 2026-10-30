@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { IngestEvent } from '../packages/data/src/ingestEvents'
 import { buildContractIndex } from './contractIndex'
 import { fakeEmbedder, fixtureIo, FIXTURE_ID } from './fixtures'
-import { createHosted, createIngestedSync, indexedProjectsInStore, loadEmbeddingsFromStore, type HostedResponse } from './hosted'
+import { blobStoreFromEnv, createHosted, createIngestedSync, hasBlobStore, indexedProjectsInStore, loadEmbeddingsFromStore, type HostedResponse } from './hosted'
 import { memoryStore, putJson, type Store } from './store'
 
 const TOKEN = 'secret-token'
@@ -173,5 +173,18 @@ describe('what the rest of the app reads from the store', () => {
     expect(typeof extras.findProjects).toBe('function')
     await putJson(w.store, 'x/y.json', {})
     expect(await extras.semantic.indexedProjects()).toEqual([FIXTURE_ID])
+  })
+})
+
+describe('which Blob credentials count as a connected store', () => {
+  it('accepts a read-write token or a store id, and nothing else', async () => {
+    expect(hasBlobStore({ BLOB_READ_WRITE_TOKEN: 'x' })).toBe(true)
+    expect(hasBlobStore({ BLOB_STORE_ID: 'store_abc' })).toBe(true)
+    expect(hasBlobStore({ BLOB_WEBHOOK_PUBLIC_KEY: 'k' })).toBe(false)
+    expect(hasBlobStore({})).toBe(false)
+    expect(await blobStoreFromEnv({})).toBeNull()
+    expect(await blobStoreFromEnv({ BLOB_WEBHOOK_PUBLIC_KEY: 'k' })).toBeNull()
+    expect(await blobStoreFromEnv({ BLOB_STORE_ID: 'store_abc' })).not.toBeNull() // built, no network call
+    expect(await blobStoreFromEnv({ BLOB_READ_WRITE_TOKEN: 'vercel_blob_rw_x', INGEST_BLOB_ACCESS: 'public' })).not.toBeNull()
   })
 })
