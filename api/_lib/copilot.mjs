@@ -543,6 +543,128 @@ var LEARNING_OPTIONS = [
   { id: "learning-figures", title: "Learning figures", what: "How many pieces of feedback came in, how many were reviewed and how many accepted, worked out from the queue.", uses: "The feedback queue" }
 ];
 
+// server/semantic.ts
+import { readdirSync } from "node:fs";
+
+// packages/data/src/vectors.ts
+function unpackVectors(bytes, count, dimensions) {
+  if (bytes.length !== count * 4 + count * dimensions) throw new Error("Vector file does not match its manifest");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  return Array.from({ length: count }, (_, i) => {
+    const scale = view.getFloat32(i * 4, true) / 127;
+    const out = new Float32Array(dimensions);
+    const base = count * 4 + i * dimensions;
+    let sum = 0;
+    for (let d = 0; d < dimensions; d++) {
+      const x = view.getInt8(base + d) * scale;
+      out[d] = x;
+      sum += x * x;
+    }
+    const norm = Math.sqrt(sum) || 1;
+    for (let d = 0; d < dimensions; d++) out[d] /= norm;
+    return out;
+  });
+}
+var dot = (a, b) => {
+  let s = 0;
+  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
+  return s;
+};
+function normalise(v) {
+  const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1;
+  return Float32Array.from(v, (x) => x / norm);
+}
+function topK(query, vectors, k) {
+  return vectors.map((v, index) => ({ index, score: dot(query, v) })).sort((a, b) => b.score - a.score || a.index - b.index).slice(0, Math.max(0, k));
+}
+function fuseRanks(lists, k = 60) {
+  const score = /* @__PURE__ */ new Map();
+  for (const list of lists) list.forEach((id, rank) => score.set(id, (score.get(id) ?? 0) + 1 / (k + rank + 1)));
+  return [...score].map(([id, s]) => ({ id, score: s })).sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+}
+
+// ingest/publish.ts
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join as join2 } from "node:path";
+
+// ingest/nodeIo.ts
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+var ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+var CACHE_DIR = join(ROOT, "ingest", "cache");
+
+// ingest/publish.ts
+var DEFAULT_DIRS = { snapshots: join2(ROOT, "mock", "ingested"), embeddings: join2(ROOT, "mock", "embeddings"), db: join2(ROOT, "mock", "db.json") };
+function loadEmbeddings(projectId, dir = DEFAULT_DIRS.embeddings) {
+  const json = join2(dir, `${projectId}.json`), bin = join2(dir, `${projectId}.bin`);
+  if (!existsSync(json) || !existsSync(bin)) return null;
+  try {
+    const manifest = JSON.parse(readFileSync(json, "utf8"));
+    return { manifest, vectors: unpackVectors(new Uint8Array(readFileSync(bin)), manifest.count, manifest.dimensions) };
+  } catch {
+    return null;
+  }
+}
+
+// server/semantic.ts
+var MIN_SIMILARITY = 0.3;
+var indexedProjectIds = (dir = DEFAULT_DIRS.embeddings) => {
+  try {
+    return readdirSync(dir).filter((f) => f.endsWith(".bin")).map((f) => f.slice(0, -4));
+  } catch {
+    return [];
+  }
+};
+async function semanticSearch(db, query, deps, projectId, limit = 5) {
+  const keyword = searchDocuments(db, query, projectId, limit * 3);
+  const keywordHits = typeof keyword.results === "string" ? [] : keyword.results;
+  const load = deps.loadIndex ?? ((id) => loadEmbeddings(id));
+  const candidates = projectId ? [projectId] : (deps.indexedProjects ?? indexedProjectIds)().filter((id) => db.projects.some((p) => p.project_id === id));
+  const indexes = candidates.map((id) => ({ id, index: load(id) })).filter((x) => x.index !== null);
+  if (indexes.length === 0) {
+    return { results: keyword.results, method: "keywords only", note: projectId ? `${projectId} has no embedded chunks, so only keywords were used.` : "No project has embedded chunks yet, so only keywords were used." };
+  }
+  let q;
+  try {
+    q = normalise(await deps.embedQuery(query));
+  } catch (e) {
+    return { results: keyword.results, method: "keywords only", note: `The question could not be embedded (${e instanceof Error ? e.message : e}), so only keywords were used.` };
+  }
+  const min = deps.minSimilarity ?? MIN_SIMILARITY;
+  const similarity = /* @__PURE__ */ new Map();
+  for (const { index } of indexes) {
+    if (index.manifest.dimensions !== q.length) continue;
+    for (const hit of topK(q, index.vectors, limit * 3)) similarity.set(index.manifest.chunk_ids[hit.index], hit.score);
+  }
+  const byMeaning = [...similarity].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+  const byKeywords = keywordHits.map((h) => h.chunk_id);
+  const keywordSet = new Set(byKeywords);
+  const fused = fuseRanks([byMeaning, byKeywords]).filter(({ id }) => keywordSet.has(id) || (similarity.get(id) ?? 0) >= min).slice(0, Math.min(Math.max(limit, 1), 8));
+  if (fused.length === 0) return { results: "No supporting evidence found in the ingested documents.", method: "meaning+keywords" };
+  const chunks = new Map(db.chunks.map((c) => [c.chunk_id, c]));
+  const docs = new Map(db.documents.map((d) => [d.doc_id, d]));
+  const snippets = new Map(keywordHits.map((h) => [h.chunk_id, h.snippet]));
+  return {
+    method: "meaning+keywords",
+    results: fused.flatMap(({ id }) => {
+      const c = chunks.get(id), d = c && docs.get(c.doc_id);
+      if (!c || !d) return [];
+      const sim = similarity.get(id);
+      return [{
+        chunk_id: id,
+        document: d.title,
+        document_type: d.type,
+        date: d.date,
+        page: c.page,
+        section: c.section_path,
+        snippet: snippets.get(id) ?? c.text.slice(0, 400),
+        similarity: sim === void 0 ? null : Math.round(sim * 1e3) / 1e3,
+        matched_by: [...sim !== void 0 && sim >= min ? ["meaning"] : [], ...keywordSet.has(id) ? ["keywords"] : []]
+      }];
+    })
+  };
+}
+
 // server/copilot.ts
 var COPILOT_BASE_PATH = "/api/copilotkit";
 var SYSTEM_PROMPT = `GUARDRAILS. These come first and override everything below.
@@ -566,6 +688,10 @@ H. Stage names. For a project that is stored (real or mock) the four stages are 
 I. Comparing projects. When the user asks to compare two or more stored projects, or asks which has more suppliers, costs more, was extended more or is further along, call show_compare with their project ids (use list_projects to find an id from a name). This is the one case where projects sit side by side, and only projects of the SAME kind: two or more real projects, or two or more mock projects. Never compare a real project with a mock one; if asked, say they are not compared with each other and offer two of the same kind. The card draws bar charts and a scatter plot; add one or two sentences and do not repeat its figures. The data has no budget field: if asked about budget, say so and point to the committed amount (contract awards) shown instead. A figure the card shows as Missing (for example amendments on a real project) is missing, not zero.
 
 J. Editing the user's own plan and tender clauses. A plan or tender clauses the user added to their lifecycle started as the application's suggestion, and the user may change it and save the final version. When they ask to change, move, set or make a date, the plan name, category or method, or a tender clause value, or to save, finalise or reopen their plan or tender draft, call edit_my_lifecycle (what plan or tender); do not just say you changed it. The lifecycle context lists each item with its current dates or clause values in its summary and a status (suggested, edited by the user or final): work relative requests ("a month later", "two weeks earlier") out from those values and give dates as YYYY-MM-DD; the plan may be a suggested plan or the planning estimates (dated milestones and median figures, listed under dates in the context), and the tender draft may be tender clauses or tender design estimates; keep the plan dates in order (advertisement, bid opening, evaluation complete, signing), so when one moves past a later date, move the later dates too and say so. Pass on what the tool result says, including a refusal (a final item must be reopened first; a date must be real). If the lifecycle has no plan or tender clauses, say so: you cannot add them, the user adds a suggestion with the Add button. After an edit, add one short sentence and do not repeat every figure; remind the user they can press Save as final on the item, or ask you to.
+
+K. Projects that are not stored yet. When the user asks about a World Bank project that the stored list does not hold (they name it, or give an id like P158504 that is not in the context projects), call find_world_bank_project with their words. It searches the public World Bank Projects API and returns candidates, each with a stored flag. The chat draws the candidates with an "Ingest this project" button: only the USER can press it, you cannot ingest, fetch or start anything, and you must never say you did. After the result, reply with at most two sentences: which project matched (or ask which, when several), and that pressing the button reads its contracts and documents, chunks them and makes it available (the first run can take several minutes because the public contract list is large). If a candidate is already stored, do not offer to ingest it: show it with find_views and the matching show_ tool. If nothing matched, say so and ask for another name or the project id (the letter P and six digits). Ingested projects are real World Bank data. Once the user says it is done, the project is in the context projects list: use the normal views for it.
+
+L. Searching document text. For a question the document text may answer (why something was delayed, lessons, risks, what a report says), call semantic_search_documents (it ranks by meaning and by keywords) with the project id when there is one, and cite the chunk ids it returns. If it returns "No supporting evidence found", say that and nothing more. Never present the similarity figure as a probability or a confidence. If its method is "keywords only", say meaning search was not available and why (its note). search_documents is the older keyword-only tool; prefer the semantic one.
 
 You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
@@ -597,7 +723,7 @@ var guard = (run) => async (args) => {
   }
 };
 var withKind = (projectId, result) => ({ data_kind: scopeLabel(projectScope(projectId)), ...result });
-function buildTools(loadDb) {
+function buildTools(loadDb, extras = {}) {
   return [
     defineTool({
       name: "find_views",
@@ -697,6 +823,29 @@ function buildTools(loadDb) {
       execute: guard(({ keyword }) => suggestTenderClauses(loadDb(), keyword))
     }),
     defineTool({
+      name: "find_world_bank_project",
+      description: "Search the public World Bank Projects API for a project by name or id when the user asks about a project that is not stored in the app. Returns candidates (id, name, country, status, approval date, sector, and stored: true when the app already holds it). The chat draws them with an Ingest button that only the user can press. Never claim to have ingested anything.",
+      parameters: z2.object({ query: z2.string().describe("The project name, or part of it, with a country or sector when the user gave one; or the project id like P158504") }),
+      execute: guard(async ({ query }) => {
+        if (!extras.findProjects) return { error: "Project search is not available on this server." };
+        const stored = new Set(loadDb().projects.map((p) => p.project_id));
+        const found = (await extras.findProjects(query)).map((c) => ({ ...c, stored: stored.has(c.project_id) }));
+        return found.length ? { data_kind: scopeLabel("real"), query, candidates: found } : { query, candidates: [], note: "No World Bank project matched. Ask for another name or the project id (P and six digits)." };
+      })
+    }),
+    defineTool({
+      name: "semantic_search_documents",
+      description: "Search the ingested document text by MEANING and by keywords. Returns the best passages with chunk id, document, page, section, snippet and which methods matched. Prefer this to search_documents. Only real projects that were ingested with embeddings are searched by meaning; otherwise it says it used keywords only and why.",
+      parameters: z2.object({ scope: scopeParam, query: z2.string().describe("The question or the words to look for"), project_id: z2.string().optional(), limit: z2.number().optional() }),
+      execute: guard(async ({ scope, query, project_id, limit }) => {
+        const problem = scopeProblem(loadDb(), scope, project_id);
+        if (problem) return { error: problem };
+        const db = scopedDb(loadDb(), scope);
+        if (!extras.semantic) return { data_kind: scopeLabel(scope), method: "keywords only", note: "Meaning search is not available on this server.", ...searchDocuments(db, query, project_id, limit) };
+        return { data_kind: scopeLabel(scope), ...await semanticSearch(db, query, extras.semantic, project_id, limit) };
+      })
+    }),
+    defineTool({
       name: "search_documents",
       description: "Keyword search over the ingested document text. Returns the best matching passages with chunk ids, document, page and section.",
       parameters: z2.object({ scope: scopeParam, query: z2.string().describe("Words to look for"), project_id: z2.string().optional(), limit: z2.number().optional() }),
@@ -707,13 +856,13 @@ function buildTools(loadDb) {
     })
   ];
 }
-function createCopilotListener(loadDb) {
+function createCopilotListener(loadDb, extras = {}) {
   if (!process.env.OPENAI_API_KEY) return null;
   const agent = new BuiltInAgent({
     model: process.env.OPENAI_MODEL ?? "openai/gpt-4.1-mini",
     maxSteps: 6,
     prompt: SYSTEM_PROMPT,
-    tools: buildTools(loadDb)
+    tools: buildTools(loadDb, extras)
   });
   const runtime = new CopilotRuntime({ agents: { default: agent } });
   return createCopilotNodeListener({ runtime, basePath: COPILOT_BASE_PATH, cors: true });

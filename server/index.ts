@@ -7,7 +7,8 @@ import { AssistantRequest, answer, type AssistantDb } from '../packages/data/src
 import { COPILOT_BASE_PATH, createCopilotListener } from './copilot'
 import { createIngestRoutes } from './ingestRoutes'
 import { createJobRunner } from '../ingest/jobs'
-import { EMBED_DIMENSIONS, EMBED_MODEL, nodeIo, openAiEmbedder } from '../ingest/nodeIo'
+import { EMBED_DIMENSIONS, EMBED_MODEL, embedWith, nodeIo, openAiEmbedder } from '../ingest/nodeIo'
+import { findProjects } from '../ingest/discover'
 
 // The model key lives in .env.local (git-ignored). Without it the rule-based assistant is used and CopilotKit is not started.
 try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))) } catch { /* no key file */ }
@@ -43,10 +44,15 @@ function readBody(req: IncomingMessage): Promise<string> {
   })
 }
 
-const copilot = createCopilotListener(() => loadDb())
+const ingestIo = nodeIo()
+const embedQuery = async (text: string) => {
+  const key = process.env.OPENAI_API_KEY
+  if (!key) throw new Error('OPENAI_API_KEY is not set')
+  return (await embedWith(key, [text])).vectors[0]!
+}
+const copilot = createCopilotListener(() => loadDb(), { findProjects: (q) => findProjects(q, ingestIo), semantic: { embedQuery } })
 
 // Live ingestion: the chat finds a World Bank project, the user presses a button, and this runner reads, parses, chunks and embeds it.
-const ingestIo = nodeIo()
 const ingest = createIngestRoutes({
   runner: createJobRunner({ io: () => ingestIo, embedder: () => openAiEmbedder() }),
   io: ingestIo,

@@ -11,6 +11,8 @@ import { estimateLifecycle } from '../packages/data/src/lifecycleEstimate'
 import { suggestPlan, suggestTenderClauses } from '../packages/data/src/tenderSuggestion'
 import { potentialSuppliers } from '../packages/data/src/potentialSuppliers'
 import { LEARNING_OPTIONS, MONITORING_OPTIONS } from '../packages/data/src/lifecycleOptions'
+import type { ProjectCandidate } from '../packages/data/src/ingestEvents'
+import { semanticSearch, type SemanticDeps } from './semantic'
 import { listProjects, projectOverview, proposePlan, proposeTenderDraft, queryContracts, referencePractice, searchDocuments, supervisionSeries } from '../packages/data/src/assistantData'
 
 export const COPILOT_BASE_PATH = '/api/copilotkit'
@@ -36,6 +38,10 @@ H. Stage names. For a project that is stored (real or mock) the four stages are 
 I. Comparing projects. When the user asks to compare two or more stored projects, or asks which has more suppliers, costs more, was extended more or is further along, call show_compare with their project ids (use list_projects to find an id from a name). This is the one case where projects sit side by side, and only projects of the SAME kind: two or more real projects, or two or more mock projects. Never compare a real project with a mock one; if asked, say they are not compared with each other and offer two of the same kind. The card draws bar charts and a scatter plot; add one or two sentences and do not repeat its figures. The data has no budget field: if asked about budget, say so and point to the committed amount (contract awards) shown instead. A figure the card shows as Missing (for example amendments on a real project) is missing, not zero.
 
 J. Editing the user's own plan and tender clauses. A plan or tender clauses the user added to their lifecycle started as the application's suggestion, and the user may change it and save the final version. When they ask to change, move, set or make a date, the plan name, category or method, or a tender clause value, or to save, finalise or reopen their plan or tender draft, call edit_my_lifecycle (what plan or tender); do not just say you changed it. The lifecycle context lists each item with its current dates or clause values in its summary and a status (suggested, edited by the user or final): work relative requests ("a month later", "two weeks earlier") out from those values and give dates as YYYY-MM-DD; the plan may be a suggested plan or the planning estimates (dated milestones and median figures, listed under dates in the context), and the tender draft may be tender clauses or tender design estimates; keep the plan dates in order (advertisement, bid opening, evaluation complete, signing), so when one moves past a later date, move the later dates too and say so. Pass on what the tool result says, including a refusal (a final item must be reopened first; a date must be real). If the lifecycle has no plan or tender clauses, say so: you cannot add them, the user adds a suggestion with the Add button. After an edit, add one short sentence and do not repeat every figure; remind the user they can press Save as final on the item, or ask you to.
+
+K. Projects that are not stored yet. When the user asks about a World Bank project that the stored list does not hold (they name it, or give an id like P158504 that is not in the context projects), call find_world_bank_project with their words. It searches the public World Bank Projects API and returns candidates, each with a stored flag. The chat draws the candidates with an "Ingest this project" button: only the USER can press it, you cannot ingest, fetch or start anything, and you must never say you did. After the result, reply with at most two sentences: which project matched (or ask which, when several), and that pressing the button reads its contracts and documents, chunks them and makes it available (the first run can take several minutes because the public contract list is large). If a candidate is already stored, do not offer to ingest it: show it with find_views and the matching show_ tool. If nothing matched, say so and ask for another name or the project id (the letter P and six digits). Ingested projects are real World Bank data. Once the user says it is done, the project is in the context projects list: use the normal views for it.
+
+L. Searching document text. For a question the document text may answer (why something was delayed, lessons, risks, what a report says), call semantic_search_documents (it ranks by meaning and by keywords) with the project id when there is one, and cite the chunk ids it returns. If it returns "No supporting evidence found", say that and nothing more. Never present the similarity figure as a probability or a confidence. If its method is "keywords only", say meaning search was not available and why (its note). search_documents is the older keyword-only tool; prefer the semantic one.
 
 You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
@@ -69,7 +75,13 @@ const guard = <A,>(run: (args: A) => unknown) => async (args: A) => {
 const withKind = (projectId: string, result: object) => ({ data_kind: scopeLabel(projectScope(projectId)), ...result })
 
 /** Builds the tools. Each call reads the data file again, so a reset or a new ingestion shows up without a restart. */
-function buildTools(loadDb: () => AssistantDb) {
+export interface CopilotExtras {
+  /** Searches the public World Bank Projects API. Absent in tests that do not need it. */
+  findProjects?: (query: string) => Promise<ProjectCandidate[]>
+  semantic?: SemanticDeps
+}
+
+function buildTools(loadDb: () => AssistantDb, extras: CopilotExtras = {}) {
   return [
     defineTool({
       name: 'find_views', description: 'FIRST STEP for any request about data the app can show: suppliers, contracts, sources or documents (knowledge base), conflicts and evidence, planning, tender design, monitoring, learning, the whole lifecycle, a proposed plan or tender draft. Pass the user\'s own words. It returns the matching views and the tool and arguments that draw each. An empty result means the app has NO view for that request.',
@@ -152,6 +164,27 @@ function buildTools(loadDb: () => AssistantDb) {
       execute: guard(({ keyword }: { keyword?: string }) => suggestTenderClauses(loadDb(), keyword)),
     }),
     defineTool({
+      name: 'find_world_bank_project', description: 'Search the public World Bank Projects API for a project by name or id when the user asks about a project that is not stored in the app. Returns candidates (id, name, country, status, approval date, sector, and stored: true when the app already holds it). The chat draws them with an Ingest button that only the user can press. Never claim to have ingested anything.',
+      parameters: z.object({ query: z.string().describe('The project name, or part of it, with a country or sector when the user gave one; or the project id like P158504') }),
+      execute: guard(async ({ query }: { query: string }) => {
+        if (!extras.findProjects) return { error: 'Project search is not available on this server.' }
+        const stored = new Set(loadDb().projects.map((p) => p.project_id))
+        const found = (await extras.findProjects(query)).map((c) => ({ ...c, stored: stored.has(c.project_id) }))
+        return found.length ? { data_kind: scopeLabel('real'), query, candidates: found } : { query, candidates: [], note: 'No World Bank project matched. Ask for another name or the project id (P and six digits).' }
+      }),
+    }),
+    defineTool({
+      name: 'semantic_search_documents', description: 'Search the ingested document text by MEANING and by keywords. Returns the best passages with chunk id, document, page, section, snippet and which methods matched. Prefer this to search_documents. Only real projects that were ingested with embeddings are searched by meaning; otherwise it says it used keywords only and why.',
+      parameters: z.object({ scope: scopeParam, query: z.string().describe('The question or the words to look for'), project_id: z.string().optional(), limit: z.number().optional() }),
+      execute: guard(async ({ scope, query, project_id, limit }: { scope: 'real' | 'mock'; query: string; project_id?: string; limit?: number }) => {
+        const problem = scopeProblem(loadDb(), scope, project_id)
+        if (problem) return { error: problem }
+        const db = scopedDb(loadDb(), scope)
+        if (!extras.semantic) return { data_kind: scopeLabel(scope), method: 'keywords only', note: 'Meaning search is not available on this server.', ...searchDocuments(db, query, project_id, limit) }
+        return { data_kind: scopeLabel(scope), ...(await semanticSearch(db, query, extras.semantic, project_id, limit)) }
+      }),
+    }),
+    defineTool({
       name: 'search_documents', description: 'Keyword search over the ingested document text. Returns the best matching passages with chunk ids, document, page and section.',
       parameters: z.object({ scope: scopeParam, query: z.string().describe('Words to look for'), project_id: z.string().optional(), limit: z.number().optional() }),
       execute: guard(({ scope, query, project_id, limit }: { scope: 'real' | 'mock'; query: string; project_id?: string; limit?: number }) => {
@@ -163,13 +196,13 @@ function buildTools(loadDb: () => AssistantDb) {
 }
 
 /** The request listener for /api/copilotkit, or null when no key is configured. */
-export function createCopilotListener(loadDb: () => AssistantDb): ((req: IncomingMessage, res: ServerResponse) => void) | null {
+export function createCopilotListener(loadDb: () => AssistantDb, extras: CopilotExtras = {}): ((req: IncomingMessage, res: ServerResponse) => void) | null {
   if (!process.env.OPENAI_API_KEY) return null
   const agent = new BuiltInAgent({
     model: process.env.OPENAI_MODEL ?? 'openai/gpt-4.1-mini',
     maxSteps: 6,
     prompt: SYSTEM_PROMPT,
-    tools: buildTools(loadDb),
+    tools: buildTools(loadDb, extras),
   })
   const runtime = new CopilotRuntime({ agents: { default: agent } })
   return createCopilotNodeListener({ runtime, basePath: COPILOT_BASE_PATH, cors: true }) as (req: IncomingMessage, res: ServerResponse) => void
