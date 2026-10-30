@@ -6,3 +6,5 @@ dist-vercel
 apps/shell/@mf-types
 ingest/cache
 .env.local
+.env.vercel
+.env.*.local
