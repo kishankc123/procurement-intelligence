@@ -36,7 +36,7 @@ const sse = async (id: string, from = 0) => {
 
 describe('ingest routes', () => {
   it('reports whether embedding is available', async () => {
-    expect(await (await fetch(`${base}/ingest/config`)).json()).toEqual({ embedding: { available: true, model: 'fake', dimensions: 16 } })
+    expect(await (await fetch(`${base}/ingest/config`)).json()).toEqual({ mode: 'stream', enabled: true, embedding: { available: true, model: 'fake', dimensions: 16 } })
   })
 
   it('finds candidates and marks the ones already stored', async () => {

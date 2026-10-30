@@ -14,6 +14,9 @@
     },
     "api/copilotkit.mjs": {
       "includeFiles": "mock/db.json"
+    },
+    "api/ingest/[...path].mjs": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

@@ -3,6 +3,7 @@ import { ASSISTANT_BASE } from '@pi/config'
 import { INGEST_STAGES, INGEST_STAGE_LABEL, type IngestSummary, type ProjectCandidate, type RunView } from '@pi/data'
 import { Badge, Button, CircleAlert, ProvenanceChip } from '@pi/ui'
 import { StageDetail, StageRail, VectorMap, VectorStrip } from './IngestViz'
+import { fetchConfig, type IngestConfig } from './ingestClient'
 import { useIngestRun, type RunPhase } from './useIngestRun'
 import styles from './IngestCard.module.css'
 
@@ -10,18 +11,28 @@ interface FindResult { query?: string; candidates?: ProjectCandidate[]; note?: s
 const parse = (result: string | undefined): FindResult | null => { try { return result ? JSON.parse(result) as FindResult : null } catch { return null } }
 const nf = (n: number) => n.toLocaleString('en-US')
 
-interface EmbeddingConfig { available: boolean; model?: string; dimensions?: number; reason?: string }
-
-/** Whether a run here will embed the chunks, read from the server before the user commits to a run that can take minutes. */
-function useEmbeddingConfig(enabled: boolean) {
-  const [config, setConfig] = useState<EmbeddingConfig | null>(null)
+/** What a run can do on this server, read before the user commits to a run that can take minutes. Null while loading or when the server is not reachable. */
+function useIngestConfig(enabled: boolean) {
+  const [config, setConfig] = useState<IngestConfig | null>(null)
   useEffect(() => {
     if (!enabled) return
     let live = true
-    fetch(`${ASSISTANT_BASE}/ingest/config`).then((r) => r.json()).then((b: { embedding: EmbeddingConfig }) => { if (live) setConfig(b.embedding) }).catch(() => undefined)
+    void fetchConfig(ASSISTANT_BASE).then((c) => { if (live) setConfig(c) })
     return () => { live = false }
   }, [enabled])
   return config
+}
+
+/** Asked for when the hosted site needs its ingest token. The token stays in this tab and is sent only to the ingest endpoints. */
+function TokenPrompt({ projectId, message, onSubmit }: { projectId: string; message: string | null; onSubmit: (token: string, id: string) => void }) {
+  const [value, setValue] = useState('')
+  return (
+    <form className={styles.warn} onSubmit={(e) => { e.preventDefault(); if (value.trim()) onSubmit(value, projectId) }}>
+      <label htmlFor={`tok-${projectId}`}>{message ?? 'Ingest token'}</label>
+      <input id={`tok-${projectId}`} type="password" autoComplete="off" value={value} onChange={(e) => setValue(e.target.value)} className={styles.token} />
+      <Button variant="primary" type="submit" disabled={!value.trim()}>Use token and ingest</Button>
+    </form>
+  )
 }
 
 /** The status line a screen reader hears: what is running now, with its counter. */
@@ -81,7 +92,7 @@ function RunView_({ projectId, run, phase, problem, lost, onCancel, onRetry, onS
   )
 }
 
-function Candidate({ c, active, busy, onIngest, onSend, children }: { c: ProjectCandidate; active: boolean; busy: boolean; onIngest: () => void; onSend: (t: string) => void; children: React.ReactNode }) {
+function Candidate({ c, active, busy, blocked, onIngest, onSend, children }: { c: ProjectCandidate; active: boolean; busy: boolean; /** Why ingesting is not possible here, shown as the button's tooltip. */ blocked?: string; onIngest: () => void; onSend: (t: string) => void; children: React.ReactNode }) {
   return (
     <li className={`${styles.cand} ${active ? styles.candActive : ''}`}>
       <div className={styles.candHead}>
@@ -91,8 +102,8 @@ function Candidate({ c, active, busy, onIngest, onSend, children }: { c: Project
         </div>
         {c.stored && <Badge tone="low">Already stored</Badge>}
         {c.stored
-          ? <div className={styles.actions}><Button onClick={() => onSend(`Show the lifecycle for ${c.project_name} (${c.project_id})`)}>Show lifecycle</Button>{!active && <Button disabled={busy} onClick={onIngest}>Ingest again</Button>}</div>
-          : !active && <Button variant="primary" disabled={busy} onClick={onIngest}>Ingest this project</Button>}
+          ? <div className={styles.actions}><Button onClick={() => onSend(`Show the lifecycle for ${c.project_name} (${c.project_id})`)}>Show lifecycle</Button>{!active && <Button disabled={busy} disabledReason={blocked} onClick={onIngest}>Ingest again</Button>}</div>
+          : !active && <Button variant="primary" disabled={busy} disabledReason={blocked} onClick={onIngest}>Ingest this project</Button>}
       </div>
       {children}
     </li>
@@ -106,9 +117,11 @@ function Candidate({ c, active, busy, onIngest, onSend, children }: { c: Project
 export function IngestCandidates({ result, onSend }: { result: string | undefined; onSend: (text: string) => void }) {
   const found = parse(result)
   const [chosen, setChosen] = useState<string | null>(null)
-  const { run, phase, problem, lost, start, cancel } = useIngestRun(chosen)
+  const { run, phase, problem, lost, needsToken, start, submitToken, cancel } = useIngestRun(chosen)
   const candidates = found?.candidates ?? []
-  const embedding = useEmbeddingConfig(candidates.some((c) => !c.stored) || candidates.length > 0)
+  const config = useIngestConfig(candidates.length > 0)
+  const embedding = config?.embedding
+  const blocked = config?.mode === 'steps' && config.enabled === false ? (config.reason ?? 'Live ingestion is not switched on for this site.') : undefined
   if (!found) return null
   if (found.error) return <p role="alert" className={styles.warn}>{found.error}</p>
   if (candidates.length === 0) return <p role="status" className={styles.caption}>{found.note ?? 'No World Bank project matched.'}</p>
@@ -122,13 +135,18 @@ export function IngestCandidates({ result, onSend }: { result: string | undefine
       </header>
       <ul className={styles.cands}>
         {candidates.map((c) => (
-          <Candidate key={c.project_id} c={c} active={chosen === c.project_id && phase !== 'idle'} busy={live} onIngest={() => go(c.project_id)} onSend={onSend}>
+          <Candidate key={c.project_id} c={c} active={chosen === c.project_id && phase !== 'idle'} busy={live} blocked={blocked} onIngest={() => go(c.project_id)} onSend={onSend}>
+            {chosen === c.project_id && needsToken && <TokenPrompt projectId={c.project_id} message={problem} onSubmit={(t, id) => { setChosen(id); void submitToken(t, id) }} />}
             {chosen === c.project_id && phase !== 'idle' && <RunView_ projectId={c.project_id} run={run} phase={phase} problem={problem} lost={lost} onCancel={() => void cancel()} onRetry={() => go(c.project_id)} onSend={onSend} />}
           </Candidate>
         ))}
       </ul>
+      {blocked && <p role="status" className={styles.warn}><CircleAlert size={14} aria-hidden="true" /> Live ingestion is not available on this site: {blocked}</p>}
       <p className={styles.caption}>
-        Ingesting reads the project’s contract awards, documents and supervision reports from the public World Bank APIs, splits the document text into chunks{embedding?.available ? ` and embeds them with ${embedding.model} (${embedding.dimensions} numbers per chunk)` : ''}. The first run reads the whole public contract list and can take several minutes; later runs reuse what was read.
+        Ingesting reads the project’s contract awards, documents and supervision reports, splits the document text into chunks{embedding?.available ? ` and embeds them with ${embedding.model} (${embedding.dimensions} numbers per chunk)` : ''}.
+        {config?.mode === 'steps'
+          ? ` On this site the contract awards come from a prebuilt index${config.index ? ` (built ${config.index.built_at.slice(0, 10)})` : ''}, and the run continues over several requests until it is finished; up to ${config.dailyLimit ?? 'a few'} ingestions a day.`
+          : ' The first run reads the whole public contract list and can take several minutes; later runs reuse what was read.'}
         {embedding && !embedding.available && <> <strong>Embedding is off here:</strong> {embedding.reason}.</>}
       </p>
     </section>

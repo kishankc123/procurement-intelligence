@@ -21,6 +21,13 @@ export default async function handler(req, res) {
       url.searchParams.delete('path')
       req.url = `/api/copilotkit/${rest}${url.search}`
     }
+    // Projects ingested on the hosted site live in the Blob store; they are merged into this copy of the data before each call (at most every few seconds),
+    // and the chat gets the project search and the search by meaning that use the same store.
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const ingest = await import('../_lib/ingest.mjs')
+      await ingest.dbWithIngested(loadDb())
+      listener ??= (await import('../_lib/copilot.mjs')).createCopilotListener(loadDb, ingest.getHosted(process.env).copilotExtras())
+    }
     listener ??= (await import('../_lib/copilot.mjs')).createCopilotListener(loadDb)
     if (!listener) { res.statusCode = 404; res.setHeader('Content-Type', 'application/json'); return res.end(JSON.stringify({ error: 'The model is not configured (no OPENAI_API_KEY).' })) }
     return listener(req, res)

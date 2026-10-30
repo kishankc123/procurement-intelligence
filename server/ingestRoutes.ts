@@ -43,7 +43,7 @@ export function createIngestRoutes(deps: IngestRouteDeps) {
     if (!path.startsWith('/ingest')) return false
     if (req.method === 'OPTIONS') { res.writeHead(204, CORS); res.end(); return true }
 
-    if (req.method === 'GET' && path === '/ingest/config') { json(res, 200, { embedding: deps.embeddingInfo() }); return true }
+    if (req.method === 'GET' && path === '/ingest/config') { json(res, 200, { mode: 'stream', enabled: true, embedding: deps.embeddingInfo() }); return true }
 
     if (req.method === 'GET' && path === '/ingest/find') {
       const now = Date.now()

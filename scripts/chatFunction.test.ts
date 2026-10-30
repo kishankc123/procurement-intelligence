@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { describe, expect, it } from 'vitest'
 import { answer, type AssistantDb } from '../packages/data/src/assistant'
-import { bundleCopilot, copilotTarget, target, transpile } from './build-chat-function.mjs'
+import { bundleCopilot, bundleIngest, copilotTarget, ingestTarget, target, transpile } from './build-chat-function.mjs'
 
 describe('the Vercel chat function copy (api/_lib/assistant.js)', () => {
   it('is up to date with assistant.ts (run `pnpm build:chat` if this fails)', () => {
@@ -20,5 +20,9 @@ describe('the Vercel chat function copy (api/_lib/assistant.js)', () => {
 
   it('has an up to date CopilotKit runtime bundle (api/_lib/copilot.mjs)', () => {
     expect(readFileSync(copilotTarget as string, 'utf8')).toBe((bundleCopilot as () => string)())
+  })
+
+  it('has an up to date live-ingestion bundle (api/_lib/ingest.mjs)', () => {
+    expect(readFileSync(ingestTarget as string, 'utf8')).toBe((bundleIngest as () => string)())
   })
 })

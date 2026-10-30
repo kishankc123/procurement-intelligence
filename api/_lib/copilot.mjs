@@ -619,8 +619,8 @@ async function semanticSearch(db, query, deps, projectId, limit = 5) {
   const keyword = searchDocuments(db, query, projectId, limit * 3);
   const keywordHits = typeof keyword.results === "string" ? [] : keyword.results;
   const load = deps.loadIndex ?? ((id) => loadEmbeddings(id));
-  const candidates = projectId ? [projectId] : (deps.indexedProjects ?? indexedProjectIds)().filter((id) => db.projects.some((p) => p.project_id === id));
-  const indexes = candidates.map((id) => ({ id, index: load(id) })).filter((x) => x.index !== null);
+  const candidates = projectId ? [projectId] : (await (deps.indexedProjects ?? indexedProjectIds)()).filter((id) => db.projects.some((p) => p.project_id === id));
+  const indexes = (await Promise.all(candidates.map(async (id) => ({ id, index: await load(id) })))).filter((x) => x.index !== null);
   if (indexes.length === 0) {
     return { results: keyword.results, method: "keywords only", note: projectId ? `${projectId} has no embedded chunks, so only keywords were used.` : "No project has embedded chunks yet, so only keywords were used." };
   }
