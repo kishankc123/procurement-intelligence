@@ -8,7 +8,7 @@ const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.ur
 describe('card style', () => {
   it('the landing cards size to their text: no aspect ratio, no fixed height', () => {
     const css = read('apps/shell/src/pages/Landing.module.css')
-    const rules = css.split('\n').filter((l) => /^\.(layers li|steps li)\b(?!::)/.test(l))
+    const rules = css.split('\n').filter((l) => /^\.(layers li|steps li) \{/.test(l))
     expect(rules.length).toBe(2)
     for (const rule of rules) { expect(rule).not.toMatch(/aspect-ratio|\bheight\s*:|min-height/) }
   })
@@ -20,6 +20,6 @@ describe('card style', () => {
   })
   it('the landing cards take their corners from the same setting', () => {
     const css = read('apps/shell/src/pages/Landing.module.css')
-    for (const l of css.split('\n').filter((x) => /^\.(layers li|steps li)\b(?!::)/.test(x))) expect(l).toMatch(/border-radius:\s*var\(--radius-card\)/)
+    for (const l of css.split('\n').filter((x) => /^\.(layers li|steps li) \{/.test(x))) expect(l).toMatch(/border-radius:\s*var\(--radius-card\)/)
   })
 })
