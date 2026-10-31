@@ -5,6 +5,7 @@ import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
 import { CHAT_PANEL_ATTR, scrollChatToLatest } from './chatScroll'
+import { loadChat, saveChat } from './chatSession'
 import { IngestInChat } from './IngestInChat'
 import { useSendToChat } from './useSendToChat'
 import { MapBlock } from './MapBlock'
@@ -235,6 +236,38 @@ function useProposalTools() {
   }, [])
 }
 
+/**
+ * Keeps the conversation for the life of this tab. It is put back when the panel is drawn again (after a reload, or a visit to the home page),
+ * and saved whenever a reply has finished or a message is added. The saved copy is only written once the earlier one has been put back, so a
+ * fresh, empty panel can never overwrite it.
+ */
+function useKeepChatForTab(agent: ReturnType<typeof useAgent>['agent']) {
+  const restored = useRef(false)
+  // Wait for the real agent: the placeholder used while the runtime connects is swapped out, and messages put on it would be lost.
+  const provisional = (agent as { runtimeMode?: string }).runtimeMode === 'pending'
+  useEffect(() => {
+    if (restored.current || provisional) return
+    restored.current = true
+    if (agent.messages.length > 0) return
+    const saved = loadChat()
+    if (saved.length > 0) agent.setMessages(saved as unknown as typeof agent.messages)
+  }, [agent, provisional])
+  const count = agent.messages.length
+  const running = agent.isRunning
+  useEffect(() => {
+    if (!restored.current || running) return
+    if (count === 0) return
+    saveChat(agent.messages)
+  }, [agent, count, running])
+  // A tab closed or reloaded in the middle of a reply still keeps what had been said so far.
+  useEffect(() => {
+    // Mid-reply the history ends in a half-finished turn, which the model would reject; the copy saved after the last finished reply stays.
+    const flush = () => { if (restored.current && !agent.isRunning && agent.messages.length > 0) saveChat(agent.messages) }
+    window.addEventListener('pagehide', flush)
+    return () => { flush(); window.removeEventListener('pagehide', flush) }
+  }, [agent])
+}
+
 function Inner({ onEngage }: { onEngage: () => void }) {
   const projects = useProjects()
   const chatProjectId = useUiStore((s) => s.chatProjectId)
@@ -245,8 +278,9 @@ function Inner({ onEngage }: { onEngage: () => void }) {
   useProposalTools()
   useIngestTool()
   // Once anyone has said anything, the page gives the chat the room (same as the rule-based chat).
-  const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged] })
+  const { agent } = useAgent({ updates: [UseAgentUpdate.OnMessagesChanged, UseAgentUpdate.OnRunStatusChanged] })
   const spoken = agent.messages.length > 0
+  useKeepChatForTab(agent)
   // Whenever a message is added (yours or the answer), show it, even if the reader had scrolled up.
   const messageCount = agent.messages.length
   useEffect(() => { if (messageCount > 0) return scrollChatToLatest() }, [messageCount])
