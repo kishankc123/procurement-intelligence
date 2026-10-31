@@ -630,3 +630,8 @@ This is the light version of the "user's own lifecycle" step noted above (K aske
 - `propose_plan` (plan from a start date or signing deadline): a start in the past, given or worked back from the deadline, becomes today with a note; a signing deadline before today is refused ("no plan can meet it"); the existing deadline check still says whether the plan fits.
 - The model now gets today's date from the browser as context, and a prompt rule says never to suggest or pass a date before today.
 - Tests added for each case. Not checked in the live chat or with the real model. "Today" is the user's device date for the estimates and the context, and the server's date (UTC) for `propose_plan`, so around midnight the two can differ by a day.
+
+## Block 71: the filter rail only on the dashboard pages
+- The left rail (Project · Year · Role) is no longer drawn on the home page, "Learn about the assistant" and the chat; those pages use the full width, and on a phone the top bar has its normal side padding. Every other page keeps it: Planning, Tender design, Monitoring, Learning, and also Knowledge, Evidence, Project data, Work with AI, Suppliers and the project overview. One list (`filterRailPages.ts`) decides, with a test.
+- Consequence: in the chat the Year and Role filters cannot be changed (Role stays at its saved value, normally Planner); the chat picks its project through the conversation. The rail's open/closed state is not kept when moving to a page without it.
+- Checked in a browser at 1280 and 390 px: the rail is present on the eight pages tried as expected and nothing scrolls sideways. The donut hover was left as it is, by request.

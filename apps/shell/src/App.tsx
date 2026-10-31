@@ -8,6 +8,7 @@ import { BackButton } from './BackButton'
 import { Breadcrumbs } from './Breadcrumbs'
 import { StepNav } from './StepNav'
 import { FilterRail } from './FilterRail'
+import { hasFilterRail } from './filterRailPages'
 import { Sparkles } from '@pi/ui'
 import { ThemeToggle } from './ThemeToggle'
 import { ToastHost } from './toasts'
@@ -28,10 +29,11 @@ const WorkWithAI = lazy(() => import('ai/WorkWithAI'))
 export function App() {
   const [railOpen, setRailOpen] = useState(false)
   const { pathname } = useLocation()
+  const rail = hasFilterRail(pathname)
 
   return (
-    <div className={`${styles.layout} ${railOpen ? styles.layoutRailOpen : ''}`}>
-      <FilterRail open={railOpen} onOpenChange={setRailOpen} />
+    <div className={`${styles.layout} ${rail && railOpen ? styles.layoutRailOpen : ''} ${rail ? '' : styles.noRail}`}>
+      {rail && <FilterRail open={railOpen} onOpenChange={setRailOpen} />}
       <ToastHost />
       <div className={styles.main}>
         <header className={styles.top}>
@@ -49,7 +51,7 @@ export function App() {
         <main className={styles.content}>
           {pathname !== '/' && <BackButton />}
           <Breadcrumbs />
-          {!['/', '/assistant', '/chat'].includes(pathname) && <StepNav />}
+          {rail && <StepNav />}
           <Routes>
             <Route index element={<Landing />} />
             <Route path="/assistant" element={<Assistant />} />
