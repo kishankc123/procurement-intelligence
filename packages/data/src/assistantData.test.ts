@@ -98,6 +98,11 @@ describe('proposals', () => {
   it('works back from a signing deadline and says whether a start date fits it', () => {
     const back = proposePlan(base, { signing_by: '2027-06-30', keyword: 'road' }) as { plan: { planned_advertisement: string; planned_signing: string } }
     expect(back.plan.planned_signing).toBe('2027-06-30')
+    const past = proposePlan(base, { start_date: '2020-01-01', keyword: 'road' }, '2026-10-31') as { plan: { planned_advertisement: string }; note: string }
+    expect(past.plan.planned_advertisement).toBe('2026-10-31')
+    expect(past.note).toMatch(/starts today/)
+    const tooSoon = proposePlan(base, { signing_by: '2026-01-01', keyword: 'road' }, '2026-10-31') as { missing: string }
+    expect(tooSoon.missing).toMatch(/before today/)
     const late = proposePlan(base, { start_date: '2027-01-01', signing_by: '2027-03-01', keyword: 'road' }) as { deadline_check: { fits: boolean; days_over: number } }
     expect(late.deadline_check).toEqual({ fits: false, days_over: 32 })
   })

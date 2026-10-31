@@ -155,7 +155,7 @@ export function applyEstimateChanges(detail: unknown, changes: { figures?: { met
   if (timeline && (changes.figures?.length ?? 0) > 0 && changed.length > 0) {
     // Work the dates out again from the changed figures, from the same completion date, and put back every date the user set by hand.
     const hand = new Map(timeline.milestones.filter((m) => m.how === SET_BY_USER).map((m) => [m.id, m.date]))
-    const rebuilt = datePlanningEstimates(rows, timeline.completion, timeline.completion)
+    const rebuilt = datePlanningEstimates(rows, timeline.completion, new Date().toISOString().slice(0, 10))
     timeline = {
       ...rebuilt, assumed: timeline.assumed && !hand.has('completion'),
       milestones: rebuilt.milestones.map((m) => (hand.has(m.id) ? { ...m, date: hand.get(m.id)!, how: SET_BY_USER } : m)),

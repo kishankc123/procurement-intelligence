@@ -202,7 +202,7 @@ export interface PlanProposalInput {
  * A suggested plan for the user's own procurement: the four stage dates, built from the median gaps between stages in the stored plans
  * (matching the category and sector when given). The basis says how many plans and which projects it rests on. No reference plans means no plan, never a guess.
  */
-export function proposePlan(db: AssistantDb, raw: PlanProposalInput) {
+export function proposePlan(db: AssistantDb, raw: PlanProposalInput, today: string = new Date().toISOString().slice(0, 10)) {
   // A model that leaves a field out often sends an empty string for it; that means "not given".
   const input = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, typeof v === 'string' && v.trim() === '' ? undefined : v])) as PlanProposalInput
   const ids = new Set(db.projects.filter((p) => matchesKeyword(p, input.keyword)).map((p) => p.project_id))
@@ -217,9 +217,13 @@ export function proposePlan(db: AssistantDb, raw: PlanProposalInput) {
   const total = gap.to_bid_opening + gap.to_evaluation_complete + gap.to_signing
   // A start on or after the signing deadline cannot be meant: work back from the deadline instead, and say so.
   const startIgnored = !!input.start_date && !!input.signing_by && input.start_date >= input.signing_by
+  if (input.signing_by && input.signing_by < today) return { missing: `The signing deadline ${input.signing_by} is before today (${today}), so no plan can meet it. Give a later date.` }
   const given = startIgnored ? undefined : input.start_date
-  const start = given ?? (input.signing_by ? addDays(input.signing_by, -total) : undefined)
-  if (!start) return { missing: 'Give a start date (advertisement) or a date the contract must be signed by.' }
+  const wanted = given ?? (input.signing_by ? addDays(input.signing_by, -total) : undefined)
+  if (!wanted) return { missing: 'Give a start date (advertisement) or a date the contract must be signed by.' }
+  // No suggested date is before today: a start in the past (given, or worked back from the deadline) becomes today, and the deadline check says whether that still fits.
+  const movedToToday = wanted < today
+  const start = movedToToday ? today : wanted
   const bid = addDays(start, gap.to_bid_opening)
   const evalc = addDays(bid, gap.to_evaluation_complete)
   const sign = addDays(evalc, gap.to_signing)
@@ -229,7 +233,10 @@ export function proposePlan(db: AssistantDb, raw: PlanProposalInput) {
       planned_advertisement: start, planned_bid_opening: bid, planned_evaluation_complete: evalc, planned_signing: sign,
     },
     basis: { sample_size: refs.length, projects: [...new Set(refs.map((x) => x.project_id))], median_gap_days: gap, median_total_days: total, filtered_by: [input.keyword, input.category].filter(Boolean).join(' · ') || 'all stored plans' },
-    ...(startIgnored ? { note: 'The start date was on or after the signing deadline, so the plan was worked back from the deadline.' } : {}),
+    ...((startIgnored || movedToToday) ? { note: [
+      startIgnored ? 'The start date was on or after the signing deadline, so the plan was worked back from the deadline.' : '',
+      movedToToday ? `Working back would put the start at ${wanted}, before today (${today}), so the plan starts today.` : '',
+    ].filter(Boolean).join(' ') } : {}),
     deadline_check: input.signing_by ? (sign <= input.signing_by ? { fits: true, spare_days: daysBetween(sign, input.signing_by) } : { fits: false, days_over: daysBetween(input.signing_by, sign) }) : 'No signing deadline was given.',
   }
 }

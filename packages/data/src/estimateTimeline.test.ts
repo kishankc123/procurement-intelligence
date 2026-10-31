@@ -39,4 +39,24 @@ describe('datePlanningEstimates', () => {
     const r = datePlanningEstimates([{ metric: 'Planned project length', value: 0.1 }, { metric: 'Approval to effectiveness', value: 400 }], '2030-01-01', '2026-10-29')
     expect(r.overrun).toBe(true)
   })
+
+  it('never places a date before today: a 90-month length ending 2029-12-30 starts today, not in 2022', () => {
+    const long = rows.map((x) => (x.metric.startsWith('Planned project length') ? { ...x, value: 90 } : x))
+    const r = datePlanningEstimates(long, '2029-12-30', '2026-10-31')
+    expect(r.milestones.every((m) => m.date >= '2026-10-31')).toBe(true)
+    expect(r.milestones[0]).toMatchObject({ id: 'approval', date: '2026-10-31' })
+    expect(r.completion).toBe('2029-12-30')
+    expect(r.notes.join(' ')).toMatch(/starts today/)
+  })
+  it('keeps working back from the completion date when that lands after today', () => {
+    const r = datePlanningEstimates(rows, '2032-06-30', '2026-10-31')
+    expect(r.milestones[0]!.how).toMatch(/Completion date minus/)
+    expect(r.milestones[0]!.date > '2026-10-31').toBe(true)
+  })
+  it('treats a completion date in the past as not given', () => {
+    const r = datePlanningEstimates(rows, '2020-01-01', '2026-10-31')
+    expect(r.assumed).toBe(true)
+    expect(r.completion).toBe('2036-10-31')
+    expect(r.notes.join(' ')).toMatch(/before today/)
+  })
 })

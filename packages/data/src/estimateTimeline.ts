@@ -44,8 +44,12 @@ interface RowLike { metric: string; value: number | string | null }
  * in the label); then bid opening, evaluation complete and signing follow by the median periods the estimates hold.
  */
 export function datePlanningEstimates(rows: RowLike[], completion: string | undefined, today: string): DatedPlanning {
-  const assumed = !isDate(completion)
-  const end = isDate(completion) ? completion : defaultCompletion(today)
+  const notes: string[] = []
+  // A completion date that is already past cannot be planned for: it is treated as not given, and the result says so.
+  const past = isDate(completion) && completion < today
+  if (past) notes.push(`The completion date you gave (${completion}) is before today (${today}), so ten years from today is used instead.`)
+  const assumed = !isDate(completion) || past
+  const end = isDate(completion) && !past ? completion : defaultCompletion(today)
   const num = (prefix: string) => {
     const v = rows.find((r) => r.metric.startsWith(prefix))?.value
     return typeof v === 'number' ? v : undefined
@@ -55,14 +59,19 @@ export function datePlanningEstimates(rows: RowLike[], completion: string | unde
   const bidding = num('Bidding period')
   const evaluation = num('Evaluation period')
   const award = num('Award to signing')
-  const notes: string[] = []
   const milestones: DatedMilestone[] = []
 
   if (months === undefined) {
     notes.push('No planned project length in the estimates, so the start of the project cannot be placed. Only the completion date is shown.')
   } else {
     let at = addDaysIso(end, -Math.round(months * 30.44))
-    milestones.push({ id: 'approval', label: 'Board approval', date: at, how: `Completion date minus the median planned length of ${months} months.` })
+    // No date is ever placed before today. When working back from the completion date lands in the past, the project starts today and the rest follows forward;
+    // it then runs shorter than the median length, which the note says, and the completion date stays the one the user gave.
+    if (at < today) {
+      at = today
+      milestones.push({ id: 'approval', label: 'Board approval', date: at, how: `Today. The median planned length of ${months} months would start before today, so the plan starts now and runs shorter.` })
+      notes.push(`Working back ${months} months from ${end} would start before today (${today}), so the plan starts today and the project is given less time than the median.`)
+    } else milestones.push({ id: 'approval', label: 'Board approval', date: at, how: `Completion date minus the median planned length of ${months} months.` })
     if (toEffective !== undefined) {
       at = addDaysIso(at, Math.round(toEffective))
       milestones.push({ id: 'effectiveness', label: 'Effectiveness', date: at, how: `${Math.round(toEffective)} days after approval (median).` })

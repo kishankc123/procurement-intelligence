@@ -293,6 +293,11 @@ function Inner({ onEngage }: { onEngage: () => void }) {
       projects: (projects.data ?? []).map((p) => ({ id: p.project_id, name: p.project_name, kind: projectScope(p.project_id) })),
     },
   })
+  // The model has no clock: say what day it is, so that no date it suggests is before it.
+  useAgentContext({
+    description: "Today's date (YYYY-MM-DD) on the user's device. Every date you suggest, mention as upcoming or pass to a tool must be today or later; never suggest a date in the past.",
+    value: { today: new Date().toISOString().slice(0, 10) },
+  })
   const send = useSendToChat()
   const setChatProject = useUiStore((st) => st.setChatProject)
   const reference = useUiStore((st) => st.referenceKeyword)
