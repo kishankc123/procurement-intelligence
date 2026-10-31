@@ -1,11 +1,12 @@
 import { z } from 'zod'
 import { useEffect, useRef, useState } from 'react'
-import { CopilotChat, CopilotKitProvider, useAgent, useCopilotKit, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool, useRenderTool } from '@copilotkit/react-core/v2'
+import { CopilotChat, CopilotKitProvider, useAgent, UseAgentUpdate, useAgentContext, useConfigureSuggestions, useFrontendTool, useRenderTool } from '@copilotkit/react-core/v2'
 import { COPILOT_URL } from '@pi/config'
 import { useProjects, useUiStore, suggestedPrompts, Block, projectScope, scopeLabel, useMyLifecycle, describeLifecycle, type FeatureOption } from '@pi/data'
 import { BlockView } from './ChatBlocks'
 import { CHAT_PANEL_ATTR, scrollChatToLatest } from './chatScroll'
-import { IngestCandidates } from './IngestCard'
+import { IngestInChat } from './IngestInChat'
+import { useSendToChat } from './useSendToChat'
 import { MapBlock } from './MapBlock'
 import { CompareProjectsCard } from './CompareCard'
 import { planEditCommand } from './lifecycleEdit'
@@ -29,19 +30,6 @@ function Card({ block }: { block: unknown }) {
   if (parsed.data.type === 'tool' ? !id && (parsed.data.tool === 'suppliers' || parsed.data.tool === 'project-data') : !id) return null
   if (id && projects.data && !projects.data.some((p) => p.project_id === id)) return <p role="status" className={styles.problem}>There is no project with id {id}.</p>
   return <div className={styles.cards}><BlockView block={parsed.data} onSend={send} /></div>
-}
-
-/** What a click inside a card does: it says the same thing in the chat, as if the user had typed it, and the model answers. */
-function useSendToChat() {
-  const { agent } = useAgent()
-  const { copilotkit } = useCopilotKit()
-  return (text: string) => {
-    if (agent.isRunning) return
-    agent.addMessage({ id: crypto.randomUUID(), role: 'user', content: text })
-    void copilotkit.runAgent({ agent })
-    // A click in an earlier card (a donut, a button) adds the message far above the end of the list; bring the view to it.
-    scrollChatToLatest()
-  }
 }
 
 /** The cards the model can show. Each is a frontend tool: the model chooses it, the shell draws it with live data. */
@@ -213,10 +201,10 @@ function ForOwnProcurement({ id, result, children }: { id: string; result?: stri
 
 /** The projects the public World Bank API matched for a name. The Ingest button is the user's: the model only runs the search. */
 function useIngestTool() {
-  const send = useSendToChat()
+  // The card asks for "send a message" itself (IngestInChat): a copy taken here would be kept from the first render, when the chat may still be holding a placeholder agent.
   useRenderTool({
     name: 'find_world_bank_project', parameters: z.object({}).passthrough(),
-    render: (p) => (p.status === 'complete' ? <div className={styles.cards}><IngestCandidates result={p.result} onSend={send} /></div> : <p>Searching the World Bank projects…</p>),
+    render: (p) => (p.status === 'complete' ? <div className={styles.cards}><IngestInChat result={p.result} /></div> : <p>Searching the World Bank projects…</p>),
   }, [])
 }
 
