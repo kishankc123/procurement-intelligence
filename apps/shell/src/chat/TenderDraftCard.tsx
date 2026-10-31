@@ -156,7 +156,7 @@ function TenderDraftEditor({ projectId }: { projectId: string }) {
 
 /**
  * The Tender design stage for a project that exists: what its tender draft HAS on record, read only. Nothing is suggested or crafted here.
- * With no draft it says so. Entering or editing a draft for a past project (the editor above) is off while PAST_PROJECTS_EDITABLE is false; a draft for
+ * With no draft (and past projects read-only) it shows only the tenders and the own-procurement button. Entering or editing a draft for a past project (the editor above) is off while PAST_PROJECTS_EDITABLE is false; a draft for
  * the user's own procurement is asked for in the chat.
  */
 export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSend: (text: string) => void }) {
@@ -173,6 +173,17 @@ export function TenderDraftCard({ projectId, onSend }: { projectId: string; onSe
       <div className={styles.card}>
         <TenderDraftEditor projectId={projectId} />
         <div className={styles.actions}><Button onClick={() => setEditing(false)}>Back to the draft on record</Button></div>
+      </div>
+    )
+  }
+  // A real project has no tender clauses in the public sources, so there is no draft card to show: only the tenders it published, and the way to ask for a draft for the user's own procurement.
+  if (!draft && !PAST_PROJECTS_EDITABLE) {
+    return (
+      <div className={styles.stack}>
+        <TenderNoticesOnRecord projectId={projectId} />
+        <div className={styles.actions}>
+          <Button variant="primary" onClick={() => onSend('Suggest tender clauses for my own procurement')}>Suggest a draft for my own procurement</Button>
+        </div>
       </div>
     )
   }
