@@ -33,6 +33,13 @@ describe('suggested prompts', () => {
     expect(first!.title).toBe('Road project like Lao PDR')
   })
 
+  it('offers an analytical starter about a real project of the country with the most, and none when there are no real projects', () => {
+    const risk = suggestedPrompts(projects).find((p) => p.title === 'Risks and comparable projects')!
+    expect(risk.message).toContain('main risks in Lao Road Sector Project 2 (LRSP2)')
+    expect(risk.message).toMatch(/how well does the data support that.*most comparable.*why/)
+    expect(suggestedPrompts([projects[4]!]).some((p) => p.title === 'Risks and comparable projects')).toBe(false)
+  })
+
   it('never builds a country prompt from a mock project', () => {
     const all = suggestedPrompts(projects).map((p) => p.message).join(' ')
     expect(all).not.toContain('Romania')
@@ -40,7 +47,7 @@ describe('suggested prompts', () => {
 
   it('also offers any other country, the real project list, the data sources and one mock project', () => {
     const titles = suggestedPrompts(projects).map((p) => p.title)
-    expect(titles).toEqual(['Road project like Lao PDR', 'Road project like Cambodia', 'Road project like India', 'Any other country', 'Real projects', 'Data sources', 'Try a mock project'])
+    expect(titles).toEqual(['Road project like Lao PDR', 'Road project like Cambodia', 'Road project like India', 'Risks and comparable projects', 'Any other country', 'Real projects', 'Data sources', 'Try a mock project'])
   })
 
   it('follows the data: with no real projects there is no country prompt', () => {

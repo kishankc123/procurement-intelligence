@@ -597,13 +597,13 @@ function unpackVectors(bytes, count, dimensions) {
     const scale = view.getFloat32(i * 4, true) / 127;
     const out = new Float32Array(dimensions);
     const base = count * 4 + i * dimensions;
-    let sum = 0;
+    let sum2 = 0;
     for (let d = 0; d < dimensions; d++) {
       const x = view.getInt8(base + d) * scale;
       out[d] = x;
-      sum += x * x;
+      sum2 += x * x;
     }
-    const norm = Math.sqrt(sum) || 1;
+    const norm = Math.sqrt(sum2) || 1;
     for (let d = 0; d < dimensions; d++) out[d] /= norm;
     return out;
   });
@@ -713,15 +713,688 @@ async function semanticSearch(db, query, deps, projectId, limit = 5) {
   };
 }
 
+// packages/config/src/index.ts
+var THRESHOLDS = {
+  tenderBenchmarkMinContracts: 10,
+  competitionBenchmarkMinContracts: 10,
+  restructuringModelMinProjects: 30,
+  durationModelMinProjects: 30,
+  disbursementLagPoints: 20,
+  /** A schedule item is flagged behind when recorded progress trails the share of its time already used by more than this. */
+  scheduleLagPoints: 20,
+  /** Two tender names count as similar at or above this share of shared words (0 to 1). */
+  retenderNameSimilarity: 0.6,
+  /** A supplier's record is judged only from this many contracts. Below it the history is shown but no flag is raised. */
+  supplierProfileMinContracts: 3,
+  /** Approved price changes above this share of the contract amounts flag a supplier. */
+  supplierPriceGrowthPct: 10,
+  /** Completed milestones that finished later than planned by more than this many days, on average, flag a supplier. */
+  supplierDelayDays: 30,
+  /** A supplier is flagged when at least this share of its contracts got an approved time extension. */
+  supplierTimeExtensionShare: 0.5
+};
+var API_BASE = typeof window !== "undefined" && window.location.hostname !== "localhost" ? "/api" : "http://localhost:3001";
+var ASSISTANT_BASE = typeof window !== "undefined" && window.location.hostname !== "localhost" ? "/api" : "http://localhost:3002";
+var COPILOT_URL = `${ASSISTANT_BASE.replace(/\/api$/, "")}/api/copilotkit`;
+
+// packages/data/src/selectors.ts
+var DAY2 = 864e5;
+function dayDiff(from, to) {
+  return Math.round((Date.parse(to) - Date.parse(from)) / DAY2);
+}
+
+// packages/data/src/analysis.ts
+var STAGE_LABEL = { plans_executed: "Plans executed", tenders_published: "Tenders published", monitoring: "Monitoring", lessons_learned: "Lessons learned" };
+var RATING_ORDER = ["HS", "S", "MS", "MU", "U", "HU"];
+var RISK_ORDER = ["Low", "Moderate", "Substantial", "High"];
+var round1 = (n) => Math.round(n * 10) / 10;
+var pct = (part, whole) => whole > 0 ? round1(part / whole * 100) : 0;
+var usd2 = (n) => `USD ${Math.round(n).toLocaleString("en-US")}`;
+var months = (from, to) => round1(dayDiff(from, to) / 30.44);
+var sum = (xs) => xs.reduce((a, b) => a + b, 0);
+var sortedByDate = (xs) => [...xs].sort((a, b) => a.date.localeCompare(b.date));
+var isIsr = (d) => /implementation status|supervision/i.test(d.type);
+var isIcrReview = (d) => /completion report review/i.test(d.type);
+var isIcr = (d) => !isIcrReview(d) && /implementation completion|completion report/i.test(d.type);
+var isAppraisal = (d) => /appraisal/i.test(d.type);
+var isPlanDoc = (d) => /procurement plan/i.test(d.type);
+var LESS_COMPETITIVE = /direct|single[- ]source|sole|limited|restricted/i;
+function projectOf(db, id) {
+  return db.projects.find((p) => p.project_id === id) ?? null;
+}
+var asOfOf = (db, reports) => db.meta?.as_of_date ?? sortedByDate(reports).at(-1)?.date ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+function getDataGaps(db, projectId) {
+  const project = projectOf(db, projectId);
+  if (!project) return { error: `No project with id ${projectId}.` };
+  const real = projectScope(projectId) === "real";
+  const contracts = db.contracts.filter((c) => c.project_id === projectId);
+  const reports = db.supervision_reports.filter((r) => r.project_id === projectId);
+  const docs = db.documents.filter((d) => d.project_id === projectId);
+  const chunks = db.chunks.filter((c) => docs.some((d) => d.doc_id === c.doc_id));
+  const rows = db.plan_packages.filter((r) => r.project_id === projectId);
+  const notices = db.tender_notices.filter((t) => t.project_id === projectId);
+  const asOf = asOfOf(db, reports);
+  const closing = project.closing_date_revised ?? project.closing_date_planned;
+  const items = [];
+  const add = (i) => items.push(i);
+  if (rows.length > 0) {
+    add({
+      stage: "plans_executed",
+      item: "Procurement plan packages",
+      status: "available",
+      detail: `${rows.length} package rows from the World Bank plan of ${rows[0].plan_date}, copied as written (estimated costs in ${rows[0].cost_unit ?? "an unstated unit"}).`,
+      limits: "Only the first rows of one plan document are stored, so the plan is not complete and totals cannot be taken from it.",
+      evidence: [{ type: "document", id: rows[0].plan_doc, label: `Procurement plan of ${rows[0].plan_date}` }]
+    });
+  } else if (docs.some(isPlanDoc)) {
+    add({
+      stage: "plans_executed",
+      item: "Procurement plan packages",
+      status: "could_not_verify",
+      detail: "A plan document is stored, but no package row could be read and checked against its text.",
+      limits: "Planned packages, methods and expected bid openings cannot be listed.",
+      alternative: "The plan text is stored in chunks and can be searched.",
+      next_step: "Search the plan document text for the package or method in question."
+    });
+  } else {
+    add({
+      stage: "plans_executed",
+      item: "Procurement plan",
+      status: "not_found",
+      detail: "No procurement plan document and no plan rows are stored for this project.",
+      limits: "What was planned cannot be compared with what was awarded.",
+      alternative: "The contract awards show what was procured.",
+      next_step: "Check whether a plan is published for the project; otherwise compare the contract awards with comparable projects."
+    });
+  }
+  if (contracts.length > 0) {
+    const dates = contracts.map((c) => c.contract_signing_date).sort();
+    add({
+      stage: "plans_executed",
+      item: "Contract awards",
+      status: "available",
+      detail: `${contracts.length} contracts, ${usd2(sum(contracts.map((c) => c.supplier_contract_amount_usd)))} committed, signed ${dates[0]} to ${dates.at(-1)}.`,
+      limits: "Amounts are committed at signing, not paid; joint ventures may appear as several rows."
+    });
+  } else {
+    add({
+      stage: "plans_executed",
+      item: "Contract awards",
+      status: real ? "not_in_public_sources" : "not_found",
+      detail: real ? "The public contract-awards list has no rows for this project." : "No contracts are stored for this project.",
+      limits: "Suppliers, values, methods and categories cannot be analysed for this project.",
+      alternative: "Comparable projects that do have contract awards.",
+      next_step: "Use find_comparable_projects to see what similar projects awarded."
+    });
+  }
+  add({
+    stage: "plans_executed",
+    item: "Procurement durations (advertisement to award) and contract completion dates",
+    status: "not_in_public_sources",
+    detail: "The contract awards carry a signing date only. No advertisement, bid opening, award or completion date is published with them.",
+    limits: "A reliable procurement-duration or contract-delay benchmark cannot be calculated from the contract awards.",
+    alternative: "Plan rows give an expected bid opening as text, and tender notices give a posting date; neither gives an award date.",
+    next_step: "Ask the user for the dates they hold, or compare comparable projects only on what is recorded (signing dates and supervision reports)."
+  });
+  if (notices.length > 0) add({ stage: "tenders_published", item: "Tender notices", status: "available", detail: `${notices.length} Invitation for Bids notices, newest ${sortedByDate(notices.map((n) => ({ date: n.posted }))).at(-1).date}.`, limits: "Only the newest 60 are stored; notice text and bidding documents are not." });
+  else add({
+    stage: "tenders_published",
+    item: "Tender notices",
+    status: "not_found",
+    detail: "No tender notices are stored for this project.",
+    limits: "What was tendered, when and by whom cannot be listed.",
+    alternative: "Contract awards show what was bought.",
+    next_step: "Re-run the ingestion for this project to read its notices, or accept that none are published."
+  });
+  add({
+    stage: "tenders_published",
+    item: "Tender clauses, bidder counts, bid dates and evaluation results",
+    status: real ? "not_in_public_sources" : "available",
+    detail: real ? "The public sources hold none of these for a World Bank project." : "Demonstration tender drafts and amendments exist for the mock projects.",
+    limits: real ? "Competition (how many bid), bid validity and evaluation outcomes cannot be assessed; the method label is the only competition signal." : "These are made-up figures.",
+    next_step: real ? "Ask the user for the bidding documents or evaluation reports, if they hold them." : void 0
+  });
+  add({
+    stage: "tenders_published",
+    item: "Contract amendments and variations",
+    status: real ? "not_in_public_sources" : "available",
+    detail: real ? "Amendments are not published with the contract awards." : `${db.amendments.length} demonstration amendments exist.`,
+    limits: real ? "Cost and time changes after signing cannot be measured." : void 0,
+    alternative: real ? "Supervision reports record restructurings and closing-date extensions at project level." : void 0
+  });
+  const isrDocs = docs.filter(isIsr);
+  if (reports.length > 0) {
+    const sorted = sortedByDate(reports);
+    add({ stage: "monitoring", item: "Supervision reports", status: "available", detail: `${reports.length} reports with ratings, risk and disbursement, ${sorted[0].date} to ${sorted.at(-1).date}.` });
+  } else add({
+    stage: "monitoring",
+    item: "Supervision reports",
+    status: isrDocs.length > 0 ? "could_not_verify" : "not_found",
+    detail: isrDocs.length > 0 ? `${isrDocs.length} supervision report documents are stored but none could be read into ratings.` : "No supervision reports are stored for this project.",
+    limits: "Performance, risk and disbursement trends cannot be assessed.",
+    next_step: "Search the stored report text, or re-run the ingestion."
+  });
+  const unread = isrDocs.filter((d) => d.parse_status === "parsed").length - reports.length;
+  if (reports.length > 0 && unread > 0) add({
+    stage: "monitoring",
+    item: "Supervision reports the parser could not read",
+    status: "could_not_verify",
+    detail: `${unread} of ${isrDocs.length} report documents were stored as text but are not in the ratings series.`,
+    limits: "The ratings series has gaps, so a change between two reports may be larger than it looks.",
+    alternative: "The text of those reports is searchable.",
+    next_step: "Search the report text for the periods missing from the series."
+  });
+  const refused = docs.filter((d) => d.parse_status === "failed");
+  if (refused.length > 0) add({
+    stage: "monitoring",
+    item: "Documents whose text could not be downloaded",
+    status: "not_retrieved",
+    detail: `${refused.length} documents were listed but the World Bank site refused or did not have their text: ${refused.slice(0, 4).map((d) => d.title).join("; ")}.`,
+    limits: "Anything those documents say is missing from the analysis.",
+    next_step: "Re-run the ingestion later (a refusal is retried after a day), or open them on the World Bank site.",
+    evidence: refused.slice(0, 4).map((d) => ({ type: "document", id: d.doc_id, label: d.title }))
+  });
+  const icr = docs.filter(isIcr);
+  const structured = db.completion_reports.filter((r) => r.project_id === projectId);
+  if (structured.length > 0) add({ stage: "lessons_learned", item: "Completion report lessons", status: "available", detail: `${structured.reduce((n, r) => n + r.lessons.length, 0)} lessons extracted from the completion report, each with its source passage.`, evidence: structured.flatMap((r) => r.lessons.map((l) => ({ type: "chunk", id: l.chunk_id, label: l.section }))).slice(0, 6) });
+  else if (icr.some((d) => d.parse_status === "parsed")) add({
+    stage: "lessons_learned",
+    item: "Completion report lessons",
+    status: "not_retrieved",
+    detail: `The completion report text is stored (${chunks.filter((c) => icr.some((d) => d.doc_id === c.doc_id)).length} searchable chunks), but its lessons have not been extracted into a list.`,
+    limits: "Lessons cannot be listed or counted; they have to be read from the text.",
+    alternative: "The completion report text itself.",
+    next_step: "Search the completion report text for lessons, causes of delay and procurement problems (semantic_search_documents).",
+    evidence: icr.map((d) => ({ type: "document", id: d.doc_id, label: d.title }))
+  });
+  else add({
+    stage: "lessons_learned",
+    item: "Completion report",
+    status: "not_found",
+    detail: `No completion report is stored. The project's closing date is ${closing}${closing >= asOf ? ", which has not passed, so it may simply not exist yet" : ", which has passed, so one may exist that was not retrieved"}.`,
+    limits: "There is no documented hindsight on how this project turned out.",
+    alternative: "Lessons from comparable projects that have a completion report.",
+    next_step: "Use find_comparable_projects and scan_risk_evidence on projects that do have one; do not infer lessons for this project."
+  });
+  if (docs.some((d) => isIcrReview(d) && d.parse_status !== "parsed")) add({ stage: "lessons_learned", item: "Completion report review", status: "not_retrieved", detail: "The independent review of the completion report is listed but its text was not read.", limits: "The reviewers' rating of the outcome is not available." });
+  if (docs.some((d) => isAppraisal(d) && d.parse_status !== "parsed")) add({
+    stage: "general",
+    item: "Project appraisal document",
+    status: "not_retrieved",
+    detail: "The appraisal document is listed but its text was not read.",
+    limits: "The original objectives, risk assessment and procurement arrangements are not available to check later findings against.",
+    next_step: "Open it on the World Bank site, or ask for text ingestion of this document type."
+  });
+  const embedded = chunks.filter((c) => c.embedding_status === "embedded").length;
+  if (chunks.length > 0 && embedded === 0) add({ stage: "general", item: "Search by meaning", status: "not_retrieved", detail: `None of the ${chunks.length} document chunks has been embedded, so only keyword search works.`, limits: "A question phrased differently from the text may miss relevant passages.", next_step: "Re-ingest the project with the embedding model switched on." });
+  if (chunks.length === 0) add({ stage: "general", item: "Document text", status: "not_found", detail: "No document text is stored for this project.", limits: "Nothing can be cited from documents." });
+  const by = (s) => items.filter((i) => i.status === s).length;
+  return {
+    project_id: projectId,
+    project: project.project_name,
+    kind: scopeLabel(projectScope(projectId)),
+    meaning: {
+      not_in_public_sources: "Not published by the public sources for this kind of project. It cannot be retrieved by ingesting again.",
+      not_retrieved: "It exists or is listed, but its content was not downloaded, read or extracted. It may be obtainable.",
+      could_not_verify: "It was read, but the figures could not be checked against the text.",
+      not_found: "Nothing is stored, and the records do not say whether none exists or it was not retrieved."
+    },
+    counts: { available: by("available"), not_in_public_sources: by("not_in_public_sources"), not_retrieved: by("not_retrieved"), could_not_verify: by("could_not_verify"), not_found: by("not_found") },
+    items
+  };
+}
+var sectorOf = (p) => p.project_global_practice.split(/[;,]/).map((s) => s.trim().toLowerCase()).filter(Boolean);
+function profileOf(db, p) {
+  const contracts = db.contracts.filter((c) => c.project_id === p.project_id);
+  const committed = sum(contracts.map((c) => c.supplier_contract_amount_usd));
+  const byCat = /* @__PURE__ */ new Map();
+  for (const c of contracts) byCat.set(c.procurement_category, (byCat.get(c.procurement_category) ?? 0) + c.supplier_contract_amount_usd);
+  const top = [...byCat].sort((a, b) => b[1] - a[1])[0];
+  const lessValue = sum(contracts.filter((c) => LESS_COMPETITIVE.test(c.procurement_method)).map((c) => c.supplier_contract_amount_usd));
+  const reports = db.supervision_reports.filter((r) => r.project_id === p.project_id);
+  const docs = db.documents.filter((d) => d.project_id === p.project_id);
+  const hasIcr = db.completion_reports.some((r) => r.project_id === p.project_id) || docs.some((d) => isIcr(d) && d.parse_status === "parsed");
+  return {
+    id: p.project_id,
+    name: p.project_name,
+    country: p.borrower_country,
+    region: p.region,
+    sector: sectorOf(p),
+    committed: contracts.length ? committed : null,
+    contracts: contracts.length,
+    avgContract: contracts.length ? committed / contracts.length : null,
+    dominantCategory: top && committed > 0 ? { name: top[0], share: pct(top[1], committed) } : null,
+    lessCompetitiveShare: contracts.length && committed > 0 ? pct(lessValue, committed) : null,
+    plannedYears: p.approval_date && p.closing_date_planned ? round1(dayDiff(p.approval_date, p.closing_date_planned) / 365.25) : null,
+    extensionMonths: p.closing_date_revised ? months(p.closing_date_planned, p.closing_date_revised) : 0,
+    stage: hasIcr ? "completed" : reports.length ? "supervised" : "no reports",
+    reports: reports.length,
+    hasCompletionReport: hasIcr
+  };
+}
+var ratioVerdict = (a, b, similarWithin, differentAbove) => {
+  if (a === null || b === null || a <= 0 || b <= 0) return { verdict: "unknown", ratio: null };
+  const r = Math.max(a, b) / Math.min(a, b);
+  return { verdict: r <= similarWithin ? "similar" : r >= differentAbove ? "different" : "partly", ratio: round1(r) };
+};
+function findComparableProjects(db, input) {
+  const target = input.project_id ? projectOf(db, input.project_id) : null;
+  if (input.project_id && !target) return { error: `No project with id ${input.project_id}.` };
+  const scope = target ? projectScope(target.project_id) : input.scope ?? (db.projects.some((p) => projectScope(p.project_id) === "real") ? "real" : "mock");
+  const pool = db.projects.filter((p) => projectScope(p.project_id) === scope && p.project_id !== target?.project_id);
+  if (pool.length === 0) return { comparables: "missing: no other stored project of this kind to compare with." };
+  const t = target ? profileOf(db, target) : {
+    sector: input.sector ? [input.sector.toLowerCase()] : void 0,
+    country: input.country,
+    committed: input.value_usd ?? null,
+    dominantCategory: input.category ? { name: input.category, share: 100 } : null
+  };
+  const targetLabel = target ? `${target.project_name} (${target.project_id})` : "your procurement as described";
+  const allSectors = /* @__PURE__ */ new Set([...pool.flatMap((p) => sectorOf(p)), ...t.sector ?? []]);
+  const sectorDiscriminates = allSectors.size > 1;
+  const out = pool.map((p) => {
+    const c = profileOf(db, p);
+    const dims = [];
+    if (t.sector?.length && sectorDiscriminates) {
+      const same = c.sector.some((s) => t.sector.some((x) => s.includes(x) || x.includes(s)));
+      dims.push({ dimension: "sector", target: t.sector.join(", "), candidate: c.sector.join(", "), verdict: same ? "similar" : "different" });
+    }
+    if (t.country) {
+      const norm = (s) => s.toLowerCase();
+      const same = norm(c.country).includes(norm(t.country)) || norm(t.country).includes(norm(c.country));
+      const sameRegion = !!(t.region && c.region && norm(t.region) === norm(c.region));
+      dims.push({ dimension: "country", target: t.country, candidate: c.country, verdict: same ? "similar" : sameRegion ? "partly" : "different", note: same ? void 0 : sameRegion ? `a different country in the same region (${c.region})` : `a different region (${c.region})` });
+    }
+    if (t.committed != null) {
+      const { verdict, ratio } = ratioVerdict(t.committed, c.committed, 2, 5);
+      dims.push({ dimension: "scale (committed value)", target: usd2(t.committed), candidate: c.committed === null ? "no contracts" : usd2(c.committed), verdict, note: ratio ? `${ratio}\xD7 apart (similar within 2\xD7, different at 5\xD7 or more)` : void 0 });
+    }
+    if (t.dominantCategory) {
+      const same = !!c.dominantCategory && c.dominantCategory.name.toLowerCase().includes(t.dominantCategory.name.toLowerCase().slice(0, 5));
+      dims.push({ dimension: "main procurement category", target: t.dominantCategory.name, candidate: c.dominantCategory ? `${c.dominantCategory.name} (${c.dominantCategory.share}% of value)` : "no contracts", verdict: c.dominantCategory ? same ? "similar" : "different" : "unknown" });
+    }
+    if (input.method) dims.push({ dimension: "method", target: input.method, candidate: c.lessCompetitiveShare === null ? "no contracts" : `${c.lessCompetitiveShare}% of value by less competitive methods`, verdict: "unknown", note: "only the share of less competitive methods is compared when a project is the target" });
+    if (t.lessCompetitiveShare != null) {
+      const d = c.lessCompetitiveShare === null ? null : Math.abs(c.lessCompetitiveShare - t.lessCompetitiveShare);
+      dims.push({ dimension: "share procured less competitively (direct, single-source or limited selection)", target: `${t.lessCompetitiveShare}%`, candidate: c.lessCompetitiveShare === null ? "no contracts" : `${c.lessCompetitiveShare}%`, verdict: d === null ? "unknown" : d <= 15 ? "similar" : d >= 30 ? "different" : "partly", note: "by value; the label does not show how a selection was justified" });
+    }
+    if (t.plannedYears != null) {
+      const { verdict, ratio } = ratioVerdict(t.plannedYears, c.plannedYears, 1.25, 2);
+      dims.push({ dimension: "planned length (approval to planned closing)", target: `${t.plannedYears} years`, candidate: c.plannedYears === null ? "unknown" : `${c.plannedYears} years`, verdict, note: ratio ? `${ratio}\xD7 apart` : void 0 });
+    }
+    const known = dims.filter((d) => d.verdict !== "unknown");
+    const similar = known.filter((d) => d.verdict === "similar");
+    const different = dims.filter((d) => d.verdict === "different");
+    const share = similar.length / Math.max(known.length, 1);
+    const comparability = known.length >= 4 && share >= 0.75 && different.length === 0 ? "closer" : similar.length >= 2 && share >= 0.5 && different.length <= 1 ? "partial" : "limited";
+    return {
+      project_id: c.id,
+      name: c.name,
+      country: c.country,
+      sector: c.sector.join(", "),
+      comparability,
+      why_relevant: similar.map((d) => `${d.dimension}: yours ${d.target}, this one ${d.candidate}${d.note ? ` (${d.note})` : ""}`),
+      partly_similar: dims.filter((d) => d.verdict === "partly").map((d) => `${d.dimension}: yours ${d.target}, this one ${d.candidate}${d.note ? ` (${d.note})` : ""}`),
+      differences_that_limit_use: different.map((d) => `${d.dimension}: yours ${d.target}, this one ${d.candidate}${d.note ? ` (${d.note})` : ""}`),
+      not_comparable_for_lack_of_data: dims.filter((d) => d.verdict === "unknown").map((d) => d.dimension),
+      history_available: { supervision_reports: c.reports, completion_report: c.hasCompletionReport, stage: c.stage },
+      _rank: [comparability === "closer" ? 0 : comparability === "partial" ? 1 : 2, -similar.length, c.id]
+    };
+  }).sort((a, b) => a._rank[0] - b._rank[0] || a._rank[1] - b._rank[1] || a._rank[2].localeCompare(b._rank[2]));
+  const limit = Math.min(Math.max(input.limit ?? 5, 1), 10);
+  const stripped = out.slice(0, limit).map(({ _rank, ...rest }) => rest);
+  return {
+    compared_with: targetLabel,
+    kind: scopeLabel(scope),
+    candidates_considered: pool.length,
+    shown: stripped.length,
+    how_ranked: 'Each dimension is judged similar, partly similar, different or unknown (not enough data). closer = at least 4 dimensions could be compared, at least 75% of them similar and none different; partial = at least 2 similar, at least half of those compared similar, and at most 1 different; limited = otherwise. Ties are ordered by the number of similar dimensions. This is a rule over the stored figures, not a statistical score, and with few dimensions known (for example a procurement you describe in a sentence) "closer" cannot be reached.',
+    limits: [
+      `Only ${pool.length} stored ${scope} project${pool.length === 1 ? "" : "s"} can be compared, so nothing here supports a statistical conclusion.`,
+      ...!sectorDiscriminates ? [`Every stored ${scope} project is in the same sector (${[...allSectors].join(", ")}), so sector is not used to rank them; country, scale, procurement mix, length and stage matter more.`] : [],
+      "Similar figures do not mean a similar cause; a difference listed here may explain why a finding does not carry over."
+    ],
+    comparables: stripped
+  };
+}
+var PROBLEM = /\b(delay\w*|late(r)?|slow\w*|problem\w*|issue\w*|weak\w*|poor\w*|constraint\w*|challeng\w*|difficult\w*|shortfall\w*|overrun\w*|fail\w*|insufficient|lack\w*|inadequate|bottleneck\w*|cancel\w*|terminat\w*|re-?bid\w*|re-?tender\w*|dispute\w*|complain\w*|non-?complian\w*|backlog|arrears|escalat\w*|increase[ds]?|unsatisfactory)\b/i;
+var RISK_THEMES = [
+  { id: "procurement_delay", label: "Procurement and bidding problems", topic: /\b(procure\w*|bid(s|ding)?|tender\w*|contract award|award of contract|bid validity|bid evaluation)\b/i, needsProblem: true },
+  { id: "contractor_performance", label: "Contractor performance and capacity", topic: /\b(contractor\w*|civil works|works contract\w*)\b/i, needsProblem: true },
+  { id: "land_and_safeguards", label: "Land acquisition, resettlement and safeguards", topic: /\b(land acquisition|resettlement|right[- ]of[- ]way|compensation|safeguards?|ESMP|environmental and social)\b/i, needsProblem: true },
+  { id: "cost_and_variations", label: "Cost increases and contract variations", topic: /\b(cost\w*|price\w*|variation\w*|amendment\w*|additional works|contingenc\w*)\b/i, needsProblem: true },
+  { id: "design_and_specification", label: "Design and specification quality", topic: /\b(design|technical specification\w*|specification\w*|bidding documents?)\b/i, needsProblem: true },
+  { id: "institutional_capacity", label: "Implementing agency capacity", topic: /\b(capacity|staff\w*|implementing (agency|unit)|project management unit|PMU|turnover)\b/i, needsProblem: true },
+  { id: "disbursement_and_funds", label: "Disbursement and funding", topic: /\b(disburse\w*|payments?|counterpart fund\w*|funding)\b/i, needsProblem: true },
+  { id: "closing_and_restructuring", label: "Extensions and restructuring", topic: /\b(closing date|extension|restructur\w*|additional financing)\b/i, needsProblem: true, problem: /\b(extend\w*|extension\w*|delay\w*|slow\w*|shortfall\w*|unsatisf\w*|challeng\w*|insufficient|lack\w*)\b/i }
+];
+var THEME_IDS = RISK_THEMES.map((t) => t.id);
+var looksLikeTable = (text) => (text.match(/\d/g) ?? []).length / Math.max(text.length, 1) > 0.15;
+var looksLikeGlossary = (text) => {
+  const words2 = text.split(/\s+/).filter(Boolean);
+  return words2.length > 0 && words2.filter((w) => /^[A-Z(]/.test(w)).length / words2.length > 0.45;
+};
+var sentencesOf = (text) => text.replace(/\s+/g, " ").split(/(?<=[.!?;])\s+(?=[A-Z(])/).filter((x) => x.length >= 30);
+var trimTo = (s, n = 340) => s.length <= n ? s : `${s.slice(0, n).replace(/\s+\S*$/, "")}\u2026`;
+function scanRiskEvidence(db, input) {
+  const scope = input.scope ?? "real";
+  const projects = db.projects.filter((p) => projectScope(p.project_id) === scope && (!input.project_ids?.length || input.project_ids.includes(p.project_id)));
+  if (projects.length === 0) return { themes: "missing: no stored project matches the request." };
+  const wanted = input.themes?.length ? RISK_THEMES.filter((t) => input.themes.includes(t.id)) : RISK_THEMES;
+  const custom = input.keyword?.trim() ? [{ id: "custom", label: `"${input.keyword.trim()}"`, topic: new RegExp(input.keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), needsProblem: false }] : [];
+  const themes = [...wanted, ...custom];
+  const docOf = new Map(db.documents.map((d) => [d.doc_id, d]));
+  const nameOf = new Map(projects.map((p) => [p.project_id, p.project_name]));
+  const pool = db.chunks.filter((c) => {
+    const d = docOf.get(c.doc_id);
+    return d && nameOf.has(d.project_id) && !looksLikeTable(c.text) && !looksLikeGlossary(c.text);
+  });
+  const sentences = new Map(pool.map((c) => [c.chunk_id, sentencesOf(c.text)]));
+  const limit = Math.min(Math.max(input.limit_per_theme ?? 2, 1), 6);
+  const rank = (d) => isIcr(d) ? 0 : isIsr(d) ? 1 : 2;
+  const results = themes.map((theme) => {
+    const hits = pool.flatMap((c) => {
+      const sentence = sentences.get(c.chunk_id).find((x) => theme.topic.test(x) && (!theme.needsProblem || (theme.problem ?? PROBLEM).test(x)));
+      return sentence ? [{ c, d: docOf.get(c.doc_id), sentence }] : [];
+    });
+    const perProject = /* @__PURE__ */ new Map();
+    for (const h of hits) {
+      const e = perProject.get(h.d.project_id) ?? { mentions: 0, types: /* @__PURE__ */ new Set() };
+      e.mentions++;
+      e.types.add(h.d.type);
+      perProject.set(h.d.project_id, e);
+    }
+    const ordered = [...hits].sort((a, b) => rank(a.d) - rank(b.d) || b.d.date.localeCompare(a.d.date) || a.c.chunk_id.localeCompare(b.c.chunk_id));
+    const taken = [];
+    const seen = /* @__PURE__ */ new Map();
+    for (const h of ordered) {
+      if ((seen.get(h.d.project_id) ?? 0) >= 2) continue;
+      taken.push(h);
+      seen.set(h.d.project_id, (seen.get(h.d.project_id) ?? 0) + 1);
+      if (taken.length >= limit) break;
+    }
+    return {
+      theme: theme.id,
+      label: theme.label,
+      passages_matching: hits.length,
+      projects: [...perProject].map(([id, e]) => ({ project_id: id, name: nameOf.get(id), mentions: e.mentions, document_types: [...e.types] })).sort((a, b) => b.mentions - a.mentions),
+      passages: taken.map((h) => ({ chunk_id: h.c.chunk_id, project_id: h.d.project_id, document: h.d.title, document_type: h.d.type, date: h.d.date, section: h.c.section_path, excerpt: trimTo(h.sentence) }))
+    };
+  });
+  return {
+    kind: scopeLabel(scope),
+    projects_scanned: projects.length,
+    chunks_scanned: pool.length,
+    caution: "Keyword scan of stored document text: a sentence is kept when it names the topic and a problem word together. It shows that a document discusses the theme, not how often it happened, how much it mattered, or that it caused a delay or cost, and it can match a sentence that says the problem was solved. Tables and acronym lists are skipped. Read the passage before relying on it.",
+    themes: results,
+    available_themes: THEME_IDS
+  };
+}
+var RISK_RULES = {
+  disbursementLagPoints: THRESHOLDS.disbursementLagPoints,
+  supplierShareLower: 40,
+  supplierShareModerate: 60,
+  lessCompetitiveShareLower: 25,
+  lessCompetitiveShareModerate: 50,
+  extensionMonthsLower: 6,
+  extensionMonthsModerate: 12,
+  restructuringsModerate: 2
+};
+var PRIORITY_RULE = `Priority is a rule, not a probability. higher = a threshold is breached in the latest supervision report (a rating at moderately unsatisfactory or worse, a downgrade of two levels or more, disbursement more than ${RISK_RULES.disbursementLagPoints} points behind the time used, overall risk High), or two or more separate signals about the same theme are each at least moderate. moderate = one signal above its threshold (overall risk Substantial, a one-level downgrade, a closing date moved ${RISK_RULES.extensionMonthsModerate}+ months, ${RISK_RULES.restructuringsModerate}+ restructurings, one supplier above ${RISK_RULES.supplierShareModerate}% of committed value, ${RISK_RULES.lessCompetitiveShareModerate}%+ of value procured by direct, single-source or limited selection, recorded amendments that add cost). lower = context worth knowing (a closing date moved ${RISK_RULES.extensionMonthsLower}-${RISK_RULES.extensionMonthsModerate} months, one supplier at ${RISK_RULES.supplierShareLower}-${RISK_RULES.supplierShareModerate}%, ${RISK_RULES.lessCompetitiveShareLower}-${RISK_RULES.lessCompetitiveShareModerate}% by less competitive methods).`;
+var ATTN = { higher: 0, moderate: 1, lower: 2 };
+function analyseProjectRisks(db, projectId) {
+  const project = projectOf(db, projectId);
+  if (!project) return { error: `No project with id ${projectId}.` };
+  const reports = sortedByDate(db.supervision_reports.filter((r) => r.project_id === projectId));
+  const contracts = db.contracts.filter((c) => c.project_id === projectId);
+  const latest = reports.at(-1);
+  const prev = reports.at(-2);
+  const asOf = asOfOf(db, reports);
+  const closing = project.closing_date_revised ?? project.closing_date_planned;
+  const closed = closing < asOf;
+  const risks = [];
+  const ref = (r) => ({ type: "record", id: r.id, label: `Supervision report ${r.sequence} (${r.date})` });
+  const notAssessed = [];
+  if (latest) {
+    const pi = RATING_ORDER.indexOf(latest.progress_rating), ii = RATING_ORDER.indexOf(latest.implementation_rating);
+    const worst = Math.max(pi, ii);
+    const prevWorst = prev ? Math.max(RATING_ORDER.indexOf(prev.progress_rating), RATING_ORDER.indexOf(prev.implementation_rating)) : null;
+    const dropLevels = prevWorst === null ? 0 : worst - prevWorst;
+    const weak = worst >= RATING_ORDER.indexOf("MU");
+    const weakRun = (() => {
+      let n = 0;
+      for (const r of [...reports].reverse()) {
+        if (Math.max(RATING_ORDER.indexOf(r.progress_rating), RATING_ORDER.indexOf(r.implementation_rating)) >= 3) n++;
+        else break;
+      }
+      return n;
+    })();
+    if (weak || dropLevels > 0) risks.push({
+      id: `RISK-${projectId}-rating`,
+      stage: "monitoring",
+      theme: "performance",
+      basis: "documented",
+      attention: weak || dropLevels >= 2 ? "higher" : "moderate",
+      statement: weak ? `The latest supervision report rates progress toward the objective ${latest.progress_rating} and implementation ${latest.implementation_rating} (moderately unsatisfactory or worse)${weakRun > 1 ? `, and ${weakRun} consecutive reports have been at that level` : ""}.` : `A rating fell by ${dropLevels} level${dropLevels > 1 ? "s" : ""} in the latest report (progress ${prev.progress_rating}\u2192${latest.progress_rating}, implementation ${prev.implementation_rating}\u2192${latest.implementation_rating}).`,
+      evidence: [ref(latest), ...prev ? [ref(prev)] : []],
+      why_it_matters: "The World Bank's own rating is the clearest documented signal of how delivery is going; a weak or falling rating usually precedes restructuring or a closing-date extension, though that is a pattern in these records, not a rule.",
+      uncertain: ["The reports give ratings but not the reasons in structured form; the reasons are in the report text.", "Two consecutive reports show a direction, not a trend."],
+      reduce_or_investigate: ["Read the latest report text for the stated reasons behind the rating.", "Check whether a restructuring or closing-date extension followed earlier downgrades in this project."]
+    });
+    const riskIdx = RISK_ORDER.indexOf(latest.overall_risk);
+    const riskUp = prev ? riskIdx > RISK_ORDER.indexOf(prev.overall_risk) : false;
+    if (riskIdx >= RISK_ORDER.indexOf("Substantial") || riskUp) risks.push({
+      id: `RISK-${projectId}-overall`,
+      stage: "monitoring",
+      theme: "overall_risk",
+      basis: "documented",
+      attention: latest.overall_risk === "High" ? "higher" : "moderate",
+      statement: `Overall risk is rated ${latest.overall_risk}${riskUp ? ` (it was ${prev.overall_risk} in the previous report)` : ""}; fiduciary risk is ${latest.fiduciary_risk}.`,
+      evidence: [ref(latest)],
+      why_it_matters: "Overall and fiduciary risk are the World Bank team's own assessment of what could keep the project from its objectives, including procurement and financial management.",
+      uncertain: ["The rating does not say which risk drives it."],
+      reduce_or_investigate: ["Read the risk section of the latest report for the drivers, and compare it with the ratings of the other stored projects."]
+    });
+    const gapAt = (r) => {
+      const start = project.effectiveness_actual ?? project.effectiveness_planned;
+      const end = project.closing_date_revised ?? project.closing_date_planned;
+      const elapsed = Math.max(0, Math.min(100, dayDiff(start, r.date) / Math.max(dayDiff(start, end), 1) * 100));
+      return round1(elapsed - r.disbursed_pct);
+    };
+    const gap2 = gapAt(latest);
+    if (gap2 > RISK_RULES.disbursementLagPoints) {
+      const earlier = reports.slice(0, -1).map(gapAt);
+      const atClosing = latest.date >= closing;
+      risks.push({
+        id: `RISK-${projectId}-disbursement`,
+        stage: "monitoring",
+        theme: "schedule_delivery",
+        basis: "derived",
+        attention: "higher",
+        statement: atClosing ? `Only ${latest.disbursed_pct}% had been disbursed at the last supervision report (${latest.date}), on or after the closing date: ${round1(100 - latest.disbursed_pct)}% of the financing was not used (rule: more than ${RISK_RULES.disbursementLagPoints} points behind the time used).` : `${latest.disbursed_pct}% was disbursed when about ${round1(gap2 + latest.disbursed_pct)}% of the time to the closing date had been used: ${gap2} points behind (rule: more than ${RISK_RULES.disbursementLagPoints}).${earlier.length ? ` The gap was ${earlier.at(-1)} points in the previous report.` : ""}`,
+        evidence: [ref(latest)],
+        why_it_matters: "Funds not yet spent late in a project's life leave less time to deliver the remaining works and to correct problems.",
+        uncertain: ["Disbursement can lag for reasons that are not delivery problems (advance payments, slow documentation).", "The time-used figure depends on the closing date, which may have been extended."],
+        reduce_or_investigate: ["Check the latest report for the stated cause of slow disbursement.", "See whether the closing date has been extended since."]
+      });
+    }
+  } else notAssessed.push("Rating, risk and disbursement trends: no supervision reports are stored for this project.");
+  const ext = project.closing_date_revised ? months(project.closing_date_planned, project.closing_date_revised) : 0;
+  const restruct = /* @__PURE__ */ new Map();
+  for (const r of reports) for (const x of r.restructurings) restruct.set(x.date, x.note);
+  if (ext >= RISK_RULES.extensionMonthsLower) risks.push({
+    id: `RISK-${projectId}-extension`,
+    stage: "monitoring",
+    theme: "schedule_delivery",
+    basis: "documented",
+    attention: ext >= RISK_RULES.extensionMonthsModerate ? "moderate" : "lower",
+    statement: `The closing date moved from ${project.closing_date_planned} to ${project.closing_date_revised}, ${Math.round(ext)} months later than planned.`,
+    evidence: [{ type: "record", id: project.project_id, label: "Project record: planned and revised closing dates" }, ...latest ? [ref(latest)] : []],
+    why_it_matters: "An extension means the original schedule was not met; it is documented, but the record gives the fact, not the reason.",
+    uncertain: ["Extensions can be requested for reasons outside the implementing agency's control, or to use additional financing.", "The record does not say how many extensions there were."],
+    reduce_or_investigate: ["Search the supervision and completion report text for the reason given for the extension."]
+  });
+  if (restruct.size >= RISK_RULES.restructuringsModerate) risks.push({
+    id: `RISK-${projectId}-restructuring`,
+    stage: "monitoring",
+    theme: "schedule_delivery",
+    basis: "documented",
+    attention: "moderate",
+    statement: `${restruct.size} restructurings are recorded across the supervision reports (${[...restruct.keys()].sort().join(", ")}).`,
+    evidence: latest ? [ref(latest)] : [],
+    why_it_matters: "Restructuring changes scope, targets, financing or dates; repeated restructuring suggests the original design needed adjusting.",
+    uncertain: ["The records list that a restructuring happened and its level, not what it changed."],
+    reduce_or_investigate: ["Read the restructuring paper or the report section describing each change."]
+  });
+  if (contracts.length > 0) {
+    const committed = sum(contracts.map((c) => c.supplier_contract_amount_usd));
+    const bySupplier = /* @__PURE__ */ new Map();
+    for (const c of contracts) {
+      const e = bySupplier.get(c.supplier_id) ?? { name: c.supplier, value: 0, refs: [] };
+      e.value += c.supplier_contract_amount_usd;
+      e.refs.push(c.borrower_contract_reference_number);
+      bySupplier.set(c.supplier_id, e);
+    }
+    const top = [...bySupplier.values()].sort((a, b) => b.value - a.value)[0];
+    const share = pct(top.value, committed);
+    const refCounts = /* @__PURE__ */ new Map();
+    for (const c of contracts) refCounts.set(c.borrower_contract_reference_number, (refCounts.get(c.borrower_contract_reference_number) ?? 0) + 1);
+    if (share >= RISK_RULES.supplierShareLower && bySupplier.size > 1) risks.push({
+      id: `RISK-${projectId}-concentration`,
+      stage: "plans_executed",
+      theme: "concentration",
+      basis: "derived",
+      attention: share >= RISK_RULES.supplierShareModerate ? "moderate" : "lower",
+      statement: `${top.name} holds ${share}% of the ${usd2(committed)} committed (${top.refs.length} contract${top.refs.length > 1 ? "s" : ""}).`,
+      evidence: top.refs.slice(0, 5).map((r) => ({ type: "record", id: r, label: `Contract ${r}` })),
+      why_it_matters: "Heavy reliance on one supplier means a performance problem with that supplier affects a large part of the programme.",
+      uncertain: [...top.refs.some((r) => (refCounts.get(r) ?? 0) > 1) ? ["This supplier's contract appears on more than one row (a joint venture is split into one row per member), so the share may be over- or understated."] : [], "Concentration can be appropriate where only a few firms are qualified."],
+      reduce_or_investigate: ["Check the performance of that supplier's contracts in the supervision reports.", "Compare with the share held by the largest supplier in comparable projects."]
+    });
+    const less = contracts.filter((c) => LESS_COMPETITIVE.test(c.procurement_method));
+    const lessShare = pct(sum(less.map((c) => c.supplier_contract_amount_usd)), committed);
+    if (lessShare >= RISK_RULES.lessCompetitiveShareLower) risks.push({
+      id: `RISK-${projectId}-competition`,
+      stage: "tenders_published",
+      theme: "competition",
+      basis: "derived",
+      attention: lessShare >= RISK_RULES.lessCompetitiveShareModerate ? "moderate" : "lower",
+      statement: `${lessShare}% of committed value (${less.length} of ${contracts.length} contracts) was procured by less competitive methods (${[...new Set(less.map((c) => c.procurement_method))].join(", ")}).`,
+      evidence: [...less].sort((a, b) => b.supplier_contract_amount_usd - a.supplier_contract_amount_usd).slice(0, 5).map((c) => ({ type: "record", id: c.borrower_contract_reference_number, label: `Contract ${c.borrower_contract_reference_number}: ${c.procurement_method}, ${usd2(c.supplier_contract_amount_usd)}` })),
+      why_it_matters: "Less competition can mean less price discipline; it can also be the proper method for small purchases, individual consultants or urgent needs.",
+      uncertain: ["The method name does not show how a selection was justified.", "Bidder counts and evaluation results are not published, so actual competition cannot be measured."],
+      reduce_or_investigate: ["Look at which categories the less competitive contracts fall in (consultants and small purchases are expected).", "Ask for the justification of any large direct selection."]
+    });
+  } else notAssessed.push("Supplier concentration and procurement method mix: no contract awards are stored for this project.");
+  const refs = new Set(contracts.map((c) => c.borrower_contract_reference_number));
+  const approved = db.amendments.filter((a) => refs.has(a.contract_ref) && a.status === "approved");
+  if (approved.length > 0) {
+    const days3 = sum(approved.map((a) => a.days_added)), change = sum(approved.map((a) => a.value_change_usd));
+    risks.push({
+      id: `RISK-${projectId}-amendments`,
+      stage: "monitoring",
+      theme: "contract_changes",
+      basis: "documented",
+      attention: approved.length >= 3 || change > 0 ? "moderate" : "lower",
+      statement: `${approved.length} approved amendments add ${days3} days and ${usd2(change)} across ${new Set(approved.map((a) => a.contract_ref)).size} contracts.`,
+      evidence: approved.map((a) => ({ type: "record", id: a.id, label: `${a.contract_ref}: ${a.type}. Reason given: ${a.reason}` })),
+      why_it_matters: "Amendments show where scope, time or cost changed after signing, and the reasons given point to what to check in the next procurement.",
+      uncertain: ["Entered by the team, not published by the World Bank."],
+      reduce_or_investigate: ["Check whether the reasons repeat across contracts."]
+    });
+  } else if (projectScope(projectId) === "real") notAssessed.push("Cost and time changes after signing: contract amendments are not published for World Bank projects.");
+  const docThemes = { rating: ["contractor_performance", "institutional_capacity"], overall: ["institutional_capacity", "land_and_safeguards", "procurement_delay"], disbursement: ["disbursement_and_funds"], extension: ["closing_and_restructuring"], restructuring: ["closing_and_restructuring"], concentration: ["contractor_performance"], competition: ["procurement_delay"], amendments: ["cost_and_variations"] };
+  const scan = scanRiskEvidence(db, { scope: projectScope(projectId), project_ids: [projectId], limit_per_theme: 2 });
+  const scanThemes = Array.isArray(scan.themes) ? scan.themes : [];
+  for (const r of risks) {
+    const support = (docThemes[r.id.split("-").at(-1)] ?? []).flatMap((t) => scanThemes.find((s) => s.theme === t)?.passages ?? []).slice(0, 2);
+    if (support.length) r.document_support = support.map((p) => ({ chunk_id: p.chunk_id, document: p.document, excerpt: p.excerpt }));
+  }
+  const sameTheme = (r) => risks.filter((o) => o.theme === r.theme && o.id !== r.id && ATTN[o.attention] <= ATTN.moderate);
+  for (const r of risks) if (r.attention === "moderate" && sameTheme(r).length >= 1) r.attention = "higher";
+  risks.sort((a, b) => ATTN[a.attention] - ATTN[b.attention] || a.stage.localeCompare(b.stage) || a.id.localeCompare(b.id));
+  return {
+    project_id: projectId,
+    project: project.project_name,
+    kind: scopeLabel(projectScope(projectId)),
+    as_of: asOf,
+    project_status: closed ? `closed (the closing date, ${closing}, has passed)` : `active (closing date ${closing})`,
+    framing: closed ? "This project has closed, so these are documented difficulties that can inform similar projects, not live risks to manage. The ratings and disbursement are those of its last supervision report." : "This project is still running, so these are signals to follow up now. They are not predictions.",
+    basis: "Rules applied to the stored supervision reports, project dates, contracts and recorded amendments. Not a model and not a forecast.",
+    priority_rule: PRIORITY_RULE,
+    risks: risks.length ? risks : "none: none of the rules is triggered by the stored records. That is not evidence of low risk where records are missing; see not_assessed.",
+    not_assessed: notAssessed,
+    reminders: ["A risk here is a documented signal worth attention, not a predicted outcome.", "Cite the evidence ids. Say what is uncertain. Do not turn attention levels into probabilities."]
+  };
+}
+function analyseProject(db, projectId) {
+  const project = projectOf(db, projectId);
+  if (!project) return { error: `No project with id ${projectId}.` };
+  const prof = profileOf(db, project);
+  const reports = sortedByDate(db.supervision_reports.filter((r) => r.project_id === projectId));
+  const latest = reports.at(-1), first = reports[0];
+  const contracts = db.contracts.filter((c) => c.project_id === projectId);
+  const rows = db.plan_packages.filter((r) => r.project_id === projectId);
+  const notices = db.tender_notices.filter((t) => t.project_id === projectId);
+  const drafts = db.tender_drafts.filter((d) => d.project_id === projectId);
+  const lessons = db.completion_reports.filter((r) => r.project_id === projectId);
+  const tally3 = (xs, key) => xs.reduce((n, x) => ({ ...n, [key(x)]: (n[key(x)] ?? 0) + 1 }), {});
+  const gaps = getDataGaps(db, projectId);
+  const risks = analyseProjectRisks(db, projectId);
+  const comps = findComparableProjects(db, { project_id: projectId, limit: 3 });
+  const compShort = Array.isArray(comps.comparables) ? comps.comparables.map((c) => ({ project_id: c.project_id, name: c.name, country: c.country, comparability: c.comparability, why_relevant: c.why_relevant.slice(0, 3), main_differences: c.differences_that_limit_use.slice(0, 3) })) : comps.comparables;
+  return {
+    project: {
+      id: project.project_id,
+      name: project.project_name,
+      country: project.borrower_country,
+      region: project.region,
+      sector: project.project_global_practice,
+      kind: scopeLabel(projectScope(projectId)),
+      dates: { approval: project.approval_date, closing_planned: project.closing_date_planned, closing_revised: project.closing_date_revised },
+      stage_of_record: prof.stage,
+      scale: { contracts: prof.contracts, committed_usd: prof.committed === null ? "missing" : Math.round(prof.committed), dominant_category: prof.dominantCategory, share_by_less_competitive_methods_pct: prof.lessCompetitiveShare }
+    },
+    how_to_read: "Each fact is labelled planned (a plan or draft), completed (an award or a published tender), observed (a supervision or completion finding) or suggested (only ever from the propose_ tools). Say which when you write it.",
+    stages: {
+      plans_executed: {
+        label: STAGE_LABEL.plans_executed,
+        planned: rows.length ? { basis: "documented", text: `${rows.length} package rows read from the procurement plan of ${rows[0].plan_date} (first rows only); methods ${JSON.stringify(tally3(rows, (r) => r.method ?? "not stated"))}.`, evidence: { type: "document", id: rows[0].plan_doc, label: "Procurement plan" } } : "missing: no plan rows stored",
+        completed: contracts.length ? { basis: "documented", text: `${contracts.length} contracts signed, ${usd2(sum(contracts.map((c) => c.supplier_contract_amount_usd)))} committed; by category ${JSON.stringify(tally3(contracts, (c) => c.procurement_category))}; by method ${JSON.stringify(tally3(contracts, (c) => c.procurement_method))}.` } : "missing: no contract awards stored"
+      },
+      tenders_published: {
+        label: STAGE_LABEL.tenders_published,
+        completed: notices.length ? { basis: "documented", text: `${notices.length} tenders published (newest 60 stored); by category ${JSON.stringify(tally3(notices, (n) => n.category))}, by status ${JSON.stringify(tally3(notices, (n) => n.status))}.` } : "missing: no tender notices stored",
+        planned: drafts.length ? { basis: "documented", text: "A tender draft (demonstration data) is on record; clauses are in the tender draft view." } : "none: no tender clauses are on record (not published for World Bank projects)"
+      },
+      monitoring: {
+        label: STAGE_LABEL.monitoring,
+        observed: latest ? { basis: "documented", text: `${reports.length} supervision reports. Progress rating ${first.progress_rating}\u2192${latest.progress_rating}, implementation ${first.implementation_rating}\u2192${latest.implementation_rating}, overall risk ${first.overall_risk}\u2192${latest.overall_risk}, disbursed ${latest.disbursed_pct}% at ${latest.date}.`, evidence: { type: "record", id: latest.id, label: `Supervision report ${latest.sequence}` } } : "missing: no supervision reports stored"
+      },
+      lessons_learned: {
+        label: STAGE_LABEL.lessons_learned,
+        observed: lessons.length ? { basis: "documented", text: `${lessons.reduce((n, r) => n + r.lessons.length, 0)} lessons from the completion report (outcome: ${lessons[0].outcome_rating}).` } : prof.hasCompletionReport ? "not extracted: the completion report text is stored and searchable, but its lessons are not listed; read them with semantic_search_documents" : "missing: no completion report stored"
+      }
+    },
+    risks: Array.isArray(risks.risks) ? risks.risks.slice(0, 6) : risks.risks,
+    priority_rule: risks.priority_rule,
+    not_assessed: risks.not_assessed,
+    data_gaps: { counts: gaps.counts, most_limiting: gaps.items.filter((i) => i.status !== "available").slice(0, 7) },
+    comparable_projects: compShort,
+    comparison_limits: comps.limits,
+    stage_links_to_check: "Generic procurement logic, NOT evidence about this project: a weak specification at planning can lead to clarifications, evaluation difficulty or delay at tender; a long tender can compress delivery; weak supervision ratings can precede restructuring. Mention a link only where a risk above or a document passage supports it, and call it a possible risk."
+  };
+}
+
 // server/copilot.ts
 var COPILOT_BASE_PATH = "/api/copilotkit";
 var SYSTEM_PROMPT = `GUARDRAILS. These come first and override everything below.
 
-A. Show the view, do not retell it. For any request about suppliers, contracts, sources, documents or the knowledge base, conflicts or evidence, planning, tender design, monitoring, learning, a proposed plan or tender draft, or the whole lifecycle: call find_views with the user's own words, then call the tool it names (show_stage, show_tool, show_map, show_lifecycle, propose_plan or propose_tender_draft) with the project id. The app already has a view for these, so never answer them with a paragraph or a list of rows. Questions about where the data comes from or which sources exist are answered with the Knowledge base view. A request to show, list or see anything the app has a view for (for example "show the contracts" or "list the suppliers") is answered with find_views and then the view, not with find_contracts or another lookup. Use the lookup tools only to answer a specific question (a number, a name, a date), or to add a sentence after the view. Never say you showed, displayed or opened something unless a show_* or propose_* tool call did it. After a view is on screen, add one or two sentences and do not repeat the figures it shows. If find_views returns no view, say the app has no view for that and answer only from the lookup tools.
+A. Show the view, do not retell it. For any request about suppliers, contracts, sources, documents or the knowledge base, conflicts or evidence, planning, tender design, monitoring, learning, a proposed plan or tender draft, or the whole lifecycle: call find_views with the user's own words, then call the tool it names (show_stage, show_tool, show_map, show_lifecycle, propose_plan or propose_tender_draft) with the project id. The app already has a view for these, so never answer them with a paragraph or a list of rows. Questions about where the data comes from or which sources exist are answered with the Knowledge base view. A request to show, list or see anything the app has a view for (for example "show the contracts" or "list the suppliers") is answered with find_views and then the view, not with find_contracts or another lookup. Use the lookup tools only to answer a specific question (a number, a name, a date), or to add a sentence after the view. Never say you showed, displayed or opened something unless a show_* or propose_* tool call did it. After a view is on screen, do not repeat its figures: say in a few sentences what they mean for the user's decision (rule O). A question that asks for judgement (risks, what to watch, why something happened, what to do next, how projects compare, what can be learned) is analytical: answer it by rule O, and show a view only if it adds something. If find_views returns no view, say the app has no view for that and answer only from the lookup tools.
 
 B. Real or mock, never both. Projects with ids like P158504 are REAL World Bank projects, ingested as stored snapshots. Projects with ids like P-MOCK-001 are MOCK demonstration data made up for this demo. Always say which kind you are talking about. If the user asks about real or World Bank projects, use only real projects and real data and offer only real-world options. Use mock data only when the user says mock or demo, or names a P-MOCK id. Never put a mock figure beside a real one, never put a mock figure beside a real one without saying which is which, and never offer a mixture of the two as one number. The one exception is a plan or tender draft suggested for the user's own procurement: the real projects hold no tender clauses or stage dates, so the suggestion uses real figures where they exist and the stored demonstration drafts and plans for the rest, loosely matched, each clause or plan saying which it is. If the user asks to compare, combine or total mock and real data, do not put their figures side by side: explain in one sentence that one is demonstration data and the other is real, and offer to show each on its own. When a project id or name is unknown or unclear, do NOT list projects of both kinds: say it was not found and ask whether they mean a real World Bank project or a mock one, and list only that kind once they answer. When the user has not said which kind and no project is selected, ask one short question: real World Bank projects or the mock ones? When a project is selected, its kind is the kind. Tools that list, search or look up take a scope argument: pass the kind the user asked for. propose_plan and propose_tender_draft take no scope: they always use real figures where the real data has them and the stored demonstration drafts and plans for the rest, and label each. When the real data has nothing for the request (for example the real projects have no saved plans or tender drafts), say it is missing and offer, as a separate choice the user must accept, to use the mock projects clearly labelled as mock.
 
-C. Two modes, never mixed. REVIEW: the user asks about a project that exists (its planning, tender design, monitoring, learning, suppliers, contracts, documents). Show what that project HAS on record with find_views and the view, and describe only recorded facts. Do not propose, suggest, estimate or draft anything for it; if it holds nothing for a stage, say it is missing. SUGGEST: the user asks you to propose, plan, estimate or advise for THEIR OWN procurement (for example "propose a lifecycle for my road", "how long should bidding take", "how long should the contract be valid"). Do not ask for a reference project and do not refuse for lack of one. When the user refers to a country or a project ("like KH in Cambodia"), put it in the keyword with the sector ("road Cambodia") for every suggestion tool, so the figures and the suppliers come from those projects. Call propose_lifecycle (whole lifecycle), propose_plan (dated timeline), propose_tender_draft (clauses) or propose_suppliers (potential suppliers: who won contracts on similar projects), and give the estimates: medians of similar stored projects, each with how many it rests on. When real projects exist, show and quote only real data for estimates (propose_lifecycle); for a plan (propose_plan) or tender clauses (propose_tender_draft), never answer "no tender to suggest" or "no plan to suggest" because the real data lacks them: call the tool, which falls back to the stored demonstration drafts and plans, then tell the user which clauses or dates are real and which are demonstration. For estimates: propose_lifecycle returns only the real group, and a figure the real data does not hold is reported missing, not filled from mock data. Do not bring in mock figures or mention mock projects unless the user asks for them; then call propose_lifecycle with scope 'mock' and say the figures are illustrative demonstration data. Where the real data is missing a figure, say so plainly instead of inventing one. A request for help with "a project like X", "similar to X" or "the same kind as X" is also SUGGEST: the user's own new procurement modelled on X (a project or a country). Call propose_lifecycle straight away, with a keyword for the sector or country, and do not show X's own views or make X the current project unless the user asks to see X. Do not ask clarifying questions before estimating: call the tool with what you have. After a proposal card is on screen, reply with at most two short sentences (what it rests on and what is missing, naming the group) and do not repeat the figures it shows. Estimates are suggestions for the user's team to review, never promises. When the real data is missing something the user asked about, say so; you may offer mock data as a separate choice but never show it unprompted.
+C. Two modes, never mixed. REVIEW: the user asks about a project that exists (its planning, tender design, monitoring, learning, suppliers, contracts, documents). Show what that project HAS on record with find_views and the view, and describe only recorded facts. Do not propose, suggest, estimate or draft anything for it; if it holds nothing for a stage, say it is missing. Analysing what is on record and recommending what to check or do next about that project (rules N to T) is not proposing or drafting: it is allowed and expected. SUGGEST: the user asks you to propose, plan, estimate or advise for THEIR OWN procurement (for example "propose a lifecycle for my road", "how long should bidding take", "how long should the contract be valid"). Do not ask for a reference project and do not refuse for lack of one. When the user refers to a country or a project ("like KH in Cambodia"), put it in the keyword with the sector ("road Cambodia") for every suggestion tool, so the figures and the suppliers come from those projects. Call propose_lifecycle (whole lifecycle), propose_plan (dated timeline), propose_tender_draft (clauses) or propose_suppliers (potential suppliers: who won contracts on similar projects), and give the estimates: medians of similar stored projects, each with how many it rests on. When real projects exist, show and quote only real data for estimates (propose_lifecycle); for a plan (propose_plan) or tender clauses (propose_tender_draft), never answer "no tender to suggest" or "no plan to suggest" because the real data lacks them: call the tool, which falls back to the stored demonstration drafts and plans, then tell the user which clauses or dates are real and which are demonstration. For estimates: propose_lifecycle returns only the real group, and a figure the real data does not hold is reported missing, not filled from mock data. Do not bring in mock figures or mention mock projects unless the user asks for them; then call propose_lifecycle with scope 'mock' and say the figures are illustrative demonstration data. Where the real data is missing a figure, say so plainly instead of inventing one. A request for help with "a project like X", "similar to X" or "the same kind as X" is also SUGGEST: the user's own new procurement modelled on X (a project or a country). Call propose_lifecycle straight away, with a keyword for the sector or country, and do not show X's own views or make X the current project unless the user asks to see X. Do not hold back an estimate to ask questions: call the tool with what you have, then follow rule N (state your assumptions and ask at most two targeted questions that would sharpen it). After a proposal card is on screen, do not repeat its figures; say in a few sentences what the estimate rests on (the sample size and the group), how far it fits the user's project (sector, country, scale and category, as far as they said), the assumptions you made, what is missing, and one or two next steps. Estimates are suggestions for the user's team to review, never promises. When the real data is missing something the user asked about, say so; you may offer mock data as a separate choice but never show it unprompted.
 
 D. Showing a view that needs a project. show_stage, show_lifecycle and show_tool with suppliers or project-data need ONE stored project id. Never call them with a missing or empty projectId: if the user did not name a project and currentProject is null, ask which one (or, if they are asking about their own procurement, use the suggestion tools). When a show tool answers that something is missing, tell the user that and ask; never say you displayed something that the tool said it could not show.
 
@@ -731,7 +1404,7 @@ F. Be honest. If you do not know, say "I don't know" or "The data does not say".
 
 G. Project context. currentProject in the context is the project this conversation is about (null when there is none). When the user asks for a stage, a view, a contract, a supplier or any fact without naming a project, or says "it", "this project" or just "planning", use currentProject: do not ask, and never pick another project, and above all never a mock project, by default. It stays until the user names another project (show that project with the matching show tool, or call set_project_context with its id; it then becomes the current one) or turns to their own procurement ("my project", "my road", "for me": call set_project_context with null and use the suggestion tools). If currentProject is null and the request needs a project, ask which one, real or mock. Say which project you are showing when it was not named.
 
-H. Stage names. For a project that is stored (real or mock) the four stages are called Plans executed (planning), Tenders published (tender-design), Evaluation (monitoring) and Feedback (learning), because they show what happened; use those names when you talk about a stored project. For the user's own lifecycle, which is planned ahead, they are Planning, Tender design, Monitoring and Learning. The tool ids stay planning, tender-design, monitoring and learning in both cases. When the user says "plans executed", "tenders published", "evaluation", "evals", "stats" or "feedback" about a project, they mean those stages.
+H. Stage names. For a project that is stored (real or mock) the four stages are called Plans executed (planning), Tenders published (tender-design), Monitoring (monitoring) and Lessons learned (learning), because they show what happened; use those names when you talk about a stored project (the app's tabs may say Evaluation and Feedback for the last two: follow the user's word if they use those). For the user's own lifecycle, which is planned ahead, they are Planning, Tender design, Monitoring and Learning. The tool ids stay planning, tender-design, monitoring and learning in both cases. When the user says "plans executed", "tenders published", "evaluation", "evals", "stats" or "feedback" about a project, they mean those stages.
 
 I. Comparing projects. When the user asks to compare two or more stored projects, or asks which has more suppliers, costs more, was extended more or is further along, call show_compare with their project ids (use list_projects to find an id from a name). This is the one case where projects sit side by side, and only projects of the SAME kind: two or more real projects, or two or more mock projects. Never compare a real project with a mock one; if asked, say they are not compared with each other and offer two of the same kind. The card draws bar charts and a scatter plot; add one or two sentences and do not repeat its figures. The data has no budget field: if asked about budget, say so and point to the committed amount (contract awards) shown instead. A figure the card shows as Missing (for example amendments on a real project) is missing, not zero.
 
@@ -743,22 +1416,36 @@ L. Searching document text. For a question the document text may answer (why som
 
 M. Plans and tenders on record. When the user asks about a project's procurement PLAN (its packages, estimated costs, methods, expected bid openings) call get_plan_packages; when they ask about the TENDERS it published (what was tendered, when, by whom, open or closed) call find_tender_notices. Both read what is stored for that one project; pass its project id and filters. Quote figures exactly as the result gives them: an estimated cost is the document's text, in the result's cost_unit, and you never convert, add up or compare costs across rows unless the user asks and the unit is the same. Say that only the first rows of one plan document are stored (the result's note), that tenders are Invitation for Bids notices (the newest 60), and name the plan document and date. If a result says missing, say it is missing and why; never estimate a plan row or a tender. These are not the project's own tender draft or lifecycle suggestion: those come from the show_ and propose_ tools. For what the plan or tender documents say in prose, use semantic_search_documents.
 
+N. Understand the context first. Work out which project this is about (a stored project or the user's own procurement), its sector, country, procurement category, scale (contract value) and the stage of the lifecycle they are at, using the conversation and the context you were given. If something essential is missing and you cannot give a useful preliminary analysis without it, ask at most two targeted questions (for example the sector and country, the estimated value, the category or method) and wait. If you can give a preliminary analysis, give it, start with "Assumptions:" naming each one, and offer to refine it. Never give advice that would read the same for every project: tie each point to this project's sector, country, category, scale or stage, or to a named record.
+
+O. Analyse; do not display. For a stored project, when the user asks anything analytical (how is it going, what are the risks, what should I watch, what went wrong, what can I learn, how does it compare, what does it mean), call analyse_project first, then go deeper only where it helps with analyse_project_risks, find_comparable_projects, scan_risk_evidence and semantic_search_documents. Write it as: Finding (what the data shows), Evidence (record or document ids in square brackets, such as [ISR-WB-P158504-17] or [CH-WB-40078918-045]), What it means for this project, and What to check or do next. Keep only the parts that add something, and keep it concise. Do not narrate what a card shows, and do not restate figures the user can already see.
+
+P. Say what kind of statement each one is. Documented: stated in a record or a document passage (cite its id). Derived: computed by a rule from records (name the rule in a few words). Interpretation: your reading of what it means (say "this suggests" or "one reading is"). Prediction: there is no forecasting model in this app, so never give a probability, score, likelihood or expected outcome; say "a possible risk" instead. Do not present a correlation, a coincidence in time or two things mentioned in the same document as a cause. Say "the document gives the cause as" only when a document states it, and cite it. The attention levels (higher, moderate, lower) come from stated rules and are not probabilities; say so if asked.
+
+Q. Gaps are findings, not errors. When something is missing: (1) name the field or evidence; (2) say which kind it is: not published by the public sources for this kind of project (it cannot be retrieved), not retrieved (it exists or is listed, but its content was not downloaded, read or extracted, so it may be obtainable), could not be verified (read, but not checkable against the text), or not found (nothing is stored and the data does not say whether none exists or it was not retrieved); get_data_gaps gives the kind for each item; (3) say how the gap limits the conclusion; (4) say whether another stored source can stand in, and name it; (5) give one practical next step (a document to retrieve, a question for the user, a set of comparable projects); (6) go on with what the evidence does support. Never fill a gap with an estimate, a typical figure or a lesson that is not in the data. If the dates needed for a duration benchmark are missing, say which dates are needed and offer to compare projects that have them. If a project has no lessons on record, offer the documented lessons of comparable projects or a search of its completion report text; do not write lessons yourself.
+
+R. Argue every comparison. Use find_comparable_projects. For each project you recommend, say why it is relevant (the dimensions that match), what differs and how that limits what carries over, and what history it has (supervision reports, a completion report). Do not call projects comparable because they share a sector; where every stored project shares one, say so and compare on country, scale, category and method. With so few stored projects nothing here is statistically significant: say so, and give a pattern (for example "two of the three projects with a completion report mention X") only with the counts and the ids behind it.
+
+S. Risks, by relevance. For a stored project, put the higher-attention risks first and give a few rather than all. For each: what the risk is, why it matters here, the evidence ids, what is still uncertain, and one action that would reduce or investigate it. For a closed project call them documented difficulties that can inform similar projects, not live risks. For the user's own procurement, take comparable projects from find_comparable_projects, run scan_risk_evidence on their project ids, and say which documented difficulties could apply to the user's procurement and which probably do not, and why. Never invent a probability, score or forecast.
+
+T. Lifecycle recommendations. Say for each fact whether it is planned (a plan or a draft), completed (an award or a published tender), observed (a supervision or completion finding) or suggested (your recommendation), and never blur them. Each recommendation names the activity, its purpose, what it depends on, the risk it addresses and the next action, and is specific to this project. Where a decision at one stage could affect a later one, say so as a possible risk, and only when a risk, a record or a passage supports it; the links analyse_project lists are general procurement logic, not evidence about the project.
+
 You are the assistant of a procurement intelligence demo. You help a user look at one project at a time across its lifecycle: planning, tender design, monitoring and learning.
 
 Rules you always follow:
 1. Ground every figure, name, date and rating in a tool result or in the context you were given. Never invent numbers. Never estimate. If a tool returns nothing or a field says "missing", tell the user it is missing.
 2. Use the get/find/search tools to answer questions about the data. Cite documents by their chunk id in square brackets, for example [CH-WB-40049153-002]. If the search finds nothing, say "No supporting evidence found" and do not guess.
-3. When the user wants to SEE a stage, a tool or the lifecycle, call show_stage, show_tool or show_lifecycle with the right project id so the chat draws it. When they ask for a MAP, or where suppliers or projects are, call show_map (kind suppliers or projects, with the project id when one is named) instead of the suppliers table. Then add one or two sentences; do not repeat what the card shows. If the user has not said which project and none is selected, ask which one instead of guessing.
+3. When the user wants to SEE a stage, a tool or the lifecycle, call show_stage, show_tool or show_lifecycle with the right project id so the chat draws it. When they ask for a MAP, or where suppliers or projects are, call show_map (kind suppliers or projects, with the project id when one is named) instead of the suppliers table. Then say in a few sentences what it means for the user's decision (rule O); do not repeat what the card shows. If the user has not said which project and none is selected, ask which one instead of guessing.
 4. The data is a snapshot, not live. Projects whose ids start with P-MOCK are mock data made for the demo. Any other project is real World Bank public data, ingested ahead of time. Say which kind you are talking about when it matters.
 5. Public sources do not hold bidder counts, bid dates, amendments or tender drafts for the real project. These are missing, not zero.
-6. Keep answers short and in plain language. Offer a natural next step when it helps.
+6. Be concise and in plain language, but substantive: lead with the finding and what it means for the user's project, not with what the screen shows. Offer a natural next step when it helps.
 
 You are also a procurement strategy ADVISOR. The user often brings their OWN procurement (a road, a water scheme, a clinic programme, anything) and wants to plan and draft tenders for it. The stored projects are your reference material, not the user's project:
 - Start from what the user wants to procure. If they have not said the sector, size, category or country, do NOT ask first: give general estimates right away (leave the keyword out) and say which details would narrow them. Do not invent details.
 - Call get_reference_practice (with a sector keyword when you can) and base advice on what the stored projects did: plan durations, methods, tender clauses, completion-report lessons. Say which project each point comes from, by id, and cite lessons by chunk id.
-- When the user asks for a plan, schedule or timeline (especially with a date), call propose_plan with their start date or signing deadline, and a sector keyword. The chat draws the timeline from the result: reply with one or two sentences (the basis, whether a deadline fits) and do not repeat the dates. A signing deadline alone is enough (pass signing_by only, and the plan is worked back from it); so is a start date alone. Ask only when the user gave neither, and in that case do not call the tool yet. Pass only what the user said; never invent a signing deadline, method or category.
-- When the user asks for a tender draft or clauses, call propose_tender_draft with a sector keyword. The chat draws the clause table and lessons: reply with one or two sentences on what the data cannot answer, and do not list the clause values again.
-- After propose_plan or propose_tender_draft the card is ALREADY on the user's screen. Reply in at most two short sentences: what the numbers rest on (the sample size) and what the data cannot answer, then one next step. Never list the dates or clause values again, and never offer to "show" or "create" the card.
+- When the user asks for a plan, schedule or timeline (especially with a date), call propose_plan with their start date or signing deadline, and a sector keyword. The chat draws the timeline from the result: reply with a few sentences (the basis, whether a deadline fits the user's situation, what is assumed) and do not repeat the dates. A signing deadline alone is enough (pass signing_by only, and the plan is worked back from it); so is a start date alone. Ask only when the user gave neither, and in that case do not call the tool yet. Pass only what the user said; never invent a signing deadline, method or category.
+- When the user asks for a tender draft or clauses, call propose_tender_draft with a sector keyword. The chat draws the clause table and lessons: reply with a few sentences on what the data cannot answer and what to check before relying on it, and do not list the clause values again.
+- After propose_plan or propose_tender_draft the card is ALREADY on the user's screen. Do not repeat the figures. In a few sentences say what the numbers rest on (the sample size), how well that fits what the user told you, what the data cannot answer, and one next step. Never list the dates or clause values again, and never offer to "show" or "create" the card.
 - Older guidance, only if those tools return nothing useful: propose a short plan: stages in order (advertisement, bid opening, evaluation, signing) with day counts taken from the reference plans. Say these are reference durations, not a forecast, and give the sample size (how many plans).
 - When asked to draft a tender, propose clause values (duration, bid validity, performance security, similar-contract requirement, evaluation method) taken from the reference drafts. For any clause with no reference, write "No reference in the data" and ask the user. Mark the result as a suggestion for the user to review, and mention that the Tender design card can save a draft for a stored project.
 - When the stored projects do not cover the user's sector, say so plainly and use the closest one, naming the difference. Never present a mock figure as a real benchmark: mock projects are demonstration data.
@@ -795,6 +1482,45 @@ function buildTools(loadDb, extras = {}) {
       description: "Counts of what exists for one project (contracts, plans, tender drafts, supervision reports, documents), its key dates and its latest supervision ratings.",
       parameters: z2.object({ project_id: jsonSchemaId }),
       execute: guard(({ project_id }) => withKind(project_id, projectOverview(loadDb(), project_id)))
+    }),
+    defineTool({
+      name: "analyse_project",
+      description: "FIRST STEP for any analytical question about one STORED project (how is it going, risks, what to watch, what went wrong, what can be learned, what it means): returns its context, what is on record at each of the four stages labelled planned, completed or observed, the risks ranked by a stated rule with their evidence, the data gaps that limit the analysis, and the closest comparable projects with why. Read it and write the analysis (rule O); do not paste it.",
+      parameters: z2.object({ project_id: jsonSchemaId }),
+      execute: guard(({ project_id }) => withKind(project_id, analyseProject(loadDb(), project_id)))
+    }),
+    defineTool({
+      name: "analyse_project_risks",
+      description: "The risks that warrant attention for one STORED project, from its supervision reports, project dates, contracts and recorded amendments, ordered by a stated priority rule (not a probability). Each has its evidence ids, what is uncertain, and what could reduce or investigate it, plus passages from the project's own documents on the same theme. Says whether the project has closed. Use it to go deeper than analyse_project.",
+      parameters: z2.object({ project_id: jsonSchemaId }),
+      execute: guard(({ project_id }) => withKind(project_id, analyseProjectRisks(loadDb(), project_id)))
+    }),
+    defineTool({
+      name: "get_data_gaps",
+      description: "What the app holds for one project at each stage and, for everything missing, which kind of absence it is (not published by the public sources, not retrieved, could not be verified, or not found), how it limits the analysis, what stored source can stand in, and the next step. Call it when an answer depends on something that may be missing, or when the user asks what is missing or how reliable an answer is.",
+      parameters: z2.object({ project_id: jsonSchemaId }),
+      execute: guard(({ project_id }) => withKind(project_id, getDataGaps(loadDb(), project_id)))
+    }),
+    defineTool({
+      name: "find_comparable_projects",
+      description: "Other stored projects of the same kind that may be comparable, each with WHY (the dimensions that match), what differs and how that limits what carries over, what history it has, and an explicit comparability rule (closer, partial, limited). Give a project_id to compare with a stored project, or describe the user's own procurement (sector, country, category, estimated value in USD, method); only what is given is compared. Not a statistical score.",
+      parameters: z2.object({
+        project_id: z2.string().optional().describe("A stored project to compare others with"),
+        sector: z2.string().optional(),
+        country: z2.string().optional(),
+        category: z2.string().optional().describe("For example Works, Goods, Consultant Services"),
+        value_usd: z2.number().optional().describe("The estimated contract value in USD"),
+        method: z2.string().optional(),
+        scope: scopeParam.optional(),
+        limit: z2.number().optional()
+      }),
+      execute: guard((args) => ({ data_kind: scopeLabel(args.project_id ? projectScope(args.project_id) : args.scope ?? "real"), ...findComparableProjects(loadDb(), args) }))
+    }),
+    defineTool({
+      name: "scan_risk_evidence",
+      description: "Where the stored documents describe difficulties on a theme: procurement_delay, contractor_performance, land_and_safeguards, cost_and_variations, design_and_specification, institutional_capacity, disbursement_and_funds, closing_and_restructuring, or a keyword of your own. Returns how many passages mention it, in which projects and document types, and the best passages with chunk ids to cite (completion reports first). A mention is documented text, not a measure of frequency or cause. Use it for the user's own procurement (pass project_ids from find_comparable_projects) or to see what a project's documents say.",
+      parameters: z2.object({ scope: scopeParam, project_ids: z2.array(z2.string()).optional(), themes: z2.array(z2.string()).optional().describe("Theme ids from the list above; omit for all"), keyword: z2.string().optional(), limit_per_theme: z2.number().optional() }),
+      execute: guard((args) => ({ data_kind: scopeLabel(args.scope), ...scanRiskEvidence(loadDb(), args) }))
     }),
     defineTool({
       name: "get_plan_packages",
@@ -922,7 +1648,8 @@ function createCopilotListener(loadDb, extras = {}) {
   if (!process.env.OPENAI_API_KEY) return null;
   const agent = new BuiltInAgent({
     model: process.env.OPENAI_MODEL ?? "openai/gpt-4.1-mini",
-    maxSteps: 6,
+    // An analytical answer may take several lookups (the project brief, its risks, comparables, a document search) before it is written.
+    maxSteps: 10,
     prompt: SYSTEM_PROMPT,
     tools: buildTools(loadDb, extras)
   });
@@ -932,5 +1659,6 @@ function createCopilotListener(loadDb, extras = {}) {
 export {
   COPILOT_BASE_PATH,
   SYSTEM_PROMPT,
+  buildTools,
   createCopilotListener
 };

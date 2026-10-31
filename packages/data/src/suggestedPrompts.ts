@@ -42,6 +42,9 @@ export function suggestedPrompts(projects: Project[]): SuggestedPrompt[] {
       message: `Help me with the procurement process of my own new ${sector} project, like ${like}. Suggest my lifecycle from the real projects there.`,
     })
   }
+  // One analytical starter, about the first real project of the country that has the most: what its documents show about risk, what is missing, and which other stored projects are comparable.
+  const featured = countriesByProjects(real)[0]?.projects[0]
+  if (featured) list.push({ title: 'Risks and comparable projects', message: `What are the main risks in ${featured.project_name}, how well does the data support that, and which other stored projects are most comparable to it and why?` })
   if (real.length > 0) {
     list.push({ title: 'Any other country', message: `Help me with the procurement process of my own new ${sector} project in any other country. Suggest my lifecycle from all the real projects and tell me what is missing.` })
     list.push({ title: 'Real projects', message: 'Which real World Bank projects do you have?' })
