@@ -21,7 +21,7 @@
   --step-planning: #0A5DA8; --step-tender: #0B7C84; --step-monitoring: #A35A14; --step-learning: #6A4FBF;
   /* Extra surfaces so screens never hard-code a colour. */
   --link: #0A5DA8; --selected: #E1EEF9; --banner-bg: #FFF6DB; --banner-border: #F0DFA8;
-  --radius-card: 12px; --radius-ctl: 8px;
+  --radius-card: 20px; --radius-ctl: 8px;
   --font: 'IBM Plex Sans', system-ui, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
 /* The earlier dark palette, kept as an option (the toggle in the top bar). */

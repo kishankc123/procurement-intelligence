@@ -39,6 +39,8 @@
   --color-input: var(--border);
   --color-ring: var(--primary);
   --radius-lg: var(--radius-card);
+  /* The shadcn Card and Dialog are rounded-xl; tying that to the card radius makes one setting (--radius-card in tokens.css) round every card and dialog. */
+  --radius-xl: var(--radius-card);
   --radius-md: var(--radius-ctl);
   --radius-sm: 6px;
   --font-sans: var(--font);
