@@ -433,7 +433,7 @@ function referencePractice(db, keyword) {
 var addDays = (iso, n) => new Date(Date.parse(iso) + n * 864e5).toISOString().slice(0, 10);
 var medianInt = (xs) => Math.round(median2(xs) ?? 0);
 var matchesKeyword = (p, k) => !k || [p.project_name, p.project_global_practice, p.borrower_country].some((s) => s.toLowerCase().includes(k.trim().toLowerCase()));
-function proposePlan(db, raw) {
+function proposePlan(db, raw, today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10)) {
   const input = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, typeof v === "string" && v.trim() === "" ? void 0 : v]));
   const ids = new Set(db.projects.filter((p) => matchesKeyword(p, input.keyword)).map((p) => p.project_id));
   const cat = input.category?.trim().toLowerCase();
@@ -446,9 +446,12 @@ function proposePlan(db, raw) {
   };
   const total = gap2.to_bid_opening + gap2.to_evaluation_complete + gap2.to_signing;
   const startIgnored = !!input.start_date && !!input.signing_by && input.start_date >= input.signing_by;
+  if (input.signing_by && input.signing_by < today) return { missing: `The signing deadline ${input.signing_by} is before today (${today}), so no plan can meet it. Give a later date.` };
   const given = startIgnored ? void 0 : input.start_date;
-  const start = given ?? (input.signing_by ? addDays(input.signing_by, -total) : void 0);
-  if (!start) return { missing: "Give a start date (advertisement) or a date the contract must be signed by." };
+  const wanted = given ?? (input.signing_by ? addDays(input.signing_by, -total) : void 0);
+  if (!wanted) return { missing: "Give a start date (advertisement) or a date the contract must be signed by." };
+  const movedToToday = wanted < today;
+  const start = movedToToday ? today : wanted;
   const bid = addDays(start, gap2.to_bid_opening);
   const evalc = addDays(bid, gap2.to_evaluation_complete);
   const sign = addDays(evalc, gap2.to_signing);
@@ -463,7 +466,10 @@ function proposePlan(db, raw) {
       planned_signing: sign
     },
     basis: { sample_size: refs.length, projects: [...new Set(refs.map((x) => x.project_id))], median_gap_days: gap2, median_total_days: total, filtered_by: [input.keyword, input.category].filter(Boolean).join(" \xB7 ") || "all stored plans" },
-    ...startIgnored ? { note: "The start date was on or after the signing deadline, so the plan was worked back from the deadline." } : {},
+    ...startIgnored || movedToToday ? { note: [
+      startIgnored ? "The start date was on or after the signing deadline, so the plan was worked back from the deadline." : "",
+      movedToToday ? `Working back would put the start at ${wanted}, before today (${today}), so the plan starts today.` : ""
+    ].filter(Boolean).join(" ") } : {},
     deadline_check: input.signing_by ? sign <= input.signing_by ? { fits: true, spare_days: daysBetween(sign, input.signing_by) } : { fits: false, days_over: daysBetween(input.signing_by, sign) } : "No signing deadline was given."
   };
 }
@@ -1443,6 +1449,7 @@ Rules you always follow:
 You are also a procurement strategy ADVISOR. The user often brings their OWN procurement (a road, a water scheme, a clinic programme, anything) and wants to plan and draft tenders for it. The stored projects are your reference material, not the user's project:
 - Start from what the user wants to procure. If they have not said the sector, size, category or country, do NOT ask first: give general estimates right away (leave the keyword out) and say which details would narrow them. Do not invent details.
 - Call get_reference_practice (with a sector keyword when you can) and base advice on what the stored projects did: plan durations, methods, tender clauses, completion-report lessons. Say which project each point comes from, by id, and cite lessons by chunk id.
+- Never suggest, propose or pass a date before today (the context gives today's date). A start or approval date that would fall in the past becomes today, and say so. If the user's deadline is too close for the median durations, say the plan does not fit (the tools report days over) and offer what could shorten it, rather than back-dating.
 - When the user asks for a plan, schedule or timeline (especially with a date), call propose_plan with their start date or signing deadline, and a sector keyword. The chat draws the timeline from the result: reply with a few sentences (the basis, whether a deadline fits the user's situation, what is assumed) and do not repeat the dates. A signing deadline alone is enough (pass signing_by only, and the plan is worked back from it); so is a start date alone. Ask only when the user gave neither, and in that case do not call the tool yet. Pass only what the user said; never invent a signing deadline, method or category.
 - When the user asks for a tender draft or clauses, call propose_tender_draft with a sector keyword. The chat draws the clause table and lessons: reply with a few sentences on what the data cannot answer and what to check before relying on it, and do not list the clause values again.
 - After propose_plan or propose_tender_draft the card is ALREADY on the user's screen. Do not repeat the figures. In a few sentences say what the numbers rest on (the sample size), how well that fits what the user told you, what the data cannot answer, and one next step. Never list the dates or clause values again, and never offer to "show" or "create" the card.
