@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { THRESHOLDS, can, whyDisabled } from '@pi/config'
 import {
-  dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
+  dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, type Feedback, useRecommendations, useReviewFeedback, useUiStore,
   tenderCoverage,
 } from '@pi/data'
 import { Badge, Button, Card, Check, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState, Pencil, ProvenanceChip, StackedBars, TableScroll, Paged, Carousel, X } from '@pi/ui'
@@ -40,14 +40,14 @@ export function feedbackFigures(kpis: ReturnType<typeof feedbackKpis>): ReactNod
 }
 
 /** The feedback queue with Accept, Reject and an Edit modal. Reviewers decide; everyone else sees it read-only with the reason. */
-export function FeedbackQueueCard({ projectId }: { projectId: string }) {
+export function FeedbackQueueCard({ projectId, only }: { projectId: string; only?: (f: Feedback) => boolean }) {
   const { role } = useCurrentUser()
   const feedback = useFeedback()
   const review = useReviewFeedback()
   const titleOf = useFeedbackTitles(projectId)
   const [editing, setEditing] = useState<string | null>(null)
   const [reason, setReason] = useState('')
-  const rows = feedback.data ?? []
+  const rows = (feedback.data ?? []).filter((f) => !only || only(f))
   const editingItem = rows.find((f) => f.id === editing)
   const allowed = can(role, 'review_feedback')
   const reason_ = allowed ? undefined : whyDisabled('review_feedback')
