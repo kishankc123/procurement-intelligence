@@ -13,6 +13,7 @@ This is the entry point for a new chat. Read it first, then the file for the par
 | `learning-remote.md` | Micro front-end `learning` (port 5176) |
 | `ai-remote.md` | Micro front-end `ai` ("Work with AI", port 5177) |
 | `copilot-runtime.md` | The model-backed chat: runtime, tools, prompt, context, and the custom theme over CopilotKit |
+| `copilot-engine.md` | How the Copilot engine supports each chat feature and does real-time ingestion (user flow, pipeline stages, local vs hosted, cost, safety, troubleshooting) |
 
 Other documents that already exist, and what they are for:
 - `claude.md` (repo root): the original project brief and non-negotiable rules (provenance, no invented numbers, citations, roles). Some parts are superseded by what was built since; the rules still apply.

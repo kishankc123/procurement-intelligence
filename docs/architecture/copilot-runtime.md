@@ -1,5 +1,7 @@
 # The Copilot runtime and the custom theme over it
 
+> Partly superseded by `copilot-engine.md`, which covers the current tool set (22 server tools, up to 10 steps per turn) and live ingestion. Where the two differ, `copilot-engine.md` is right.
+
 How the model-backed chat works end to end, and how our theme sits on top of CopilotKit. Versions at the time of writing: `@copilotkit/react-core` 1.83.0 (import from `/v2`), `@copilotkit/runtime` 1.83.0 (`/v2` and `/v2/node`), model `openai/gpt-4.1-mini` by default. Read `README.md` first.
 
 Files: `server/copilot.ts` (runtime), `server/index.ts` (mounts it), `apps/shell/src/chat/CopilotPanel.tsx` and `CopilotPanel.module.css` (browser side and theme), `api/copilotkit*.mjs` and `api/_lib/copilot.mjs` (Vercel).
