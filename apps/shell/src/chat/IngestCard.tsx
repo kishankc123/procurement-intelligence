@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { ASSISTANT_BASE } from '@pi/config'
 import { INGEST_STAGES, INGEST_STAGE_LABEL, useProjects, useUiStore, type IngestSummary, type ProjectCandidate, type RunView } from '@pi/data'
 import { Badge, Button, CircleAlert, CircleCheck, Info, ProvenanceChip } from '@pi/ui'
 import { notify } from '../toasts'
 import { StageDetail, StageRail, VectorMap, VectorStrip } from './IngestViz'
 import { fetchConfig, type IngestConfig } from './ingestClient'
+import { markIdle, markIngesting, useBusyIngest } from './ingestBusy'
 import { useIngestRun, type RunPhase } from './useIngestRun'
 import styles from './IngestCard.module.css'
 
@@ -119,11 +120,21 @@ export function IngestCandidates({ result, onSend }: { result: string | undefine
   const [chosen, setChosen] = useState<string | null>(null)
   const { run, phase, problem, lost, needsToken, start, submitToken, cancel } = useIngestRun(chosen)
   const candidates = found?.candidates ?? []
+  const owner = useId()
+  const busy = useBusyIngest()
   const config = useIngestConfig(candidates.length > 0)
   const known = useProjects().data
   const setChatProject = useUiStore((st) => st.setChatProject)
   const blocked = config?.mode === 'steps' && config.enabled === false ? (config.reason ?? 'Live ingestion is not switched on for this site.') : undefined
   const nameOf = (id: string | null) => candidates.find((c) => c.project_id === id)?.project_name ?? id ?? ''
+
+  // One ingestion at a time, across every card in the chat: while this card's run is going it holds the slot, and all other Proceed buttons are off.
+  const running_ = phase === 'starting' || phase === 'running'
+  useEffect(() => {
+    if (chosen && running_) markIngesting(owner, chosen, nameOf(chosen))
+    else markIdle(owner)
+  }, [chosen, running_]) // eslint-disable-line react-hooks/exhaustive-deps -- nameOf only reads candidates
+  useEffect(() => () => markIdle(owner), [owner])
 
   // Tell the user once when the run they started has finished or failed, wherever they have scrolled to.
   const told = useRef('')
@@ -178,7 +189,7 @@ export function IngestCandidates({ result, onSend }: { result: string | undefine
                 </div>
                 {here && <Badge tone="low">Available</Badge>}
                 {here && !running && <Button onClick={() => onSend(`Show the lifecycle for ${c.project_name} (${c.project_id})`)}>Show details</Button>}
-                {!here && !running && !needsToken && <Button variant="primary" disabled={live} disabledReason={blocked} onClick={() => go(c.project_id)}>{failed ? 'Try again' : 'Proceed'}</Button>}
+                {!here && !running && !needsToken && <Button variant="primary" disabled={live} disabledReason={blocked ?? (busy ? `Wait for ${busy.name} to finish ingesting. One project at a time.` : undefined)} onClick={() => go(c.project_id)}>{failed ? 'Try again' : 'Proceed'}</Button>}
               </div>
               {running && <Ingesting name={c.project_name} lost={lost} onCancel={() => void cancel()} onRetry={() => go(c.project_id)} />}
               {mine && needsToken && <TokenPrompt projectId={c.project_id} message={problem} onSubmit={(t, id) => { setChosen(id); void submitToken(t, id) }} />}

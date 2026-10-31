@@ -4,8 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getToasts, clearToasts } from '../toasts'
 import { useUiStore } from '@pi/data'
 import { IngestCandidates } from './IngestCard'
+import { resetIngestBusy } from './ingestBusy'
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); sessionStorage.clear(); clearToasts(); useUiStore.setState({ chatProjectId: null }) })
+afterEach(() => { cleanup(); resetIngestBusy(); vi.unstubAllGlobals(); sessionStorage.clear(); clearToasts(); useUiStore.setState({ chatProjectId: null }) })
 const draw = (result: string | undefined) => render(<QueryClientProvider client={new QueryClient()}><IngestCandidates result={result} onSend={vi.fn()} /></QueryClientProvider>)
 const cand = (over: object) => ({ project_id: 'P111111', project_name: 'Some Road', country: 'Peru', status: 'Active', approval_date: '2020-01-01', sector: 'Transport', stored: false, ...over })
 
@@ -145,5 +146,40 @@ describe('what the user sees while a project is ingested, and after', () => {
     expect(getToasts()[0]).toMatchObject({ tone: 'error', title: 'Some Road could not be ingested' })
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
     expect(useUiStore.getState().chatProjectId).toBeNull()
+  })
+})
+
+describe('one ingestion at a time', () => {
+  const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  const hanging = () => vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+    const path = new URL(url, 'http://x').pathname.split('/ingest/')[1]!
+    if (path === 'config') return json({ mode: 'steps', enabled: true, tokenRequired: true, dailyLimit: 5, index: null, embedding: { available: false, reason: 'no key' } })
+    if (path === 'start') return json({ projectId: 'P111111' })
+    // a step that never finishes on its own: the run stays live until it is cancelled
+    return new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError'))))
+  }))
+
+  it('turns off every other Proceed button, in this card and in other cards, while one project is being ingested', async () => {
+    hanging(); sessionStorage.setItem('pi.ingestToken', 'good')
+    const two = JSON.stringify({ query: 'road', candidates: [cand({}), cand({ project_id: 'P222222', project_name: 'Other Road' })] })
+    const another = JSON.stringify({ query: 'bridge', candidates: [cand({ project_id: 'P333333', project_name: 'A Bridge' })] })
+    render(<QueryClientProvider client={new QueryClient()}><IngestCandidates result={two} onSend={vi.fn()} /><IngestCandidates result={another} onSend={vi.fn()} /></QueryClientProvider>)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proceed' })[0]!)
+    await waitFor(() => expect(screen.getByText(/This can take a few minutes/)).toBeTruthy())
+    const rest = screen.getAllByRole('button', { name: 'Proceed' })
+    expect(rest).toHaveLength(2)
+    for (const b of rest) {
+      expect((b as HTMLButtonElement).disabled).toBe(true)
+      expect(b.getAttribute('title')).toMatch(/Wait for Some Road to finish ingesting/)
+    }
+  })
+  it('turns them back on when the run is cancelled', async () => {
+    hanging(); sessionStorage.setItem('pi.ingestToken', 'good')
+    const two = JSON.stringify({ query: 'road', candidates: [cand({}), cand({ project_id: 'P222222', project_name: 'Other Road' })] })
+    draw(two)
+    fireEvent.click(screen.getAllByRole('button', { name: 'Proceed' })[0]!)
+    await waitFor(() => expect(screen.getByText(/This can take a few minutes/)).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect((screen.getAllByRole('button', { name: /Proceed|Try again/ }).every((b) => !(b as HTMLButtonElement).disabled))).toBe(true))
   })
 })
