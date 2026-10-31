@@ -18,9 +18,14 @@ async function explain(res: Response): Promise<string> {
  * Asks the CopilotKit runtime whether it is there. It is only there when the assistant server has an OPENAI_API_KEY.
  * Until it answers, `checking`; when it does not, `off` with the reason, and the page keeps the rule-based chat.
  */
+// The answer is remembered for this page load, so coming back to the chat from another page does not wait (or show the loading picture) again.
+let known: CopilotAvailability | null = null
+
 export function useCopilotAvailable(): CopilotAvailability {
-  const [value, setValue] = useState<CopilotAvailability>({ state: 'checking', reason: null })
+  const [value, setValueState] = useState<CopilotAvailability>(known ?? { state: 'checking', reason: null })
+  const setValue = (v: CopilotAvailability) => { known = v; setValueState(v) }
   useEffect(() => {
+    if (known) return
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), 4000)
     fetch(`${COPILOT_URL}/info`, { signal: ctrl.signal })

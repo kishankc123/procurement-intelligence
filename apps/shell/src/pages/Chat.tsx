@@ -1,6 +1,7 @@
 import { projectScope, useAssistantChat, useProjects } from '@pi/data'
 import { ChatWindow, type ChatMessageView } from '@pi/domain'
 import { AgentRun } from './AgentRun'
+import { ChatLoading } from '../chat/ChatLoading'
 import { CopilotPanel } from '../chat/CopilotPanel'
 import { useCopilotAvailable } from '../chat/useCopilotAvailable'
 import styles from './Home.module.css'
@@ -28,7 +29,9 @@ export function Chat() {
   return (
     <div className={styles.chatPage}>
       {copilot === 'off' && copilotReason && <p role="status" className={styles.modelNote}>Model chat unavailable: {copilotReason}. Using the built-in rule-based assistant.</p>}
-      {copilot === 'on'
+      {copilot === 'checking'
+        ? <ChatLoading />
+        : copilot === 'on'
         ? <CopilotPanel onEngage={() => undefined} />
         : <ChatWindow onEngage={() => undefined} size="full" messages={messages} onSend={send} pending={pending} suggestions={suggestions} placeholder="e.g. Help me with the road project" />}
     </div>
