@@ -1,4 +1,5 @@
 .panel {
+  position: relative; container-type: inline-size;
   width: 100%;
   min-width: 0;
   display: flex;
@@ -111,3 +112,12 @@
 /* Assistant text is left aligned and not hyphenated: justified text with hyphens leaves wide gaps and split words on a narrow screen. */
 .panel :global([class~="cpk:prose"]) { text-align: left; hyphens: manual; -webkit-hyphens: manual; }
 .panel :global([class~="cpk:prose"]) p { text-align: left; }
+
+/* Clicking in the message box must not draw a box around it: the rounded input already shows where you are typing, and the page's own focus ring was a square one. */
+.panel :global(.copilotKitInput) textarea, .panel textarea { outline: none !important; box-shadow: none !important; }
+
+/* On a narrower panel the lifecycle bubble sits in this bar (see LifecycleBubble.module.css), so the bar makes room for it and drops its text button. */
+@container (max-width: 1000px) {
+  .lcBar { min-height: 64px; padding-right: 70px; }
+  .lcBar > button { display: none; }
+}
