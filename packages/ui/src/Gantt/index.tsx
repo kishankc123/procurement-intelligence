@@ -97,7 +97,7 @@ export function Gantt({ rows, rangeStart, rangeEnd, asOf, selectedId, onSelect, 
         </div>
       </div>
       {visibleRows !== undefined && rows.length > visibleRows && (
-        <div className={styles.more}>
+        <div className={styles.more} data-export-ignore="">
           <span>{limited ? `Showing ${visibleRows} of ${rows.length} items. Scroll the chart for the rest.` : `Showing all ${rows.length} items.`}</span>
           <Button onClick={() => setShowAll(!showAll)} aria-expanded={showAll}>{limited ? `Show all ${rows.length}` : 'Show fewer'}</Button>
         </div>

@@ -5,11 +5,25 @@ import { Badge, Button, Card, EmptyState, ProvenanceChip, TableScroll } from '@p
 import { CitationChip, SourceDrawer } from '@pi/domain'
 import styles from './ProjectData.module.css'
 
+/** The evidence workbench page: a heading around the same cards the chat shows. */
 export function Evidence() {
-  const { projectId } = useUiStore()
+  const projectId = useUiStore((s) => s.projectId)
+  return (
+    <div className={styles.page}>
+      <div><h1>Evidence workbench</h1><p className={styles.sub}>Where two sources disagree, the rule applied and the decision are shown, never hidden.</p></div>
+      <EvidenceCard projectId={projectId} />
+    </div>
+  )
+}
+
+/**
+ * Conflicts between sources, with both sides, the rule applied, a decision and the provenance trail, then the grounding table for the project.
+ * `projectId` null means every project's conflicts (the chat can ask for the workbench before a project is chosen).
+ */
+export function EvidenceCard({ projectId }: { projectId: string | null }) {
   const { role } = useCurrentUser()
   const conflicts = useConflicts()
-  const recs = useRecommendations(projectId).data ?? []
+  const recs = useRecommendations(projectId ?? '').data ?? []
   const audit = useAuditLog().data ?? []
   const resolve = useResolveConflict()
   const [open, setOpen] = useState<Citation | null>(null)
@@ -18,13 +32,11 @@ export function Evidence() {
 
   if (conflicts.isLoading) return <Card state="loading">{null}</Card>
   if (conflicts.isError) return <Card state="error">{null}</Card>
-  const list = (conflicts.data ?? []).filter((c) => c.project_id === projectId)
+  const list = (conflicts.data ?? []).filter((c) => !projectId || c.project_id === projectId)
 
   return (
-    <div className={styles.page}>
-      <div><h1>Evidence workbench</h1><p className={styles.sub}>Where two sources disagree, the rule applied and the decision are shown, never hidden.</p></div>
-
-      {list.length === 0 ? <Card title="Conflicts"><EmptyState title="No conflicts for this project" /></Card> : list.map((c) => (
+    <>
+      {list.length === 0 ? <Card title="Conflicts" aside={<ProvenanceChip kind="missing" />}><EmptyState title="No conflicts recorded" text="When two sources disagree it will appear here with the rule applied." /></Card> : list.map((c) => (
         <Card key={c.id} title={c.subject} aside={<Badge tone={c.status === 'open' ? 'medium' : 'low'}>{c.status}</Badge>}>
           <p className={styles.sub}>{c.type} · <span className="mono">{c.id}</span></p>
           <div className={styles.two}>
@@ -50,7 +62,7 @@ export function Evidence() {
         </Card>
       ))}
 
-      <Card title="Grounding table" aside={<ProvenanceChip kind="derived" />}>
+      {projectId && <Card title="Grounding table" aside={<ProvenanceChip kind="derived" />}>
         {recs.length === 0 ? <EmptyState title="No recommendations for this project" /> : (
           <TableScroll><table className={styles.table}>
             <thead><tr><th>Claim</th><th>Citations</th><th>Status</th></tr></thead>
@@ -60,8 +72,8 @@ export function Evidence() {
             ))}</tbody>
           </table></TableScroll>
         )}
-      </Card>
+      </Card>}
       <SourceDrawer citation={open} onClose={() => setOpen(null)} />
-    </div>
+    </>
   )
 }

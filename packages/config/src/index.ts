@@ -82,6 +82,20 @@ export const WB_TO_ISO: Record<string, string> = { ROM: 'RO', EST: 'EE' }
 export const API_BASE =
   typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api' : 'http://localhost:3001'
 
+// The assistant server. Locally it is a Node process on :3002; a deployed build would put it behind the same /api prefix.
+export const ASSISTANT_BASE =
+  typeof window !== 'undefined' && window.location.hostname !== 'localhost' ? '/api' : 'http://localhost:3002'
+
+/** CopilotKit runtime (the model-backed assistant). Same host as the assistant server; it answers only when OPENAI_API_KEY is set there. */
+export const COPILOT_URL = `${ASSISTANT_BASE.replace(/\/api$/, '')}/api/copilotkit`
+
+/**
+ * The stage names for a project that already exists. Its lifecycle is read back, so the stages are named for what happened: the plans executed, the tenders
+ * published, the evaluation and the feedback. A lifecycle the user is building for their own next project is planned ahead and keeps LIFECYCLE_STEPS names
+ * (Planning, Tender design, Monitoring, Learning). The ids are the same in both.
+ */
+export const PAST_STAGE_LABEL: Record<string, string> = { planning: 'Plans executed', 'tender-design': 'Tenders published', monitoring: 'Evaluation', learning: 'Feedback' }
+
 /** The four lifecycle steps of one project. Order, labels and copy shown on the Home donut and in the nav. */
 export const LIFECYCLE_STEPS = [
   { id: 'planning', to: '/planning', label: 'Planning',
@@ -118,7 +132,19 @@ export const KNOWN_SOURCE_HOSTS = [
  * (document DOC-MOCK-GUIDE-1: "between five and ten percent of the contract price" for works),
  * so the check cites that note. Change a number here and the checks follow.
  */
+/** Numbers behind the tender draft the assistant suggests. Change one here and the suggestion follows. */
+export const DRAFT_SUGGESTION = {
+  /** Days added on top of the plan's bid opening to signing period, so bids stay valid through approvals. */
+  bidValidityMarginDays: 30,
+} as const
+
 export const SPEC_RULES = {
   performanceSecurityPct: { min: 5, max: 10, category: 'Works' },
 } as const
 export { breadcrumbTrail, type Crumb } from './breadcrumbs'
+
+/**
+ * Whether the chat lets a user create or change anything on a project that already exists: a tender draft, the plan and tender rows, a saved plan.
+ * Off: the views of a past project only show what is on record. The editing code is kept, so turning this on brings it back.
+ */
+export const PAST_PROJECTS_EDITABLE = false

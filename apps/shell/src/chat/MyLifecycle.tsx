@@ -1,0 +1,257 @@
+import { lazy, useRef, useState } from 'react'
+import { LIFECYCLE_STEPS } from '@pi/config'
+import { lifecycleStatus, useExampleProject, useMyLifecycle, type FeatureOption, type LifecycleItem, type LifecycleStage, type NewLifecycleItem } from '@pi/data'
+import { Badge, Button, Card, Check, ConfirmDeleteDialog, DeleteButton, DonutNav, DownloadPng, EmptyState, Pencil, ProvenanceChip } from '@pi/ui'
+import { RemoteBoundary } from '../RemoteBoundary'
+import { STEP_COLOR } from '../stepColors'
+import { downloadLifecycleDocx } from './exportLifecycle'
+import { ClausesEditForm, EstimatesEditForm, PlanEditForm } from './ItemEdit'
+import { ClausesDetail, FeatureDetail, PlanDetail, RowsDetail, TimelineDetail } from './lifecycleDetail'
+import styles from './MyLifecycle.module.css'
+
+// The user's lifecycle is drawn with the micro front-ends' own components, the same ones a stored project's stages are made of.
+const PlanProposalCard = lazy(() => import('planning/PlanProposalCard'))
+const EstimateTimelineCard = lazy(() => import('planning/EstimateTimelineCard'))
+const MonitoringFeature = lazy(() => import('monitoring/MonitoringFeature'))
+const LearningFeature = lazy(() => import('learning/LearningFeature'))
+
+/**
+ * One monitoring or learning feature, drawn by the monitoring or learning micro front-end. A user who has just added an indicator has no values for it yet,
+ * so a monitoring feature is drawn with a stored project's data as a labelled sample, and the learning queue starts with a few labelled sample rows the user
+ * can accept or reject and add their own to. Their own data replaces the sample once they have it.
+ */
+export function FeatureView({ stage, featureId }: { stage: 'monitoring' | 'learning'; featureId: string }) {
+  const example = useExampleProject()
+  if (stage === 'learning') {
+    return (
+      <div className={styles.feature}>
+        <p className={styles.sample}><Badge tone="medium">Sample</Badge> These rows are examples. Add your own feedback to start your real queue.</p>
+        <RemoteBoundary name="Learning"><LearningFeature feature={featureId as 'feedback-queue' | 'learning-figures'} projectId={example?.project_id ?? ''} sample /></RemoteBoundary>
+      </div>
+    )
+  }
+  if (!example) return <EmptyState title="No sample to draw" text="No stored project has the data this indicator needs yet." />
+  return (
+    <div className={styles.feature}>
+      <p className={styles.sample}>
+        <Badge tone="medium">Sample</Badge> You have not entered values for this indicator yet, so it is drawn with the data of <strong>{example.project_name}</strong> <span className="mono">{example.project_id}</span>.
+        You can use this indicator for your own project; it shows your values once you add them.
+      </p>
+      <RemoteBoundary name="Monitoring"><MonitoringFeature feature={featureId as 'disbursement-chart' | 'project-schedule' | 'early-warning'} projectId={example.project_id} sample /></RemoteBoundary>
+    </div>
+  )
+}
+
+/** An item in the lifecycle, drawn the way its stage is drawn elsewhere: the plan on the planning calendar and timeline, clauses and figures as tables, features as the micro front-end's cards. */
+function ItemView({ item }: { item: LifecycleItem }) {
+  if (item.kind === 'plan') {
+    const d = PlanDetail.safeParse(item.detail)
+    if (d.success) return <RemoteBoundary name="Planning"><PlanProposalCard proposal={d.data} status={item.final ? 'final' : item.edited ? 'edited' : 'suggested'} /></RemoteBoundary>
+  }
+  if (item.kind === 'tender-clauses') {
+    const d = ClausesDetail.safeParse(item.detail)
+    if (d.success) {
+      return (
+        <table className={styles.table}>
+          <tbody>
+            {d.data.clauses.map((c) => (
+              <tr key={c.label}><th scope="row">{c.label}</th><td>{typeof c.value === 'number' ? c.value.toLocaleString('en-US') : c.value}{c.unit ? ` ${c.unit}` : ''}</td><td>{c.edited ? <Badge>Edited by you</Badge> : c.source === 'mock' ? <Badge tone="medium">Demonstration</Badge> : c.source === 'real' ? <Badge tone="low">Real data</Badge> : null}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+  }
+  if (item.kind === 'estimates') {
+    const d = RowsDetail.safeParse(item.detail)
+    const timeline = TimelineDetail.safeParse((item.detail as { timeline?: unknown } | null)?.timeline)
+    if (d.success) {
+      return (
+        <>
+        {timeline.success && <RemoteBoundary name="Planning"><EstimateTimelineCard timeline={timeline.data} edited={item.edited} /></RemoteBoundary>}
+        <table className={styles.table}>
+          <tbody>
+            {d.data.rows.filter((r) => r.value !== null).map((r) => (
+              <tr key={r.metric}><th scope="row">{r.metric}</th><td>{typeof r.value === 'number' ? r.value.toLocaleString('en-US') : r.value}{r.unit ? ` ${r.unit}` : ''}</td><td>{r.edited ? <ProvenanceChip kind="entered" detail="edited by you" /> : <><ProvenanceChip kind="derived" detail={`n=${r.n} ${r.counts}`} />{r.thin && <> <Badge tone="medium">Thin sample</Badge></>}</>}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        </>
+      )
+    }
+  }
+  if (item.kind === 'monitoring-feature' || item.kind === 'learning-feature') {
+    const d = FeatureDetail.safeParse(item.detail)
+    if (d.success) return <FeatureView stage={item.kind === 'monitoring-feature' ? 'monitoring' : 'learning'} featureId={d.data.id} />
+  }
+  return null
+}
+
+/** Monitoring and learning features have no values of the user's yet, so they are always shown as samples. */
+const isSample = (item: LifecycleItem) => item.kind === 'monitoring-feature' || item.kind === 'learning-feature'
+
+/**
+ * One item with its heading, basis and view. Remove and the PNG button are left out of the picture the PNG button saves. In a list (`open` given), only the
+ * heading shows until the row is opened; Edit and Save as final are on the row either way, and Edit opens the row.
+ */
+function ItemRow({ item, onRemove, open, onToggle }: { item: LifecycleItem; onRemove: () => void; open?: boolean; onToggle?: () => void }) {
+  const ref = useRef<HTMLLIElement>(null)
+  const update = useMyLifecycle((s) => s.update)
+  const setFinal = useMyLifecycle((s) => s.setFinal)
+  const [editing, setEditing] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const inList = open !== undefined
+  const shown = !inList || open
+  // The plan and the tender clauses are the application's suggestion until the user changes them; then they are the user's own, and can be saved as final.
+  const editable = item.kind === 'plan' || item.kind === 'tender-clauses' || item.kind === 'estimates'
+  return (
+    <li ref={ref} className={styles.item}>
+      <div className={styles.itemHead}>
+        <div>
+          <strong>{item.title}</strong>{' '}
+          {item.provenance === 'entered' ? <ProvenanceChip kind="entered" detail={item.final ? 'final' : 'edited by you'} /> : <ProvenanceChip kind="derived" detail="suggested" />}
+          {item.final && <> <Badge tone="low">Final</Badge></>}{isSample(item) && <> <Badge tone="medium">Sample</Badge></>}
+          <p className={styles.sub}>{inList && !open ? item.summary : `Basis: ${item.basis}${item.edited ? ' Edited by you.' : ''}`}</p>
+        </div>
+        <div className={styles.headActions} data-export-ignore="">
+          {inList && <Button onClick={() => { if (open) setEditing(false); onToggle?.() }} aria-expanded={open}>{open ? 'Hide' : 'View'}</Button>}
+          {editable && !editing && (
+            <>
+              <Button variant="primary" onClick={() => { if (inList && !open) onToggle?.(); setEditing(true) }} disabledReason={item.final ? 'Saved as final. Reopen it to edit.' : undefined}><Pencil size={16} aria-hidden="true" />Edit</Button>
+              {item.final ? <Button onClick={() => setFinal(item.id, false)}>Reopen</Button> : <Button variant="success" onClick={() => setFinal(item.id, true)}><Check size={16} aria-hidden="true" />Save as final</Button>}
+            </>
+          )}
+          {shown && <DownloadPng targetRef={ref} name={item.title} />}
+        </div>
+      </div>
+      {shown && editing && item.kind === 'plan' && <PlanEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
+      {shown && editing && item.kind === 'tender-clauses' && <ClausesEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
+      {shown && editing && item.kind === 'estimates' && <EstimatesEditForm detail={item.detail} onCancel={() => setEditing(false)} onSave={(edit) => { update(item.id, edit); setEditing(false) }} />}
+      {shown && !editing && <ItemView item={item} />}
+      {/* Remove sits under the data, on the right edge. It asks first, like deleting a plan. */}
+      <div className={styles.itemFoot} data-export-ignore="">
+        <DeleteButton label="Remove" onClick={() => setConfirming(true)} />
+      </div>
+      <ConfirmDeleteDialog open={confirming} onOpenChange={setConfirming} what="item from your lifecycle" detail={item.title} onConfirm={() => { setConfirming(false); onRemove() }} />
+    </li>
+  )
+}
+
+/**
+ * The items of one stage. One item is shown in full. Several (more than one plan, or more than one tender draft) become a list: a row each with its title
+ * and summary, and the row you open shows its full view underneath.
+ */
+function StageItems({ items, onRemove }: { items: LifecycleItem[]; onRemove: (id: string) => void }) {
+  const [openId, setOpenId] = useState<string | null>(null)
+  if (items.length === 1) return <ul className={styles.list}><ItemRow item={items[0]!} onRemove={() => onRemove(items[0]!.id)} /></ul>
+  return (
+    <>
+      <p className={styles.sub}>{items.length} items in this stage. Open one to see it in full.</p>
+      <ul className={`${styles.list} ${styles.itemList}`}>
+        {items.map((i) => <ItemRow key={i.id} item={i} open={openId === i.id} onToggle={() => setOpenId(openId === i.id ? null : i.id)} onRemove={() => onRemove(i.id)} />)}
+      </ul>
+    </>
+  )
+}
+
+const labelOf = (stage: LifecycleStage) => LIFECYCLE_STEPS.find((s) => s.id === stage)?.label ?? stage
+const STAGE_IDS = LIFECYCLE_STEPS.map((s) => s.id as LifecycleStage)
+
+/** What to say to ask for the next piece of an empty stage. */
+const NEXT_PROMPT: Record<LifecycleStage, string> = {
+  planning: 'Help me plan my procurement',
+  'tender-design': 'Suggest tender clauses for my own procurement',
+  monitoring: 'How can I evaluate and monitor my project?',
+  learning: 'How should I add learning to my project?',
+}
+
+/** The button on a suggestion: puts it in the user's own lifecycle, or takes it out again. The suggestion keeps its basis. */
+export function AddToLifecycle({ item, label = 'Add to my lifecycle' }: { item: NewLifecycleItem; label?: string }) {
+  const present = useMyLifecycle((s) => s.items.find((i) => i.key === item.key))
+  const add = useMyLifecycle((s) => s.add)
+  const remove = useMyLifecycle((s) => s.remove)
+  return present
+    ? <Button onClick={() => remove(present.id)} aria-pressed="true">In my lifecycle · remove</Button>
+    : <Button variant="primary" onClick={() => add(item)}>{label}</Button>
+}
+
+/** The monitoring or learning features the user can pick from, each with what it needs and an Add button. */
+export function FeatureOptions({ stage, title, options }: { stage: Extract<LifecycleStage, 'monitoring' | 'learning'>; title: string; options: FeatureOption[] }) {
+  const [preview, setPreview] = useState<string | null>(null)
+  return (
+    <Card title={title} aside={<ProvenanceChip kind="derived" detail="features of this app" />}>
+      <ul className={styles.list}>
+        {options.map((o) => (
+          <li key={o.id}>
+            <div>
+              <strong>{o.title}</strong>
+              <p className={styles.sub}>{o.what}</p>
+              <p className={styles.sub}>Uses: {o.uses}</p>
+              <Button onClick={() => setPreview(preview === o.id ? null : o.id)} aria-expanded={preview === o.id}>{preview === o.id ? 'Hide preview' : 'Preview'}</Button>
+              {preview === o.id && <FeatureView stage={stage} featureId={o.id} />}
+            </div>
+            <AddToLifecycle item={{ key: `${stage}:${o.id}`, stage, kind: stage === 'monitoring' ? 'monitoring-feature' : 'learning-feature', title: o.title, summary: o.what, basis: `A feature of this app. Uses: ${o.uses}.`, detail: o }} />
+          </li>
+        ))}
+      </ul>
+    </Card>
+  )
+}
+
+/**
+ * The user's own lifecycle as the same donut a stored project has. A slice is in its full colour once something has been added to that stage and faded while
+ * it is empty, so the donut fills in as the lifecycle is built. Clicking a stage (on the donut or on its tile) shows what was added to it; an empty stage
+ * offers a button to ask for the next suggestion. The stages keep the planning names (Planning, Tender design, Monitoring, Learning).
+ */
+export function MyLifecycleCard({ onSend }: { onSend?: (text: string) => void }) {
+  const { name, items, remove, rename, clear } = useMyLifecycle()
+  const { byStage, missing, complete } = lifecycleStatus(items)
+  const [picked, setPicked] = useState<LifecycleStage | null>(null)
+  const [hover, setHover] = useState<string | null>(null)
+  const shown: LifecycleStage = picked ?? (STAGE_IDS.find((st) => byStage[st].length > 0) ?? 'planning')
+  const segments = LIFECYCLE_STEPS.map((step) => {
+    const filled = byStage[step.id as LifecycleStage].length > 0
+    const color = STEP_COLOR[step.id] ?? 'var(--primary)'
+    return { id: step.id, label: step.label, color: filled ? color : `color-mix(in srgb, ${color} 30%, var(--surface))` }
+  })
+  return (
+    <Card title="My lifecycle" downloadName={name} aside={<span className={styles.row}><Badge tone={complete ? 'low' : 'medium'}>{complete ? 'Complete' : `${missing.length} stage${missing.length === 1 ? '' : 's'} empty`}</Badge><Button disabled={items.length === 0} title={items.length === 0 ? 'Add something to the lifecycle first' : 'Every stage and item as a Word file; opens in Google Docs too'} onClick={() => void downloadLifecycleDocx(name, items)}>Download all (.docx)</Button></span>}>
+      <label className={styles.name}>Name
+        <input value={name} onChange={(e) => rename(e.target.value)} maxLength={80} />
+      </label>
+      <p className={styles.sub}>Kept for this browser session only. Everything here is a suggestion you chose to add, with the basis it came with. Stages in full colour have something in them.</p>
+      <div className={styles.big}>
+        <DonutNav
+          ariaLabel="My lifecycle" size="min(340px, 100%)" segments={segments} activeId={hover ?? shown}
+          onActiveChange={setHover} onSelect={(id) => setPicked(id as LifecycleStage)}
+          centre={<span className={styles.centre}>{name}</span>}
+        />
+      </div>
+      <ul className={styles.facts}>
+        {LIFECYCLE_STEPS.map((step) => {
+          const id = step.id as LifecycleStage
+          const n = byStage[id].length
+          return (
+            <li key={id} style={{ borderTopColor: n > 0 ? STEP_COLOR[id] : undefined }} aria-current={id === shown ? 'true' : undefined}>
+              <button type="button" onClick={() => setPicked(id)}>{step.label}</button>
+              <span className={styles.sub}>{n > 0 ? `${n} ${n === 1 ? 'item' : 'items'} added` : 'Nothing added yet'}</span>
+              <ProvenanceChip kind={n > 0 ? 'derived' : 'missing'} detail={n > 0 ? 'suggested' : undefined} />
+            </li>
+          )
+        })}
+      </ul>
+      <section className={styles.stage} aria-label={labelOf(shown)} aria-live="polite">
+        <h4>{labelOf(shown)}</h4>
+        {byStage[shown].length === 0 ? (
+          <>
+            <EmptyState title="Nothing added yet" text="Ask for a suggestion and press Add to my lifecycle." />
+            {onSend && <Button variant="primary" onClick={() => onSend(NEXT_PROMPT[shown])}>{NEXT_PROMPT[shown]}</Button>}
+          </>
+        ) : (
+          <StageItems items={byStage[shown]} onRemove={remove} />
+        )}
+      </section>
+      {items.length > 0 && <div className={styles.actions}><Button onClick={clear}>Clear my lifecycle</Button></div>}
+    </Card>
+  )
+}

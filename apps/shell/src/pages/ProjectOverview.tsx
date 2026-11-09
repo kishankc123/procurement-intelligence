@@ -1,10 +1,11 @@
-import { lazy, type ReactNode } from 'react'
+import { lazy, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import {
   dataReadiness, plannedDurations, projectPhase, scheduleRows, useContracts, useEnrichments, useMeta, usePlan,
   useProject, useScheduleItems, useTenderDraft, useUiStore,
 } from '@pi/data'
-import { Badge, Card, EmptyState, Paged, ProvenanceChip, StackedBars } from '@pi/ui'
+import { Badge, Card, DownloadPng, EmptyState, Paged, ProvenanceChip, StackedBars } from '@pi/ui'
+import { DownloadProject } from '../exportProject'
 import { RemoteBoundary } from '../RemoteBoundary'
 import styles from './ProjectOverview.module.css'
 
@@ -14,16 +15,17 @@ const ScheduleCard = lazy(() => import('monitoring/ScheduleCard'))
 /** One lifecycle section of the project: labelled with where it comes from, with a link to the full page. */
 function Section({ from, title, to, children, aside }: { from: string; title: string; to: string; children: ReactNode; aside?: ReactNode }) {
   return (
-    <Card title={title} aside={<span className={styles.row}>{aside}<Badge>From {from}</Badge></span>}>
+    <Card title={title} downloadName={title} aside={<span className={styles.row}>{aside}<Badge>From {from}</Badge></span>}>
       <div className={styles.stack}>
         {children}
-        <div className={styles.more}><Link to={to}>View more in {from} →</Link></div>
+        <div className={styles.more} data-export-ignore=""><Link to={to}>View more in {from} →</Link></div>
       </div>
     </Card>
   )
 }
 
 export function ProjectOverview() {
+  const pageRef = useRef<HTMLDivElement>(null)
   const { projectId, fiscalYear } = useUiStore()
   const project = useProject(projectId).data?.[0]
   const plans = usePlan(projectId).data ?? []
@@ -39,10 +41,14 @@ export function ProjectOverview() {
   const readiness = dataReadiness(contracts, enrichments)
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
       <div>
         <h1>{project.project_name}</h1>
         <p className={styles.sub}><span className="mono">{project.project_id}</span> · {project.borrower_country} · {project.project_global_practice} · {project.region}</p>
+        <div className={styles.row} data-export-ignore="">
+          <DownloadProject projectId={project.project_id} />
+          <DownloadPng targetRef={pageRef} name={`${project.project_id} ${project.project_name}`} label="Download page as PNG" />
+        </div>
       </div>
 
       <Card title="Project" aside={<ProvenanceChip kind="public" />}>

@@ -1,10 +1,11 @@
 // Rebuilds mock/db.json from scratch. `pnpm reset-db` runs this. Everything here is mock data.
 // @ts-ignore Node.js type declarations are not included for this mock script.
-import { writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 // @ts-ignore Node.js type declarations are not included for this mock script.
 import { fileURLToPath } from 'node:url'
 import { fiscalYearOf } from '../packages/config/src/index'
 import { buildCountryYears } from './import-gppd'
+import { mergeSnapshot, type Snapshot } from '../ingest/publish'
 import * as X from './seed-extra'
 
 const P = 'P-MOCK-001'
@@ -175,6 +176,9 @@ const db = {
       planned_evaluation_complete: '2026-09-30', planned_signing: '2026-11-10', category: 'Consulting services', method: 'Quality-based' },
     ...X.extraPlans,
   ],
+  // Filled from mock/ingested/*.json (real projects only): the plan rows and tender notices read from World Bank sources.
+  plan_packages: [] as unknown[],
+  tender_notices: [] as unknown[],
   tender_drafts: [{ id: `TD-${P}`, project_id: P, duration_months: 18, bid_validity_days: 60, performance_security_pct: 10,
     min_similar_contracts: 2, min_similar_value_usd: 2_000_000, evaluation_method: 'Lowest evaluated price' }, ...X.extraDrafts],
   supervision_reports: [...supervision_reports, ...X.extraReports], completion_reports: [...completion_reports, ...X.extraCompletionReports],
@@ -246,6 +250,18 @@ const db = {
   }],
 }
 
+// Real, pre-ingested projects (pnpm ingest <id>) are merged in as they are: same collections, same shapes.
+const ingestedDir = fileURLToPath(new URL('./ingested/', import.meta.url))
+const ingested: string[] = []
+if (existsSync(ingestedDir)) {
+  for (const file of readdirSync(ingestedDir).filter((f: string) => f.endsWith('.json')).sort()) {
+    const snapshot = JSON.parse(readFileSync(ingestedDir + file, 'utf8')) as { manifest: { project_id: string; ingested_at: string }; collections: Record<string, unknown[]> }
+    mergeSnapshot(db as unknown as Record<string, unknown>, snapshot as unknown as Snapshot)
+    ingested.push(`${snapshot.manifest.project_id} (ingested ${snapshot.manifest.ingested_at.slice(0, 10)})`)
+  }
+}
+if (ingested.length > 0) db.meta.dataset_label += ` · Real World Bank data, ingested snapshot: ${ingested.join(', ')}`
+
 const out = fileURLToPath(new URL('./db.json', import.meta.url))
 writeFileSync(out, JSON.stringify(db, null, 2))
-console.log(`Wrote ${out}: ${db.contracts.length} contracts, ${db.country_years.length} country-years`)
+console.log(`Wrote ${out}: ${db.contracts.length} contracts, ${db.country_years.length} country-years${ingested.length ? `, ingested: ${ingested.join(', ')}` : ''}`)

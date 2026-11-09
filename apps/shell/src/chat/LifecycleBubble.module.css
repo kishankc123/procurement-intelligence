@@ -1,0 +1,24 @@
+/* Sits inside the chat panel (the panel is its positioning box), in the bottom-right corner, level with the message box and inside the panel's padding.
+   Its size follows the screen. The message box is centred and about 770px wide, so on a panel narrower than about 1000px the bubble would cover it:
+   there it moves up to sit above the message box instead. */
+.bubble {
+  position: absolute; right: clamp(12px, 2.2cqw, 24px); bottom: clamp(16px, 3cqw, 28px); z-index: 40;
+  width: clamp(52px, 5.4cqw, 68px); height: clamp(52px, 5.4cqw, 68px); border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
+}
+.bubble:hover { background: var(--selected); }
+.bubble:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.count {
+  position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 5px; box-sizing: border-box;
+  display: grid; place-items: center; border-radius: 11px;
+  background: var(--primary); color: var(--on-solid); font-size: 12px; font-weight: 600; line-height: 1;
+}
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tab { font: inherit; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); color: var(--text); cursor: pointer; text-align: left; }
+.tab:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.tabOn { background: var(--selected); border-color: var(--primary); }
+.scope { color: var(--muted); font-size: 12px; }
+.bubble svg { width: 54%; height: 54%; }
+@container (max-width: 1000px) { .bubble { top: 8px; bottom: auto; right: 12px; width: 48px; height: 48px; } }

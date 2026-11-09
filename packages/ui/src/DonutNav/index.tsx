@@ -18,6 +18,8 @@ interface Props {
   size?: string
   /** Small version for page headers: slices show only their number and the orbit ring is hidden. */
   compact?: boolean
+  /** A loading picture: the dotted orbit turns quickly and the slices ignore the pointer. */
+  busy?: boolean
 }
 
 const CENTRE = 100
@@ -70,7 +72,7 @@ function labelPath(start: number, end: number, bottom: boolean): string {
 }
 
 /** Donut of equal slices used as navigation. Each slice is a real button: hover or focus highlights it, click or Enter selects it. */
-export function DonutNav({ segments, activeId, onActiveChange, onSelect, centre, ariaLabel, size, compact }: Props) {
+export function DonutNav({ segments, activeId, onActiveChange, onSelect, centre, ariaLabel, size, compact, busy }: Props) {
   const slice = 360 / Math.max(segments.length, 1)
   const uid = useId().replace(/:/g, '')
 
@@ -91,7 +93,7 @@ export function DonutNav({ segments, activeId, onActiveChange, onSelect, centre,
   }
 
   return (
-    <div className={`${styles.wrap} ${compact ? styles.compact : ''}`} style={size ? { maxWidth: size } : undefined}>
+    <div className={`${styles.wrap} ${compact ? styles.compact : ''} ${busy ? styles.busy : ''}`} style={size ? { maxWidth: size } : undefined}>
       <svg viewBox="-8 -8 216 216" role="group" aria-label={ariaLabel} className={styles.svg}>
         <defs>
           <radialGradient id={`${uid}-hole`} cx="50%" cy="50%" r="50%">

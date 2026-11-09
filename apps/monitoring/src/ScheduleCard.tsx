@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { THRESHOLDS } from '@pi/config'
 import {
-  STATUS_LABEL, projectPhase, scheduleRange, scheduleRows, useMeta, usePlan, useScheduleItems,
+  STATUS_LABEL, isSampleId, projectPhase, sampleScheduleItems, scheduleRange, scheduleRows, useMeta, usePlan, useScheduleItems,
   type Project, type ScheduleStatus,
 } from '@pi/data'
 import { Badge, Card, EmptyState, Gantt, ProvenanceChip, type GanttTone } from '@pi/ui'
@@ -14,9 +14,10 @@ const BADGE = { good: 'low', attention: 'medium', bad: 'high', neutral: 'neutral
 
 /**
  * The selected project's schedule inside Monitoring: tender rows from its plans plus mock operational items,
- * each flagged on track, behind or overdue against the data date. Owns only the selected-bar state.
+ * each flagged on track, behind or overdue against the data date. Owns only the selected-bar state. With `sample`, three labelled sample rows (on track,
+ * behind, overdue) are added so the chart shows every status.
  */
-export function ScheduleCard({ project, badge, footer }: { project: Project; badge?: ReactNode; footer?: ReactNode }) {
+export function ScheduleCard({ project, badge, footer, sample = false }: { project: Project; badge?: ReactNode; footer?: ReactNode; sample?: boolean }) {
   const items = useScheduleItems()
   const plans = usePlan(project.project_id).data ?? []
   const asOf = useMeta().data?.as_of_date
@@ -25,13 +26,14 @@ export function ScheduleCard({ project, badge, footer }: { project: Project; bad
   if (!asOf) return <Card title="Project schedule" state="loading">{null}</Card>
   if (items.isError) return <Card title="Project schedule" state="error">{null}</Card>
 
-  const rows = scheduleRows((items.data ?? []).filter((i) => i.project_id === project.project_id), plans, asOf)
+  const stored = (items.data ?? []).filter((i) => i.project_id === project.project_id)
+  const rows = scheduleRows(sample ? [...stored, ...sampleScheduleItems(project.project_id, asOf)] : stored, plans, asOf)
   const range = scheduleRange(rows, asOf)
   const selected = rows.find((r) => r.id === selectedId) ?? null
   const flagged = rows.filter((r) => r.status === 'behind' || r.status === 'overdue').length
 
   return (
-    <Card title="Project schedule" aside={<span className={styles.row}>{badge}<ProvenanceChip kind="derived" detail={`n=${rows.length}`} /></span>}>
+    <Card title="Project schedule" downloadName={`${project.project_id} project schedule`} aside={<span className={styles.row}>{badge}<ProvenanceChip kind="derived" detail={`n=${rows.length}`} /></span>}>
       <div className={styles.stack}>
         <p className={styles.sub}>
           Phase: <strong>{projectPhase(project, rows, asOf)}</strong> · {flagged} behind or overdue as of <span className="mono">{asOf}</span>. Tender rows come from your plans; works, supplies and manpower rows are <Badge>Mock</Badge> operational records.
@@ -57,7 +59,8 @@ export function ScheduleCard({ project, badge, footer }: { project: Project; bad
                 <div className={styles.row}>
                   <strong>{selected.name}</strong>
                   <Badge tone={BADGE[TONE[selected.status]]}>{STATUS_LABEL[selected.status]}</Badge>
-                  <ProvenanceChip kind="entered" detail={selected.source === 'plan' ? 'from your plan' : 'mock record'} />
+                  {isSampleId(selected.id) && <Badge tone="medium">Sample</Badge>}
+                  <ProvenanceChip kind="entered" detail={selected.source === 'plan' ? 'from your plan' : isSampleId(selected.id) ? 'sample record' : 'mock record'} />
                   <ProvenanceChip kind="derived" detail="status" />
                 </div>
                 <p>{selected.group} · {selected.milestone ? `milestone on ${selected.start}` : `${selected.start} to ${selected.end}`}</p>

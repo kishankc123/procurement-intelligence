@@ -1,0 +1,46 @@
+.list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.sub { margin: 2px 0 0; color: var(--muted); font-size: 0.93em; line-height: 1.45; }
+.name { display: grid; gap: 4px; color: var(--muted); font-size: 0.93em; margin-bottom: 6px; }
+.name input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.stage { margin-top: 14px; }
+.stage h4 { margin: 0 0 6px; }
+.actions { margin-top: 14px; }
+
+/* The donut and the stage tiles, the same as a stored project's lifecycle card (ChatBlocks.module.css). */
+.big { display: grid; justify-items: center; margin: 8px 0; }
+.centre { font-size: 12px; font-weight: 600; text-align: center; line-height: 1.2; max-width: 11ch; overflow-wrap: anywhere; }
+.facts { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.facts li { display: grid; align-content: start; gap: 4px; padding: 8px 10px; border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.facts li[aria-current='true'] { background: var(--selected); }
+.facts button { all: unset; cursor: pointer; font-weight: 600; color: var(--link); text-decoration: underline; }
+.facts button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+
+/* A lifecycle item with its own view under the heading, instead of a text summary. */
+.item { display: grid !important; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.itemHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.feature { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-top: 8px; min-width: 0; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 6px 6px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; vertical-align: top; }
+.table th { color: var(--muted); width: 50%; }
+
+.row { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+/* A label above an indicator that is drawn with sample data, and the list of several items in one stage. */
+.sample { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px 10px; border: 1px dashed var(--border); border-radius: var(--radius-ctl); background: var(--bg); color: var(--muted); font-size: 0.93em; line-height: 1.45; }
+.itemList > li { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); }
+.itemList > li:last-child { padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+/* Editing a suggested plan or tender clauses in place. */
+.editForm { display: grid; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-ctl); background: var(--bg); }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px; }
+.field { display: grid; gap: 4px; color: var(--muted); font-size: 0.93em; }
+.field input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.error { margin: 0; color: var(--danger); font-size: 0.93em; }
+.formHead { margin: 4px 0 0; font-size: 0.93em; }
+.hint { margin: 0; color: var(--muted); font-size: 0.86em; }
+
+/* Edit, Save as final (and View, PNG) on the right edge of the heading; Remove under the data, also on the right edge. */
+.headActions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+.itemFoot { display: flex; justify-content: flex-end; }

@@ -3,15 +3,41 @@
   "buildCommand": "pnpm build:vercel",
   "outputDirectory": "dist-vercel",
   "functions": {
-    "api/[...path].js": { "includeFiles": "mock/db.json" }
+    "api/[...path].js": {
+      "includeFiles": "mock/db.json"
+    },
+    "api/chat.js": {
+      "includeFiles": "mock/db.json"
+    },
+    "api/copilotkit/[...path].mjs": {
+      "includeFiles": "mock/db.json"
+    },
+    "api/copilotkit.mjs": {
+      "includeFiles": "mock/db.json"
+    },
+    "api/ingest/[...path].mjs": {
+      "maxDuration": 60
+    }
   },
   "rewrites": [
-    { "source": "/((?!api/|remotes/|assets/).*)", "destination": "/index.html" }
+    {
+      "source": "/api/copilotkit/:path*",
+      "destination": "/api/copilotkit?path=:path*"
+    },
+    {
+      "source": "/((?!api/|remotes/|assets/).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
       "source": "/remotes/:name/remoteEntry.js",
-      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     }
   ]
 }

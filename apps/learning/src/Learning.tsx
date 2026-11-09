@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { THRESHOLDS, can, whyDisabled } from '@pi/config'
 import {
-  dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, useRecommendations, useReviewFeedback, useUiStore,
+  dataReadiness, feedbackKpis, useAuditLog, useContracts, useCurrentUser, useEnrichments, useFeedback, type Feedback, useRecommendations, useReviewFeedback, useUiStore,
   tenderCoverage,
 } from '@pi/data'
 import { Badge, Button, Card, Check, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, EmptyState, Pencil, ProvenanceChip, StackedBars, TableScroll, Paged, Carousel, X } from '@pi/ui'
@@ -16,67 +16,56 @@ const ROADMAP = [
   { phase: 'Later', item: 'Active learning: ask reviewers about the least certain links first' },
 ]
 
-export default function Learning() {
-  const { projectId, fiscalYear } = useUiStore()
-  const { role } = useCurrentUser()
-  const feedback = useFeedback()
+/** What a feedback target is, in words: a recommendation's title, or the layer or chat card the feedback was given on. */
+function useFeedbackTitles(projectId: string) {
   const recs = useRecommendations(projectId).data ?? []
-  const audit = useAuditLog().data ?? []
-  const contractsQuery = useContracts(projectId)
-  const contracts = contractsQuery.data ?? []
-  const enrichmentsQuery = useEnrichments()
-  const enrichments = enrichmentsQuery.data ?? []
-  const review = useReviewFeedback()
-  const [editing, setEditing] = useState<string | null>(null)
-  const [reason, setReason] = useState('')
-  const editingItem = (feedback.data ?? []).find((f) => f.id === editing)
+  const LAYER = { link: 'Work with AI · source link', ingestion: 'Work with AI · ingestion', records: 'Work with AI · record linking', schedule: 'Schedule', retender: 'Work with AI · retender check', spec: 'Tender design · specification checks', supplier: 'Suppliers · profile', chatready: 'Chat · ready summary', chatlifecycle: 'Chat · lifecycle', chatplanning: 'Chat · Planning card', chattender: 'Chat · tender draft', chatmonitoring: 'Chat · Monitoring cards', chatlearning: 'Chat · Learning card', chatsuppliers: 'Chat · Suppliers card', chatprojectdata: 'Chat · Contracts card', chatknowledge: 'Chat · Knowledge base card', chatevidence: 'Chat · Evidence workbench card' } as const
+  return (id: string) => recs.find((r) => r.id === id)?.title ?? LAYER[id.split('-')[2] as keyof typeof LAYER] ?? id
+}
 
-  if (feedback.isLoading) return <Card state="loading">{null}</Card>
-  if (feedback.isError) return <Card state="error">{null}</Card>
-
-  const rows = feedback.data ?? []
-  const kpis = feedbackKpis(rows)
-  const allowed = can(role, 'review_feedback')
-  const reason_ = allowed ? undefined : whyDisabled('review_feedback')
-  const fiscalYears = [...new Set(contracts.map((c) => c.fiscal_year))].filter((fy) => fy === fiscalYear)
-  // Same population as the coverage table below: this project's contracts in the selected fiscal year.
-  const inYear = contracts.filter((c) => c.fiscal_year === fiscalYear)
-  const readiness = dataReadiness(inYear, enrichments)
-  const readinessState = contractsQuery.isError || enrichmentsQuery.isError ? 'error' : contractsQuery.isLoading || enrichmentsQuery.isLoading ? 'loading' : 'ready'
-  const LAYER = { link: 'Work with AI · source link', ingestion: 'Work with AI · ingestion', records: 'Work with AI · record linking', schedule: 'Schedule', retender: 'Work with AI · retender check', spec: 'Tender design · specification checks', supplier: 'Suppliers · profile' } as const
-  const titleOf = (id: string) => recs.find((r) => r.id === id)?.title ?? LAYER[id.split('-')[2] as keyof typeof LAYER] ?? id
-
-  return (
-    <div className={styles.page}>
-      <div className={styles.head}>
-        <h1>Learning</h1>
-        <p>Feedback from planners and reviewers, and what changed because of it. Every figure is derived from the feedback and audit logs.</p>
-      </div>
-
-      <Carousel ariaLabel="Feedback figures">
-        <Card title="Feedback received">
+/** The two feedback figures. An array of keyed cards, so a carousel (page) or a grid (chat) can hold them. */
+export function feedbackFigures(kpis: ReturnType<typeof feedbackKpis>): ReactNode[] {
+  return [
+        <Card key="received" title="Feedback received">
           {kpis ? <><p><span className={styles.big}>{kpis.total}</span></p><ProvenanceChip kind="derived" detail={`n=${kpis.total}`} /></>
             : <EmptyState title="No feedback yet" text="Use Helpful or Not helpful on a recommendation in Planning." />}
-        </Card>
-        <Card title="Feedback accepted by reviewers">
+        </Card>,
+        <Card key="accepted" title="Feedback accepted by reviewers">
           {kpis && kpis.reviewed > 0 ? (
             <><p><span className={styles.big}>{kpis.accepted}</span> <span className={styles.unit}>of {kpis.reviewed} reviewed</span></p>
               <p className={styles.sub}>{kpis.rejected} rejected</p><ProvenanceChip kind="derived" detail={`n=${kpis.reviewed}`} /></>
           ) : <EmptyState title="Nothing reviewed yet" text="Accept, edit or reject items in the queue below." />}
-        </Card>
-      </Carousel>
+        </Card>,
+  ]
+}
 
+/** The feedback queue with Accept, Reject and an Edit modal. Reviewers decide; everyone else sees it read-only with the reason. */
+export function FeedbackQueueCard({ projectId, only }: { projectId: string; only?: (f: Feedback) => boolean }) {
+  const { role } = useCurrentUser()
+  const feedback = useFeedback()
+  const review = useReviewFeedback()
+  const titleOf = useFeedbackTitles(projectId)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [reason, setReason] = useState('')
+  const rows = (feedback.data ?? []).filter((f) => !only || only(f))
+  const editingItem = rows.find((f) => f.id === editing)
+  const allowed = can(role, 'review_feedback')
+  const reason_ = allowed ? undefined : whyDisabled('review_feedback')
+  if (feedback.isLoading) return <Card state="loading">{null}</Card>
+  if (feedback.isError) return <Card state="error">{null}</Card>
+  return (
+    <>
       <Card title="Feedback queue" aside={<span className={styles.sub}>Reviewer decides</span>}>
         {rows.length === 0 ? <EmptyState title="Queue is empty" /> : (
-          <Paged items={rows} label="feedback items" maxHeight="520px">{(pageRows) =><table className={styles.table}>
+          <Paged items={rows} label="feedback items" maxHeight="520px">{(pageRows) =><table className={`${styles.table} ${styles.queue}`}>
             <thead><tr><th>Recommendation</th><th>Rating</th><th>From</th><th>Status</th><th>Decision</th><th>Edit</th></tr></thead>
             <tbody>
               {pageRows.map((f) => (
                 <tr key={f.id}>
                   <td>{titleOf(f.target_id)}<br /><span className="mono">{f.target_id}</span>{f.reason && <p className={styles.sub}>Note: {f.reason}</p>}</td>
-                  <td>{f.rating === 'helpful' ? 'Helpful' : 'Not helpful'}</td>
-                  <td>{f.role.replace('_', ' ')}</td>
-                  <td><Badge tone={STATUS_TONE[f.status]}>{f.status}</Badge></td>
+                  <td data-label="Rating">{f.rating === 'helpful' ? 'Helpful' : 'Not helpful'}</td>
+                  <td data-label="From">{f.role.replace('_', ' ')}</td>
+                  <td data-label="Status"><Badge tone={STATUS_TONE[f.status]}>{f.status}</Badge></td>
                   <td>
                     <div className={styles.actions}><Button variant="success" onClick={() => review.mutate({ id: f.id, status: 'accepted' })} disabledReason={reason_}><Check size={16} aria-hidden="true" />Accept</Button>
                     <Button variant="danger" onClick={() => review.mutate({ id: f.id, status: 'rejected' })} disabledReason={reason_}><X size={16} aria-hidden="true" />Reject</Button></div>
@@ -108,6 +97,40 @@ export default function Learning() {
           </form>
         </DialogContent>
       </Dialog>
+    </>
+  )
+}
+
+export default function Learning() {
+  const { projectId, fiscalYear } = useUiStore()
+  const feedback = useFeedback()
+  const audit = useAuditLog().data ?? []
+  const contractsQuery = useContracts(projectId)
+  const contracts = contractsQuery.data ?? []
+  const enrichmentsQuery = useEnrichments()
+  const enrichments = enrichmentsQuery.data ?? []
+
+  if (feedback.isLoading) return <Card state="loading">{null}</Card>
+  if (feedback.isError) return <Card state="error">{null}</Card>
+
+  const rows = feedback.data ?? []
+  const kpis = feedbackKpis(rows)
+  const fiscalYears = [...new Set(contracts.map((c) => c.fiscal_year))].filter((fy) => fy === fiscalYear)
+  // Same population as the coverage table below: this project's contracts in the selected fiscal year.
+  const inYear = contracts.filter((c) => c.fiscal_year === fiscalYear)
+  const readiness = dataReadiness(inYear, enrichments)
+  const readinessState = contractsQuery.isError || enrichmentsQuery.isError ? 'error' : contractsQuery.isLoading || enrichmentsQuery.isLoading ? 'loading' : 'ready'
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.head}>
+        <h1>Learning</h1>
+        <p>Feedback from planners and reviewers, and what changed because of it. Every figure is derived from the feedback and audit logs.</p>
+      </div>
+
+      <Carousel ariaLabel="Feedback figures">{feedbackFigures(kpis)}</Carousel>
+
+      <FeedbackQueueCard projectId={projectId} />
 
       <Card title="Contract data readiness" aside={<ProvenanceChip kind="derived" detail={`n=${readiness.eligible}`} />} state={readinessState}>
         {readiness.eligible === 0 ? <EmptyState title={`No contracts in FY${fiscalYear}`} text="Change the fiscal year in the filters on the left." /> : (

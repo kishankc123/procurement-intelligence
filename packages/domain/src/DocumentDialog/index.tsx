@@ -70,7 +70,7 @@ export function DocumentDialog({ docId, onClose }: { docId: string | null; onClo
             <dl className={styles.facts}>
               <div><dt>Type</dt><dd>{doc.type}</dd></div>
               <div><dt>Date</dt><dd className="mono">{doc.date}</dd></div>
-              <div><dt>Pages</dt><dd className="mono">{doc.pages}</dd></div>
+              <div><dt>Pages</dt><dd className="mono">{doc.pages > 0 ? doc.pages : '—'}</dd></div>
               <div><dt>Project</dt><dd className="mono">{doc.project_id}</dd></div>
               <div><dt>Parse status</dt><dd><Badge tone={PARSE_TONE[doc.parse_status as keyof typeof PARSE_TONE] ?? 'neutral'}>{doc.parse_status}</Badge></dd></div>
               <div><dt>Source</dt><dd><ProvenanceChip kind="public" detail="mock document" /></dd></div>

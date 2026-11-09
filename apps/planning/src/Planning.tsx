@@ -69,7 +69,7 @@ function StageTable({ plan }: { plan: Plan }) {
 }
 
 /** The dropdown under a plan row: read-only stage timeline, with Edit plan, Full details and Close at the bottom. */
-function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: () => void; onFull: () => void; onClose: () => void }) {
+function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; /** Absent in a read-only list: there is then no Edit plan button. */ onEdit?: () => void; onFull?: () => void; onClose: () => void }) {
   const { role } = useCurrentUser()
   const allowed = can(role, 'edit_plan')
   return (
@@ -80,8 +80,8 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
       </div>
       <StageTable plan={plan} />
       <div className={styles.row}>
-        <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>
-        <Button onClick={onFull}>Full details</Button>
+        {onEdit && <Button variant="primary" onClick={onEdit} disabledReason={allowed ? undefined : whyDisabled('edit_plan')}>Edit plan</Button>}
+        {onFull && <Button onClick={onFull}>Full details</Button>}
         <Button variant="danger" onClick={onClose}>Close</Button>
       </div>
     </div>
@@ -89,7 +89,7 @@ function PlanTimeline({ plan, onEdit, onFull, onClose }: { plan: Plan; onEdit: (
 }
 
 /** Edit a plan in a modal: change the category, method or dates, then Save plan, Cancel or Delete plan. No page change. */
-function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; open: boolean; onOpenChange: (open: boolean) => void; onDeleted: () => void }) {
+export function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; open: boolean; onOpenChange: (open: boolean) => void; onDeleted: () => void }) {
   const save = useSavePlan()
   const remove = useDeletePlan()
   const [draft, setDraft] = useState(plan)
@@ -133,14 +133,16 @@ function EditPlanDialog({ plan, open, onOpenChange, onDeleted }: { plan: Plan; o
   )
 }
 
-function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull: (id: string) => void; onEdit: (id: string) => void; onDelete: (id: string) => void }) {
+/** The plans table. `onFull` is optional (the chat has no full-details page); `compact` drops the category and method columns for narrow places. */
+export function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete, compact }: { plans: Plan[]; selectedId: string | null; onSelect: (id: string | null) => void; onFull?: (id: string) => void; /** Leave out onEdit and onDelete for a read-only list: the Actions column and the Edit plan button are then not drawn. */ onEdit?: (id: string) => void; onDelete?: (id: string) => void; compact?: boolean }) {
+  const readOnly = !onEdit && !onDelete
   const { role } = useCurrentUser()
   const allowed = can(role, 'edit_plan')
   return (
-    <Card title="Plans" aside={<ProvenanceChip kind="entered" />}>
+    <Card title="Plans" downloadName="Plans" aside={<ProvenanceChip kind="entered" />}>
       {plans.length === 0 ? <EmptyState title="No plans yet" text="Plans you enter for this project appear here." /> : (
         <Paged items={plans} label="plans">{(pageRows) =><table className={`${styles.table} ${styles.plans}`}>
-          <thead><tr><th>Plan</th><th>Category</th><th>Method</th><th>Advertisement</th><th>Signing</th><th>Days to sign</th><th aria-label="Actions" /></tr></thead>
+          <thead><tr><th>Plan</th>{!compact && <><th>Category</th><th>Method</th></>}<th>Advertisement</th><th>Signing</th><th>Days to sign</th>{!readOnly && <th aria-label="Actions" />}</tr></thead>
           <tbody>
             {pageRows.map((p) => (
               <Fragment key={p.id}>
@@ -152,19 +154,18 @@ function PlanList({ plans, selectedId, onSelect, onFull, onEdit, onDelete }: { p
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(p.id === selectedId ? null : p.id) } }}
               >
                 <td>{p.name}<br /><span className={`mono ${styles.nowrap}`}>{p.id}</span></td>
-                <td>{p.category}</td>
-                <td>{p.method}</td>
-                <td className={`mono ${styles.nowrap}`}>{p.planned_advertisement}</td>
-                <td className={`mono ${styles.nowrap}`}>{p.planned_signing}</td>
-                <td className={`mono ${styles.nowrap}`}>{plannedDurations(p).advertisementToSigning}</td>
-                <td onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                  <DeleteButton onClick={() => onDelete(p.id)} disabledReason={allowed ? undefined : whyDisabled('edit_plan')} />
-                </td>
+                {!compact && <><td data-label="Category">{p.category}</td><td data-label="Method">{p.method}</td></>}
+                <td className={`mono ${styles.nowrap}`} data-label="Advertisement">{p.planned_advertisement}</td>
+                <td className={`mono ${styles.nowrap}`} data-label="Signing">{p.planned_signing}</td>
+                <td className={`mono ${styles.nowrap}`} data-label="Days to sign">{plannedDurations(p).advertisementToSigning}</td>
+                {!readOnly && <td onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                  {onDelete && <DeleteButton onClick={() => onDelete(p.id)} disabledReason={allowed ? undefined : whyDisabled('edit_plan')} />}
+                </td>}
               </tr>
               {p.id === selectedId && (
                 <tr>
-                  <td colSpan={7} className={styles.expandedCell}>
-                    <PlanTimeline plan={p} onEdit={() => onEdit(p.id)} onFull={() => onFull(p.id)} onClose={() => onSelect(null)} />
+                  <td colSpan={(compact ? 5 : 7) - (readOnly ? 1 : 0)} className={styles.expandedCell}>
+                    <PlanTimeline plan={p} onEdit={onEdit ? () => onEdit(p.id) : undefined} onFull={onFull ? () => onFull(p.id) : undefined} onClose={() => onSelect(null)} />
                   </td>
                 </tr>
               )}
@@ -210,7 +211,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
         <p>{plan.category} · {plan.method} · {project.project_name}, {project.borrower_country}</p>
       </div>
 
-      <Card title="Stage timeline" aside={<ProvenanceChip kind="entered" />}>
+      <Card title="Stage timeline" downloadName="Stage timeline" aside={<ProvenanceChip kind="entered" />}>
         <StageTable plan={plan} />
       </Card>
       <EditPlanDialog plan={plan} open={editing} onOpenChange={setEditing} onDeleted={onDeleted} />
@@ -241,7 +242,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
         </Card>
       </Carousel>
 
-      <Card title="Duration model" aside={<Badge>Simulated</Badge>}>
+      <Card title="Duration model" downloadName="Duration model" aside={<Badge>Simulated</Badge>}>
         <DataGate gate={durationGate} title="Duration curve locked" unit="completed projects with key dates">
           <p>Curve available.</p>
         </DataGate>
@@ -301,7 +302,7 @@ function PlanDetail({ plan, onBack, onDeleted }: { plan: Plan; onBack: () => voi
         </Card>
       </div>
 
-      <Card title="Similar completed projects" aside={<span className={styles.sub}>from completion reports</span>}>
+      <Card title="Similar completed projects" downloadName="Similar completed projects" aside={<span className={styles.sub}>from completion reports</span>}>
         {completions.length === 0 ? <EmptyState title="No completion reports ingested" /> : (
           <Paged items={completions} label="completion reports" maxHeight="420px">{(pageRows) => <table className={styles.table}>
             <thead><tr><th>Project</th><th>Completion rating</th><th>Restructurings</th><th>Closing extension</th></tr></thead>

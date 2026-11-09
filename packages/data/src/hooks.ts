@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import { get, send } from './api'
 import * as S from './schemas'
+import { pickExampleProject } from './exampleProject'
 import { emit } from '@pi/events'
 import { useCurrentUser } from './store'
 
@@ -21,7 +22,10 @@ export const useEnrichments = () => useQuery(list('enrichments', '/enrichments',
 export const useAmendments = () => useQuery(list('amendments', '/amendments', S.Amendment))
 export const usePlan = (projectId: string) => useQuery(list('plans', `/plans?project_id=${q(projectId)}`, S.Plan))
 export const useAllPlans = () => useQuery(list('plans', '/plans', S.Plan))
+export const usePlanPackages = (projectId: string) => useQuery(list('plan_packages', `/plan_packages?project_id=${q(projectId)}`, S.PlanPackage))
+export const useTenderNotices = (projectId: string) => useQuery(list('tender_notices', `/tender_notices?project_id=${q(projectId)}`, S.TenderNotice))
 export const useTenderDraft = (projectId: string) => useQuery(list('tender_drafts', `/tender_drafts?project_id=${q(projectId)}`, S.TenderDraft))
+export const useAllReports = () => useQuery(list('supervision_reports', '/supervision_reports', S.SupervisionReport))
 export const useReports = (projectId: string) => useQuery(list('supervision_reports', `/supervision_reports?project_id=${q(projectId)}`, S.SupervisionReport))
 export const useCompletionReports = () => useQuery(list('completion_reports', '/completion_reports', S.CompletionReport))
 export const useCountryYears = (country: string) => useQuery(list('country_years', `/country_years?country=${q(country)}`, S.CountryYear))
@@ -58,6 +62,19 @@ export const useSavePlan = () =>
     return { action: 'Saved plan', target: plan.project_id }
   })
 
+/** Edits to past data keep the row where it is and mark it edited, so the screen can tell the document's own text from a user's change. */
+export const useSavePlanPackage = () =>
+  useWrite<S.PlanPackage>(async (row) => {
+    await send('PUT', `/plan_packages/${row.id}`, { ...row, edited: true })
+    return { action: 'Edited plan row', target: row.project_id }
+  })
+
+export const useSaveTenderNotice = () =>
+  useWrite<S.TenderNotice>(async (row) => {
+    await send('PUT', `/tender_notices/${row.id}`, { ...row, edited: true })
+    return { action: 'Edited tender notice', target: row.project_id }
+  })
+
 export const useDeletePlan = () =>
   useWrite<S.Plan>(async (plan) => {
     await send('DELETE', `/plans/${plan.id}`)
@@ -68,6 +85,13 @@ export const useSaveTenderDraft = () =>
   useWrite<S.TenderDraft>(async (d) => {
     await send('PUT', `/tender_drafts/${d.id}`, d)
     return { action: 'Saved tender draft', target: d.project_id }
+  })
+
+/** Saves a first draft for a project that has none yet (PUT only updates). */
+export const useCreateTenderDraft = () =>
+  useWrite<S.TenderDraft>(async (d) => {
+    await send('POST', '/tender_drafts', d)
+    return { action: 'Created tender draft', target: d.project_id }
   })
 
 export const useDeleteTenderDraft = () =>
@@ -158,3 +182,10 @@ export const useRecordIngestionRun = () =>
     await send('POST', '/ingestion_runs', { ...r, id: `RUN-${Date.now()}`, ran_at: new Date().toISOString(), simulated: true })
     return { action: 'Ran ingestion (simulated)', target: r.link_id }
   })
+
+/** The stored project shown as an example wherever a user's own lifecycle needs data to draw (null while loading or when no project has reports). */
+export function useExampleProject(): S.Project | null {
+  const projects = useProjects().data
+  const reports = useAllReports().data
+  return projects && reports ? pickExampleProject(projects, reports) : null
+}
